@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
-    <main class="login-page auth-page auth-page-register">
+    <main class="login-page auth-page auth-page-login">
       <section class="visual-panel">
         <div class="visual-strip"></div>
 
@@ -49,24 +49,15 @@
           <span class="mini-spark mini-spark-c"></span>
 
           <div class="form-card">
-            <p class="eyebrow">Create account</p>
-            <h1>Join Recipe Planner</h1>
+            <p class="eyebrow">Welcome back</p>
+            <h1>Sign in to Recipe Planner</h1>
 
             <% if (error) { %>
               <div class="auth-alert landing-alert"><%= error %></div>
             <% } %>
 
             <div class="login-panel">
-              <form class="login-form" action="/register" method="post">
-                <label class="sr-only" for="username">Username</label>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  placeholder="Username"
-                  value="<%= (values && values.username) || '' %>"
-                />
-
+              <form class="login-form" action="/login" method="post">
                 <label class="sr-only" for="email">Email</label>
                 <input
                   id="email"
@@ -84,21 +75,13 @@
                   placeholder="Password"
                 />
 
-                <label class="sr-only" for="confirmPassword">Confirm password</label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="Confirm password"
-                />
-
-                <button type="submit">Create account</button>
+                <button type="submit">Login</button>
               </form>
             </div>
 
             <div class="divider">
               <span></span>
-              <p>Or sign up with</p>
+              <p>Or continue with</p>
               <span></span>
             </div>
 
@@ -114,8 +97,8 @@
             </div>
 
             <p class="signup-copy">
-              Already have an account?
-              <a href="/login">Sign in</a>
+              Don't have an account?
+              <a href="/register">Create one</a>
             </p>
           </div>
         </div>

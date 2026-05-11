@@ -2,10 +2,14 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 const pool = require('../config/db');
+const { requireAuth, preventBack } = require('../middleware/auth');
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+router.use(requireAuth);
+router.use(preventBack);
 
 function fallbackReply(message) {
     const text = message.toLowerCase();
