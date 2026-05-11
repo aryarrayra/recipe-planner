@@ -7,93 +7,193 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
-    <main class="login-page">
-      <section class="visual-panel">
-        <div class="visual-strip"></div>
+    <main class="food-landing">
+      <section class="food-shell">
+        <header class="food-header">
+          <a href="/" class="food-logo">ResepKu</a>
+          <nav class="food-nav">
+            <a href="#about">About us</a>
+            <a href="#service">Service</a>
+            <a href="#menu">Menu</a>
+            <a href="/login">Contact us</a>
+          </nav>
+          <a href="/login" class="food-header-btn">W</a>
+        </header>
 
-        <div class="plate-stack">
-          <figure class="plate plate-primary">
-            <img src="/images/3.png" alt="Noodle bowl" />
-          </figure>
-          <figure class="plate plate-secondary">
-            <img src="/images/2.png" alt="Spicy dish" />
-          </figure>
-          <figure class="plate plate-tertiary">
-            <img src="/images/1.png" alt="Vegetable soup" />
-          </figure>
-        </div>
-
-        <div class="brand-badge">
-          <span class="brand-dot"></span>
-          <div>
-            <strong>Recipe Planner</strong>
-            <small>Smart meal ideas for every day</small>
-          </div>
-        </div>
-      </section>
-
-      <section class="form-panel">
-        <div class="form-top-accent"></div>
-        <div class="corner-leaf corner-leaf-top"></div>
-        <div class="corner-leaf corner-leaf-bottom"></div>
-
-        <div class="form-shell">
-          <span class="mini-spark mini-spark-a"></span>
-          <span class="mini-spark mini-spark-b"></span>
-          <span class="mini-spark mini-spark-c"></span>
-
-          <div class="form-card">
-            <p class="eyebrow">Welcome back</p>
-            <h1>Sign in to Recipe Planner</h1>
-
-            <div class="login-panel">
-              <form class="login-form" action="/login" method="post">
-                <label class="sr-only" for="email">Email</label>
-                <input id="email" name="email" type="email" placeholder="E-mail" />
-
-                <label class="sr-only" for="password">Password</label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Password"
-                />
-
-                <a class="helper-link" href="#">Forgot password?</a>
-
-                <button type="submit">Login</button>
-              </form>
-            </div>
-
-            <div class="divider">
-              <span></span>
-              <p>Or continue with</p>
-              <span></span>
-            </div>
-
-            <div class="social-grid">
-              <a href="#" class="social-btn">
-                <span class="social-icon google">G</span>
-                Google
-              </a>
-              <a href="#" class="social-btn">
-                <span class="social-icon facebook">f</span>
-                Facebook
-              </a>
-            </div>
-
-            <p class="signup-copy">
-              Don't have an account?
-              <a href="/register">Create one</a>
+        <section class="food-hero">
+          <div class="food-hero-copy">
+            <p class="food-kicker">ResepKu</p>
+            <h1>
+              <span>YUMMY</span>
+              BREAKFAST!
+            </h1>
+            <p class="food-subtitle">
+              Discover breakfast ideas, plan your food schedule, and cook with a
+              cleaner workflow every day.
             </p>
+            <div class="food-hero-actions">
+              <a href="/login" class="food-btn food-btn-primary">Go to login</a>
+              <a href="/register" class="food-btn food-btn-secondary">Create account</a>
+            </div>
           </div>
-        </div>
+
+          <div class="food-hero-visual">
+            <div class="visual-strip"></div>
+            <figure class="hero-plate hero-plate-main">
+              <img src="/images/6.png" alt="ResepKu hero bowl" />
+            </figure>
+          </div>
+        </section>
+
+        <section class="food-mini-strip" id="service">
+          <div class="food-mini-head">
+            <p>Hot selections</p>
+          </div>
+          <div class="food-mini-grid">
+            <article class="food-mini-card">
+              <img src="/images/1.png" alt="Budget meal" />
+              <div>
+                <h3>Budget meal</h3>
+                <p>Smart and easy</p>
+              </div>
+            </article>
+            <article class="food-mini-card">
+              <img src="/images/2.png" alt="Quick dishes" />
+              <div>
+                <h3>Quick dishes</h3>
+                <p>Ready fast</p>
+              </div>
+            </article>
+            <article class="food-mini-card">
+              <img src="/images/3.png" alt="Mood food" />
+              <div>
+                <h3>Mood food</h3>
+                <p>Feel-good picks</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="food-feature" id="about">
+          <div class="food-feature-plate">
+            <div class="food-ring"></div>
+            <img src="/images/2.png" alt="Featured recipe" />
+          </div>
+          <div class="food-feature-copy">
+            <p class="food-kicker">Best workflow</p>
+            <h2>THE BEST YUMMY FOOD IN TOWN</h2>
+            <p>
+              Organize recipes, filter by ingredients, and keep your next meal plan
+              simple. ResepKu is built for practical cooking, not clutter.
+            </p>
+            <a href="/register" class="food-btn food-btn-primary">Try our app</a>
+          </div>
+        </section>
+
+        <section class="food-menu" id="menu">
+          <div class="food-section-title food-section-title-center">
+            <p class="food-kicker">Explore</p>
+            <h2>EXPLORE OUR MENU</h2>
+          </div>
+          <div class="food-menu-grid">
+            <article class="food-menu-card">
+              <img src="/images/1.png" alt="Ingredient search" />
+              <div class="food-menu-copy">
+                <h3>Ingredient search</h3>
+                <p>Cook from what you have</p>
+              </div>
+            </article>
+            <article class="food-menu-card">
+              <img src="/images/3.png" alt="Meal ideas" />
+              <div class="food-menu-copy">
+                <h3>Meal ideas</h3>
+                <p>Breakfast to dinner picks</p>
+              </div>
+            </article>
+            <article class="food-menu-card">
+              <img src="/images/2.png" alt="Recipe details" />
+              <div class="food-menu-copy">
+                <h3>Recipe details</h3>
+                <p>Time, price, and tags</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="food-popular">
+          <div class="food-popular-head">
+            <div class="food-section-title">
+              <p class="food-kicker">Most popular</p>
+              <h2>OUR MOST POPULAR RECIPES</h2>
+            </div>
+            <a href="/login" class="food-pill-link">See more</a>
+          </div>
+
+          <div class="food-popular-grid">
+            <article class="food-recipe-card">
+              <img src="/images/1.png" alt="Vegetable soup" />
+              <h3>Vegetable soup</h3>
+              <div class="food-meta">
+                <span>15 min</span>
+                <span>$8</span>
+              </div>
+            </article>
+            <article class="food-recipe-card">
+              <img src="/images/3.png" alt="Noodle bowl" />
+              <h3>Noodle bowl</h3>
+              <div class="food-meta">
+                <span>20 min</span>
+                <span>$11</span>
+              </div>
+            </article>
+            <article class="food-recipe-card">
+              <img src="/images/2.png" alt="Spicy dish" />
+              <h3>Spicy dish</h3>
+              <div class="food-meta">
+                <span>18 min</span>
+                <span>$10</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="food-quote">
+          <blockquote>
+            “The food we had inspired us to build a planner that turns meal ideas
+            into something structured and easier to use.”
+          </blockquote>
+          <div class="food-quote-plate">
+            <div class="food-ring food-ring-small"></div>
+            <img src="/images/3.png" alt="Closing recipe" />
+          </div>
+        </section>
+
+        <footer class="food-footer">
+          <div>
+            <a href="/" class="food-logo">ResepKu</a>
+            <p>ResepKu for better everyday cooking.</p>
+          </div>
+          <div class="food-footer-links">
+            <div>
+              <h3>Navigate</h3>
+              <a href="/">Home</a>
+              <a href="/login">Login</a>
+              <a href="/register">Register</a>
+            </div>
+            <div>
+              <h3>Features</h3>
+              <a href="#service">Ingredient search</a>
+              <a href="#menu">Recipes</a>
+              <a href="#about">Meal planning</a>
+            </div>
+          </div>
+        </footer>
       </section>
     </main>
   </body>

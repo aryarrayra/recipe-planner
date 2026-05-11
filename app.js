@@ -32,6 +32,8 @@ app.use('/', require('./routes/index'));
 app.use('/', require('./routes/ai'));
 
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Database: ${process.env.DATABASE_URL ? 'Connected to Neon' : 'No DB'}`);
+  console.log(`ResepKu running on http://localhost:${PORT}`);
+  console.log(
+    `Database: ${process.env.DATABASE_URL ? "Configured" : "Not configured"}`
+  );
 });
