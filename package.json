@@ -1,22 +1,27 @@
 {
   "name": "recipe-planner",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "AI Recipe & Food Planner for Gen Z",
+  "main": "app.js",
   "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["recipe", "ai", "food-planner"],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "axios": "^1.16.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "ejs": "^5.0.2",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "multer": "^2.1.1"
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
