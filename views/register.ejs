@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <main class="login-page auth-page auth-page-register">
+      <section class="visual-panel">
+        <div class="visual-strip"></div>
+
+        <div class="plate-stack">
+          <figure class="plate plate-primary">
+            <img src="/images/3.png" alt="Noodle bowl" />
+          </figure>
+          <figure class="plate plate-secondary">
+            <img src="/images/2.png" alt="Spicy dish" />
+          </figure>
+          <figure class="plate plate-tertiary">
+            <img src="/images/1.png" alt="Vegetable soup" />
+          </figure>
+        </div>
+
+        <div class="brand-badge">
+          <span class="brand-dot"></span>
+          <div>
+            <strong>Recipe Planner</strong>
+            <small>Smart meal ideas for every day</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-panel">
+        <div class="form-top-accent"></div>
+        <div class="corner-leaf corner-leaf-top"></div>
+        <div class="corner-leaf corner-leaf-bottom"></div>
+
+        <div class="form-shell">
+          <span class="mini-spark mini-spark-a"></span>
+          <span class="mini-spark mini-spark-b"></span>
+          <span class="mini-spark mini-spark-c"></span>
+
+          <div class="form-card">
+            <p class="eyebrow">Create account</p>
+            <h1>Join Recipe Planner</h1>
+
+            <div class="login-panel">
+              <form class="login-form" action="/register" method="post">
+                <label class="sr-only" for="name">Full name</label>
+                <input id="name" name="name" type="text" placeholder="Full name" />
+
+                <label class="sr-only" for="email">Email</label>
+                <input id="email" name="email" type="email" placeholder="E-mail" />
+
+                <label class="sr-only" for="password">Password</label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Password"
+                />
+
+                <label class="sr-only" for="confirmPassword">Confirm password</label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Confirm password"
+                />
+
+                <button type="submit">Create account</button>
+              </form>
+            </div>
+
+            <div class="divider">
+              <span></span>
+              <p>Or sign up with</p>
+              <span></span>
+            </div>
+
+            <div class="social-grid">
+              <a href="#" class="social-btn">
+                <span class="social-icon google">G</span>
+                Google
+              </a>
+              <a href="#" class="social-btn">
+                <span class="social-icon facebook">f</span>
+                Facebook
+              </a>
+            </div>
+
+            <p class="signup-copy">
+              Already have an account?
+              <a href="/">Sign in</a>
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
