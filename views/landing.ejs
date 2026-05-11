@@ -12,7 +12,7 @@
     />
     <link rel="stylesheet" href="/css/style.css" />
   </head>
-  <body>
+  <body class="page-transition">
     <main class="food-landing">
       <section class="food-shell">
         <header class="food-header">
@@ -132,34 +132,53 @@
               <p class="food-kicker">Most popular</p>
               <h2>OUR MOST POPULAR RECIPES</h2>
             </div>
-            <a href="/login" class="food-pill-link">See more</a>
+            <div class="food-popular-actions">
+              <button
+                type="button"
+                class="food-slider-btn"
+                id="popularPrev"
+                aria-label="Previous recipe"
+              >
+                &lt;
+              </button>
+              <button
+                type="button"
+                class="food-slider-btn"
+                id="popularNext"
+                aria-label="Next recipe"
+              >
+                &gt;
+              </button>
+              <a href="/login" class="food-pill-link">See more</a>
+            </div>
           </div>
 
-          <div class="food-popular-grid">
-            <article class="food-recipe-card">
-              <img src="/images/1.png" alt="Vegetable soup" />
-              <h3>Vegetable soup</h3>
-              <div class="food-meta">
-                <span>15 min</span>
-                <span>$8</span>
+          <div class="food-popular-carousel" id="popularSlider">
+            <div class="food-carousel-stage">
+              <div class="food-carousel-track" id="popularTrack">
+                <article class="food-carousel-card" data-popular-item="0">
+                  <img src="/images/1.png" alt="Vegetable soup" />
+                </article>
+                <article class="food-carousel-card is-active" data-popular-item="1">
+                  <img src="/images/3.png" alt="Noodle bowl" />
+                </article>
+                <article class="food-carousel-card" data-popular-item="2">
+                  <img src="/images/2.png" alt="Spicy dish" />
+                </article>
+                <article class="food-carousel-card" data-popular-item="3">
+                  <img src="/images/6.png" alt="Fresh breakfast" />
+                </article>
               </div>
-            </article>
-            <article class="food-recipe-card">
-              <img src="/images/3.png" alt="Noodle bowl" />
-              <h3>Noodle bowl</h3>
+            </div>
+
+            <div class="food-carousel-copy">
+              <p class="food-carousel-tag" id="popularTag">Most wanted</p>
+              <h3 id="popularTitle">Noodle bowl</h3>
               <div class="food-meta">
-                <span>20 min</span>
-                <span>$11</span>
+                <span id="popularTime">20 min</span>
+                <span id="popularPrice">$11</span>
               </div>
-            </article>
-            <article class="food-recipe-card">
-              <img src="/images/2.png" alt="Spicy dish" />
-              <h3>Spicy dish</h3>
-              <div class="food-meta">
-                <span>18 min</span>
-                <span>$10</span>
-              </div>
-            </article>
+            </div>
           </div>
         </section>
 
@@ -196,5 +215,106 @@
         </footer>
       </section>
     </main>
+    <script>
+      (() => {
+        window.requestAnimationFrame(() => {
+          window.setTimeout(() => {
+            document.body.classList.add("is-ready");
+          }, 40);
+        });
+
+        document.querySelectorAll('a[href="/login"], a[href="/register"]').forEach((link) => {
+          link.addEventListener("click", (event) => {
+            const href = link.getAttribute("href");
+            if (!href) {
+              return;
+            }
+
+            event.preventDefault();
+            document.body.classList.remove("is-ready");
+            document.body.classList.add("is-leaving");
+            window.setTimeout(() => {
+              window.location.href = href;
+            }, 320);
+          });
+        });
+      })();
+
+    </script>
+    <script>
+      (() => {
+        const recipes = [
+          { title: "Vegetable soup", tag: "Fresh pick", time: "15 min", price: "$8", image: "/images/1.png" },
+          { title: "Noodle bowl", tag: "Most wanted", time: "20 min", price: "$11", image: "/images/3.png" },
+          { title: "Spicy dish", tag: "Chef favorite", time: "18 min", price: "$10", image: "/images/2.png" },
+          { title: "Fresh breakfast", tag: "Morning special", time: "12 min", price: "$9", image: "/images/6.png" }
+        ];
+
+        const track = document.getElementById("popularTrack");
+        const cards = Array.from(document.querySelectorAll("[data-popular-item]"));
+        const prevButton = document.getElementById("popularPrev");
+        const nextButton = document.getElementById("popularNext");
+        const tag = document.getElementById("popularTag");
+        const title = document.getElementById("popularTitle");
+        const time = document.getElementById("popularTime");
+        const price = document.getElementById("popularPrice");
+
+        if (!track || !cards.length || !prevButton || !nextButton || !tag || !title || !time || !price) {
+          return;
+        }
+
+        let slotPositions = [3, 0, 1, 2];
+
+        const render = () => {
+          const stage = track.parentElement;
+          const stageWidth = stage.clientWidth;
+          const cardWidth = cards[0].offsetWidth;
+          const centerX = (stageWidth - cardWidth) / 2;
+          const leftX = -cardWidth * 0.18;
+          const rightX = stageWidth - cardWidth * 0.82;
+          const bottomX = centerX;
+          const arcSlots = {
+            0: { x: centerX, y: 0, scale: 1, opacity: 1, z: 3 },
+            1: { x: rightX, y: 128, scale: 0.82, opacity: 0.8, z: 2 },
+            2: { x: bottomX, y: 268, scale: 0.6, opacity: 0, z: 1 },
+            3: { x: leftX, y: 128, scale: 0.82, opacity: 0.8, z: 2 }
+          };
+
+          cards.forEach((card, index) => {
+            const image = card.querySelector("img");
+            const slotKey = slotPositions[index];
+            const slot = arcSlots[slotKey] || arcSlots[2];
+            card.classList.toggle("is-active", slotKey === 0);
+            card.style.setProperty("--tx", `${slot.x}px`);
+            card.style.setProperty("--ty", `${slot.y}px`);
+            card.style.setProperty("--scale", slot.scale);
+            card.style.opacity = slot.opacity;
+            card.style.zIndex = slot.z;
+            image.src = recipes[index].image;
+            image.alt = recipes[index].title;
+          });
+
+          const activeIndex = slotPositions.findIndex((slot) => slot === 0);
+          const activeRecipe = recipes[activeIndex];
+          tag.textContent = activeRecipe.tag;
+          title.textContent = activeRecipe.title;
+          time.textContent = activeRecipe.time;
+          price.textContent = activeRecipe.price;
+        };
+
+        nextButton.addEventListener("click", () => {
+          slotPositions = slotPositions.map((slot) => (slot + 3) % 4);
+          render();
+        });
+
+        prevButton.addEventListener("click", () => {
+          slotPositions = slotPositions.map((slot) => (slot + 1) % 4);
+          render();
+        });
+
+        window.addEventListener("resize", render);
+        render();
+      })();
+    </script>
   </body>
 </html>
