@@ -12,7 +12,7 @@
     />
     <link rel="stylesheet" href="/css/style.css" />
   </head>
-  <body>
+  <body class="page-transition auth-page">
     <main class="login-page auth-page auth-page-register">
       <section class="visual-panel">
         <div class="visual-outline"></div>
@@ -118,5 +118,44 @@
         </div>
       </section>
     </main>
+    <script>
+      (() => {
+        window.requestAnimationFrame(() => {
+          window.setTimeout(() => {
+            document.body.classList.add("is-ready");
+          }, 70);
+        });
+
+        const switchLink = document.querySelector('a[href="/login"]');
+        const homeLink = document.querySelector('a[href="/"]');
+
+        if (switchLink) {
+          switchLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            document.body.classList.remove("is-ready");
+            document.body.classList.add("is-switching-auth", "is-switching-to-login");
+            window.setTimeout(() => {
+              window.location.href = "/login";
+            }, 240);
+          });
+        }
+
+        [homeLink].filter(Boolean).forEach((link) => {
+          link.addEventListener("click", (event) => {
+            const href = link.getAttribute("href");
+            if (!href) {
+              return;
+            }
+
+            event.preventDefault();
+            document.body.classList.remove("is-ready");
+            document.body.classList.add("is-leaving");
+            window.setTimeout(() => {
+              window.location.href = href;
+            }, 320);
+          });
+        });
+      })();
+    </script>
   </body>
 </html>
