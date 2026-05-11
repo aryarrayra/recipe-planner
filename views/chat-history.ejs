@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="page-bg"></div>
+  <header class="site-header">
+    <a class="brand" href="/">
+      <span class="brand-mark">AI</span>
+      <span class="brand-text">Recipe Planner</span>
+    </a>
+    <nav class="top-nav">
+      <a href="/">Landing</a>
+      <a href="/chat-ai">Chat AI</a>
+      <a href="/chat-history">History</a>
+      <a href="/api/recipes">Recipes API</a>
+    </nav>
+    <a class="nav-cta" href="/chat-ai">Kembali ke chat</a>
+  </header>
+
+  <main class="history-layout">
+    <section class="history-hero">
+      <span class="section-kicker">Chat history</span>
+      <h1>Riwayat percakapan untuk session ini.</h1>
+      <p class="lead">Halaman ini menampilkan histori dalam bentuk UI biasa, bukan JSON API. Cocok untuk cek percobaan chat dan hasil response AI.</p>
+      <div class="history-meta">
+        <div>
+          <strong>Session</strong>
+          <span><%= session.session_id %></span>
+        </div>
+        <div>
+          <strong>Title</strong>
+          <span><%= session.title || 'Chat session' %></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="history-panel">
+      <% if (messages && messages.length) { %>
+        <% messages.forEach(function(message) { %>
+          <article class="history-item msg <%= message.role %>">
+            <span class="meta"><%= message.label %></span>
+            <div><%= message.text %></div>
+            <% if (message.tips && message.tips.length) { %>
+              <ul>
+                <% message.tips.forEach(function(tip) { %>
+                  <li><%= tip %></li>
+                <% }) %>
+              </ul>
+            <% } %>
+            <small><%= new Date(message.createdAt).toLocaleString('id-ID') %></small>
+          </article>
+        <% }) %>
+      <% } else { %>
+        <div class="empty-state">
+          <h3>Belum ada histori chat.</h3>
+          <p>Mulai percakapan di halaman chat untuk melihat hasilnya di sini.</p>
+        </div>
+      <% } %>
+    </section>
+  </main>
+</body>
+</html>

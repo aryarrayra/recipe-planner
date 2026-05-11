@@ -128,7 +128,27 @@ CREATE TABLE IF NOT EXISTS ai_generated_recipes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 9. Tabel User Ingredients Inventory
+-- 9. Tabel AI Chat Sessions
+CREATE TABLE IF NOT EXISTS ai_chat_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id VARCHAR(128) NOT NULL UNIQUE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(200),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. Tabel AI Chat Messages
+CREATE TABLE IF NOT EXISTS ai_chat_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id VARCHAR(128) NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. Tabel User Ingredients Inventory
 CREATE TABLE IF NOT EXISTS user_ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -139,7 +159,7 @@ CREATE TABLE IF NOT EXISTS user_ingredients (
     UNIQUE(user_id, ingredient_name)
 );
 
--- 10. Tabel Mood Recommendations
+-- 12. Tabel Mood Recommendations
 CREATE TABLE IF NOT EXISTS mood_recommendations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -159,6 +179,8 @@ CREATE INDEX IF NOT EXISTS idx_recipes_category ON recipes(category);
 CREATE INDEX IF NOT EXISTS idx_recipes_tags ON recipes USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_cooking_history_user ON cooking_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id);
+CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_session_created ON ai_chat_messages(session_id, created_at);
 
 -- =====================================================
 -- SAMPLE DATA (untuk testing)
