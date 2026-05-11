@@ -71,7 +71,12 @@ if (chatWindow && chatForm && chatInput) {
       }
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      window.location.href = '/login';
+      return null;
+    }
 
     if (!response.ok || !data.success) {
       throw new Error(data.error || 'Gagal menghapus histori chat');
@@ -89,7 +94,12 @@ if (chatWindow && chatForm && chatInput) {
       body: JSON.stringify({ message })
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      window.location.href = '/login';
+      return null;
+    }
 
     if (!response.ok || !data.success) {
       throw new Error(data.error || 'Chat request failed');
@@ -115,6 +125,7 @@ if (chatWindow && chatForm && chatInput) {
 
     try {
       const result = await sendMessage(message);
+      if (!result) return;
       typingNode.remove();
       renderMessage({
         role: 'ai',
@@ -140,7 +151,8 @@ if (chatWindow && chatForm && chatInput) {
     if (!confirmed) return;
 
     try {
-      await clearChatHistory();
+      const cleared = await clearChatHistory();
+      if (!cleared) return;
       renderInitialState();
     } catch (error) {
       renderMessage({

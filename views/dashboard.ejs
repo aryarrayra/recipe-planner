@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="dashboard-shell">
+    <section class="dashboard-hero">
+      <span class="eyebrow">User dashboard</span>
+      <h1>Halo, <%= user.username %>.</h1>
+      <p>
+        Kamu sudah login sebagai user. Dari sini kamu bisa lanjut ke chat AI,
+        lihat histori, atau nanti masuk ke fitur meal planner yang lain.
+      </p>
+      <div class="dashboard-actions">
+        <a class="auth-button" href="/chat-ai">Buka Chat AI</a>
+        <form action="/logout" method="post">
+          <button class="auth-button auth-button-secondary" type="submit">Logout</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="dashboard-card">
+        <span>Username</span>
+        <strong><%= user.username %></strong>
+      </article>
+      <article class="dashboard-card">
+        <span>Email</span>
+        <strong><%= user.email %></strong>
+      </article>
+      <article class="dashboard-card">
+        <span>Role</span>
+        <strong><%= user.role %></strong>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

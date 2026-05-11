@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     avatar_url TEXT,
     bio TEXT,
     dietary_preferences JSONB DEFAULT '[]',
@@ -187,10 +188,11 @@ CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_session_created ON ai_chat_messa
 -- =====================================================
 
 -- Insert sample user (password: "test123" nanti di-hash di app)
-INSERT INTO users (username, email, password_hash, avatar_url, dietary_preferences, allergies, budget_per_meal)
+INSERT INTO users (username, email, password_hash, role, avatar_url, dietary_preferences, allergies, budget_per_meal)
 VALUES 
-('annisakost', 'annisa@example.com', '$2b$10$dummyhash123', 'https://ui-avatars.com/api/?name=Annisa', '["vegetarian"]', '["peanut"]', 15000),
-('budi_kost', 'budi@example.com', '$2b$10$dummyhash456', 'https://ui-avatars.com/api/?name=Budi', '[]', '[]', 10000)
+('annisakost', 'annisa@example.com', '$2b$10$dummyhash123', 'user', 'https://ui-avatars.com/api/?name=Annisa', '["vegetarian"]', '["peanut"]', 15000),
+('budi_kost', 'budi@example.com', '$2b$10$dummyhash456', 'user', 'https://ui-avatars.com/api/?name=Budi', '[]', '[]', 10000),
+('adminrecipe', 'admin@recipeplanner.local', '$2b$10$FWQc/haZf.tcUZeF.siNi.qQAOR8WaJxjnbU/CIpEAxIRiZYPDILO', 'admin', 'https://ui-avatars.com/api/?name=Admin', '[]', '[]', 0)
 ON CONFLICT (email) DO NOTHING;
 
 -- Insert sample recipes

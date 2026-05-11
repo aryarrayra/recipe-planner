@@ -27,6 +27,7 @@ app.set('views', path.join(__dirname, 'views'));
 const recipeRoutes = require('./routes/recipes');
 app.use('/api/recipes', recipeRoutes);
 
+app.use('/', require('./routes/auth'));
 app.use('/', require('./routes/index'));
 app.use('/', require('./routes/ai'));
 

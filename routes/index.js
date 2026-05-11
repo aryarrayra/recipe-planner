@@ -8,18 +8,10 @@ router.get("/", (req, res) => {
   });
 });
 
-router.get("/register", (req, res) => {
-  res.render("register", {
-    title: "Recipe Planner Register",
+router.get("/home", (req, res) => {
+  res.render("home", {
+    title: "Recipe Planner Home",
   });
-});
-
-router.post("/login", (req, res) => {
-  res.redirect("/");
-});
-
-router.post("/register", (req, res) => {
-  res.redirect("/register");
 });
 
 module.exports = router;
