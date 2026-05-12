@@ -149,18 +149,233 @@ async function saveChatMessage(sessionId, role, content, metadata = {}) {
     );
 }
 
-async function upsertChatSession(sessionId, title = null) {
+async function upsertChatSession(sessionId, userId = null, title = null) {
     await pool.query(
         `
-            INSERT INTO ai_chat_sessions (session_id, title)
-            VALUES ($1, $2)
+            INSERT INTO ai_chat_sessions (session_id, user_id, title)
+            VALUES ($1, $2, $3)
             ON CONFLICT (session_id)
             DO UPDATE SET
                 updated_at = CURRENT_TIMESTAMP,
+                user_id = COALESCE(ai_chat_sessions.user_id, EXCLUDED.user_id),
                 title = COALESCE(EXCLUDED.title, ai_chat_sessions.title)
         `,
-        [sessionId, title]
+        [sessionId, userId, title]
     );
+}
+
+function categorizeRecipe(text = '') {
+    const source = String(text || '').toLowerCase();
+    const categoryMap = [
+        { label: 'Dessert', terms: ['dessert', 'manis', 'pisang', 'cake', 'cookie', 'brownies', 'pudding', 'coklat'] },
+        { label: 'Minuman', terms: ['minuman', 'drink', 'kopi', 'teh', 'jus', 'boba', 'es '] },
+        { label: 'Healthy food', terms: ['healthy', 'diet', 'salad', 'oat', 'protein', 'low calorie'] },
+        { label: 'Budget food', terms: ['hemat', 'budget', 'murah', 'anak kost'] },
+        { label: 'Cemilan', terms: ['cemilan', 'snack', 'goreng', 'nugget', 'roll', 'crispy'] }
+    ];
+
+    for (const category of categoryMap) {
+        if (category.terms.some((term) => source.includes(term))) {
+            return category.label;
+        }
+    }
+
+    return 'Makanan berat';
+}
+
+function extractRecipeName(text = '', fallback = 'Resep pilihan AI') {
+    const normalized = String(text || '').replace(/\r/g, '');
+    const lines = normalized
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    const explicitName = lines.find((line) =>
+        /^nama resep[:\-]/i.test(line) ||
+        /^resep[:\-]/i.test(line) ||
+        /^menu[:\-]/i.test(line)
+    );
+
+    if (explicitName) {
+        return explicitName.replace(/^[^:\-]+[:\-]\s*/i, '').trim();
+    }
+
+    const heading = lines.find((line) => line.length > 4 && line.length < 60);
+    return heading || fallback;
+}
+
+function extractDuration(text = '') {
+    const match = String(text || '').match(/(\d{1,3})\s*(menit|min)/i);
+    return match ? Number(match[1]) : 20;
+}
+
+function extractPrice(text = '') {
+    const source = String(text || '');
+    const rupiahMatch = source.match(/rp\.?\s*([\d.]+)/i);
+    if (rupiahMatch) {
+        return `Rp${rupiahMatch[1]}`;
+    }
+
+    if (/hemat|murah/i.test(source)) {
+        return 'Rp10.000 - Rp20.000';
+    }
+
+    return 'Rp15.000 - Rp30.000';
+}
+
+function inferDifficulty(text = '', steps = []) {
+    const source = String(text || '').toLowerCase();
+
+    if (source.includes('mudah') || source.includes('simple') || steps.length <= 3) {
+        return 'Easy';
+    }
+
+    if (source.includes('sulit') || source.includes('advanced') || steps.length >= 6) {
+        return 'Hard';
+    }
+
+    return 'Medium';
+}
+
+function extractIngredients(text = '') {
+    const normalized = String(text || '').replace(/\r/g, '');
+    const lines = normalized.split('\n').map((line) => line.trim());
+    const ingredients = [];
+    let collecting = false;
+
+    for (const line of lines) {
+        if (/^bahan\b/i.test(line)) {
+            collecting = true;
+            continue;
+        }
+
+        if (collecting && (/^cara\b/i.test(line) || /^langkah\b/i.test(line) || /^step\b/i.test(line))) {
+            break;
+        }
+
+        if (collecting) {
+            const item = line.replace(/^[-*•\d.)\s]+/, '').trim();
+            if (item) {
+                ingredients.push(item);
+            }
+        }
+    }
+
+    if (ingredients.length) {
+        return ingredients.slice(0, 8);
+    }
+
+    return [];
+}
+
+function extractSteps(text = '') {
+    const normalized = String(text || '').replace(/\r/g, '');
+    const lines = normalized.split('\n').map((line) => line.trim());
+    const steps = [];
+    let collecting = false;
+
+    for (const line of lines) {
+        if (/^(cara|langkah|step)\b/i.test(line)) {
+            collecting = true;
+            continue;
+        }
+
+        if (collecting) {
+            const item = line.replace(/^[-*•\d.)\s]+/, '').trim();
+            if (item) {
+                steps.push(item);
+            }
+        }
+    }
+
+    if (steps.length) {
+        return steps.slice(0, 8);
+    }
+
+    const inlineSteps = normalized.match(/(?:step|langkah)\s*\d+[:.)-]?\s*([^\n]+)/gi) || [];
+    if (inlineSteps.length) {
+        return inlineSteps.map((item) => item.replace(/^(?:step|langkah)\s*\d+[:.)-]?\s*/i, '').trim()).slice(0, 8);
+    }
+
+    return [];
+}
+
+function buildRelatedTitles(recipeName = '') {
+    const source = String(recipeName || '').toLowerCase();
+
+    if (source.includes('pisang')) {
+        return ['Pisang Nugget', 'Banana Roll', 'Pisang Crispy'];
+    }
+
+    if (source.includes('nasi goreng')) {
+        return ['Nasi Goreng Jawa', 'Nasi Goreng Kampung', 'Nasi Gila'];
+    }
+
+    if (source.includes('mie')) {
+        return ['Mie Goreng Pedas', 'Mie Ayam Jamur', 'Mie Tek Tek'];
+    }
+
+    return ['Menu Serupa 1', 'Menu Serupa 2', 'Menu Serupa 3'];
+}
+
+function buildHistoryInsights(messages = [], session = {}) {
+    const assistantMessages = messages.filter((message) => message.role === 'ai');
+    const userMessages = messages.filter((message) => message.role === 'user');
+    const latestAssistant = assistantMessages[assistantMessages.length - 1] || null;
+    const combinedText = [session.title, ...messages.map((message) => message.text)].join(' ');
+    const category = categorizeRecipe(combinedText);
+    const recipeName = extractRecipeName(
+        latestAssistant?.text || session.title,
+        session.title || 'Resep pilihan AI'
+    );
+    const ingredients = extractIngredients(latestAssistant?.text || '');
+    const steps = extractSteps(latestAssistant?.text || '');
+
+    return {
+        createdDate: session.created_at
+            ? new Date(session.created_at).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+              })
+            : new Date().toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+              }),
+        totalMessages: messages.length,
+        category,
+        recipeSummary: latestAssistant
+            ? {
+                  name: recipeName,
+                  budget: extractPrice(latestAssistant.text),
+                  duration: extractDuration(latestAssistant.text),
+                  difficulty: inferDifficulty(latestAssistant.text, steps)
+              }
+            : null,
+        ingredients,
+        steps,
+        searchHistory: userMessages.map((message) => message.text).filter(Boolean).slice(-5).reverse(),
+        relatedTitles: buildRelatedTitles(recipeName)
+    };
+}
+
+function relatedFromTitles(titles = [], fallbackRecipes = []) {
+    const fallbackMap = new Map(
+        fallbackRecipes
+            .filter((recipe) => recipe && recipe.title)
+            .map((recipe) => [String(recipe.title).toLowerCase(), recipe])
+    );
+
+    return titles.map((title, index) => {
+        const fallback = fallbackMap.get(String(title).toLowerCase());
+
+        return {
+            title,
+            category: fallback?.category || 'Related recipe',
+            image_url: fallback?.image_url || `/images/${(index % 6) + 1}.png`
+        };
+    });
 }
 
 function toGeminiContents(history, message) {
@@ -261,7 +476,7 @@ router.get('/chat-history', async (req, res) => {
     const sessionId = req.sessionID;
 
     try {
-        const [historyResult, sessionResult] = await Promise.all([
+        const [historyResult, sessionResult, otherSessionsResult, trendingResult, favoriteResult, recookResult] = await Promise.all([
             getChatHistory(sessionId, 80),
             pool.query(
                 `
@@ -271,7 +486,48 @@ router.get('/chat-history', async (req, res) => {
                     LIMIT 1
                 `,
                 [sessionId]
-            )
+            ),
+            pool.query(
+                `
+                    SELECT session_id, title, created_at, updated_at
+                    FROM ai_chat_sessions
+                    WHERE user_id = $1 AND session_id <> $2
+                    ORDER BY updated_at DESC
+                    LIMIT 5
+                `,
+                [req.session.user?.id || null, sessionId]
+            ),
+            pool.query(
+                `
+                    SELECT title, category, image_url, views_count
+                    FROM recipes
+                    WHERE is_approved = true
+                    ORDER BY views_count DESC, likes_count DESC
+                    LIMIT 3
+                `
+            ),
+            pool.query(
+                `
+                    SELECT r.title, r.category, r.image_url
+                    FROM user_favorites uf
+                    JOIN recipes r ON r.id = uf.recipe_id
+                    WHERE uf.user_id = $1 AND r.is_approved = true
+                    ORDER BY uf.created_at DESC
+                    LIMIT 3
+                `,
+                [req.session.user?.id || null]
+            ),
+            pool.query(
+                `
+                    SELECT r.title, r.category, r.image_url, ch.cooking_date
+                    FROM cooking_history ch
+                    JOIN recipes r ON r.id = ch.recipe_id
+                    WHERE ch.user_id = $1 AND r.is_approved = true
+                    ORDER BY ch.cooking_date DESC
+                    LIMIT 4
+                `,
+                [req.session.user?.id || null]
+            ),
         ]);
 
         const session = sessionResult.rows[0] || {
@@ -289,14 +545,33 @@ router.get('/chat-history', async (req, res) => {
             attachment: item.metadata?.attachment || null,
             tips: item.metadata?.tips || [],
             followUps: item.metadata?.followUps || [],
+            avatar: item.role === 'assistant' ? 'AI' : (req.session.user?.username || 'You').slice(0, 1).toUpperCase(),
             createdAt: item.created_at
         }));
+
+        const insights = buildHistoryInsights(messages, session);
+        const relatedRecipes = relatedFromTitles(insights.relatedTitles, [...trendingResult.rows, ...favoriteResult.rows]);
+        const viewedRecipes = relatedRecipes.slice(0, 4);
 
         res.render('chat-history', {
             title: 'Chat History - AI Recipe Planner',
             session,
             messages,
-            user: req.session.user || null
+            user: req.session.user || null,
+            insights,
+            sidebarData: {
+                otherSessions: otherSessionsResult.rows,
+                trendingRecipes: trendingResult.rows,
+                favoriteRecipes: favoriteResult.rows,
+                recentSearches: insights.searchHistory
+            },
+            relatedRecipes,
+            activityData: {
+                recookedRecipes: recookResult.rows,
+                likedRecipes: favoriteResult.rows,
+                watchedVideos: [],
+                viewedRecipes
+            }
         });
     } catch (error) {
         console.error('Failed to load chat history page:', error.message);
@@ -341,7 +616,11 @@ router.post('/api/chat', upload.single('photo'), async (req, res) => {
     const messageContent = messageText || (photo ? `Foto terlampir: ${photo.name}` : '');
 
     try {
-        await upsertChatSession(sessionId, (messageText || photo?.name || 'Chat session').slice(0, 80));
+        await upsertChatSession(
+            sessionId,
+            req.session.user?.id || null,
+            (messageText || photo?.name || 'Chat session').slice(0, 80)
+        );
         await saveChatMessage(sessionId, 'user', messageContent, {
             html: sanitizedHtml,
             attachment: photo
@@ -362,7 +641,11 @@ router.post('/api/chat', upload.single('photo'), async (req, res) => {
             provider: 'gemini'
         });
 
-        await upsertChatSession(sessionId, aiResult.title?.slice(0, 80) || messageContent.slice(0, 80));
+        await upsertChatSession(
+            sessionId,
+            req.session.user?.id || null,
+            aiResult.title?.slice(0, 80) || messageContent.slice(0, 80)
+        );
 
         res.json({
             success: true,
@@ -387,7 +670,11 @@ router.post('/api/chat', upload.single('photo'), async (req, res) => {
             provider: 'fallback'
         });
 
-        await upsertChatSession(sessionId, fallback.title?.slice(0, 80) || messageContent.slice(0, 80));
+        await upsertChatSession(
+            sessionId,
+            req.session.user?.id || null,
+            fallback.title?.slice(0, 80) || messageContent.slice(0, 80)
+        );
 
         res.json({
             success: true,

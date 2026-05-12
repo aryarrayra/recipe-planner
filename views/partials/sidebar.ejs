@@ -1,8 +1,8 @@
 <div class="user-sidebar-shell">
   <aside class="user-sidebar <%= mode === 'admin' ? 'admin-sidebar' : 'user-sidebar-user' %>">
-    <a href="<%= mode === 'admin' ? '/admin/dashboard' : '/dashboard' %>" class="user-sidebar-brand">
-      <i class="fa-solid <%= mode === 'admin' ? 'fa-layer-group' : 'fa-utensils' %>" aria-hidden="true"></i>
-    </a>
+    <div class="user-sidebar-brand" aria-hidden="true">
+      <img src="/images/7.png" alt="" />
+    </div>
 
     <nav class="user-sidebar-nav">
       <% if (mode === 'admin') { %>
