@@ -23,7 +23,16 @@
 
       <section class="user-dashboard-main">
         <header class="user-dashboard-topbar">
+          <div class="user-search">
+            <i class="fa-solid fa-magnifying-glass user-search-icon" aria-hidden="true"></i>
+            <input type="text" placeholder="<%= dashboardData.searchPlaceholder %>" />
+            <span>Search</span>
+          </div>
+
           <div class="user-topbar-actions">
+            <a class="user-icon-button" href="/chat-ai" aria-label="Buka AI Chat">
+              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+            </a>
             <div class="user-profile-pill">
               <strong><%= user.username %></strong>
               <span><%= user.role %></span>
@@ -31,171 +40,240 @@
           </div>
         </header>
 
-        <div class="user-dashboard-content">
+        <div class="user-dashboard-content user-dashboard-content-modern">
           <section class="user-dashboard-left">
+            <article class="user-panel user-panel-banner">
+              <div class="user-banner-copy">
+                <p class="user-panel-kicker">Dashboard User</p>
+                <h1><%= dashboardData.greeting %>, <%= dashboardData.firstName %></h1>
+                <p class="user-banner-description">
+                  Temukan resep favorit, menu hemat, comfort food, sampai ide masak cepat
+                  tanpa harus scroll terlalu jauh.
+                </p>
+
+                <div class="user-mood-row">
+                  <% dashboardData.moods.forEach((mood) => { %>
+                    <span><%= mood %></span>
+                  <% }) %>
+                </div>
+              </div>
+
+              <div class="user-banner-card">
+                <p class="user-banner-label">Daily challenge / menu hari ini</p>
+                <h2>Hari ini coba masak <%= dashboardData.dailyChallenge.title %></h2>
+                <div class="user-recipe-tags">
+                  <span><i class="fa-regular fa-clock"></i> <%= dashboardData.dailyChallenge.cookingTime %> menit</span>
+                  <span><i class="fa-solid fa-fire"></i> <%= dashboardData.dailyChallenge.calories %> kkal</span>
+                  <span><i class="fa-solid fa-signal"></i> <%= dashboardData.dailyChallenge.difficulty %></span>
+                </div>
+                <a class="auth-button" href="/recipes">Lihat resep</a>
+              </div>
+            </article>
+
             <article class="user-panel user-panel-hero">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Top recipe categories</p>
-                  <h2>Kategori resep favorit</h2>
+                  <p class="user-panel-kicker">Kategori resep</p>
+                  <h2>Pilih sesuai mood dan kebutuhan</h2>
                 </div>
               </div>
 
-              <div class="user-category-row">
-                <div class="user-category-chip">
-                  <img src="/images/1.png" alt="Soup" />
-                  <span>Soup</span>
-                </div>
-                <div class="user-category-chip">
-                  <img src="/images/3.png" alt="Pasta" />
-                  <span>Pasta</span>
-                </div>
-                <div class="user-category-chip">
-                  <img src="/images/2.png" alt="Spicy" />
-                  <span>Spicy</span>
-                </div>
-                <div class="user-category-chip">
-                  <img src="/images/6.png" alt="Breakfast" />
-                  <span>Breakfast</span>
-                </div>
-                <div class="user-category-chip">
-                  <img src="/images/1.png" alt="Healthy" />
-                  <span>Grilled</span>
-                </div>
-                <div class="user-category-chip user-category-chip-arrow">
-                  <span><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>
-                </div>
+              <div class="user-category-row user-category-grid-modern">
+                <% dashboardData.categories.forEach((category) => { %>
+                  <div class="user-category-chip">
+                    <img src="<%= category.image %>" alt="<%= category.label %>" />
+                    <span><%= category.label %></span>
+                  </div>
+                <% }) %>
               </div>
             </article>
 
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Popular recipe</p>
-                  <h2>Menu yang cocok untuk kamu</h2>
+                  <p class="user-panel-kicker">Resep trending / populer</p>
+                  <h2>Paling sering dilihat atau disukai</h2>
+                </div>
+                <a class="user-panel-link" href="/recipes">Lihat semua</a>
+              </div>
+
+              <div class="user-recipe-list user-recipe-list-compact">
+                <% dashboardData.trendingRecipes.forEach((recipe) => { %>
+                  <article class="user-recipe-card user-recipe-card-modern">
+                    <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                    <div class="user-recipe-copy">
+                      <h3><%= recipe.title %></h3>
+                      <p><%= recipe.description %></p>
+                      <div class="user-recipe-tags">
+                        <span><i class="fa-regular fa-eye"></i> <%= recipe.viewsCount %></span>
+                        <span><i class="fa-regular fa-heart"></i> <%= recipe.likesCount %></span>
+                        <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime %> menit</span>
+                        <span><i class="fa-solid fa-fire"></i> <%= recipe.calories %> kkal</span>
+                        <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
+                      </div>
+                    </div>
+                  </article>
+                <% }) %>
+              </div>
+            </article>
+
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Rekomendasi untuk user</p>
+                  <h2>Berdasarkan resep yang pernah dilihat atau disimpan</h2>
                 </div>
               </div>
 
-              <div class="user-recipe-list">
-                <article class="user-recipe-card">
-                  <img src="/images/3.png" alt="Pasta with salmon and peas" />
-                  <div class="user-recipe-copy">
-                    <h3>Pasta with salmon &amp; peas</h3>
-                    <div class="user-recipe-tags">
-                      <span><i class="fa-solid fa-star"></i> 4.7</span>
-                      <span><i class="fa-solid fa-fish"></i> Seafood</span>
-                      <span><i class="fa-solid fa-bowl-food"></i> Pasta</span>
+              <div class="user-card-grid">
+                <% dashboardData.recommendedRecipes.forEach((recipe) => { %>
+                  <article class="user-mini-recipe-card">
+                    <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                    <div class="user-mini-recipe-copy">
+                      <h3><%= recipe.title %></h3>
+                      <p><%= recipe.category %></p>
+                      <small><%= recipe.cookingTime %> menit - <%= recipe.difficulty %></small>
                     </div>
-                    <p>20 mins</p>
-                    <small>Suggested by ResepKu</small>
-                  </div>
-                </article>
-
-                <article class="user-recipe-card">
-                  <img src="/images/1.png" alt="Pumpkin soup" />
-                  <div class="user-recipe-copy">
-                    <h3>Pumpkin soup</h3>
-                    <div class="user-recipe-tags">
-                      <span><i class="fa-solid fa-star"></i> 4.4</span>
-                      <span><i class="fa-solid fa-leaf"></i> Veg</span>
-                      <span><i class="fa-solid fa-mug-hot"></i> Soup</span>
-                    </div>
-                    <p>19 mins</p>
-                    <small>Upload by Tami</small>
-                  </div>
-                </article>
-
-                <article class="user-recipe-card">
-                  <img src="/images/2.png" alt="Pesto pasta" />
-                  <div class="user-recipe-copy">
-                    <h3>Pesto pasta</h3>
-                    <div class="user-recipe-tags">
-                      <span><i class="fa-solid fa-star"></i> 4.6</span>
-                      <span><i class="fa-solid fa-pepper-hot"></i> Bold</span>
-                      <span><i class="fa-solid fa-bowl-food"></i> Pasta</span>
-                    </div>
-                    <p>24 mins</p>
-                    <small>Upload by Naya</small>
-                  </div>
-                </article>
+                  </article>
+                <% }) %>
               </div>
             </article>
+
+            <div class="user-section-grid">
+              <article class="user-panel">
+                <div class="user-panel-head">
+                  <div>
+                    <p class="user-panel-kicker">Favorite recipes</p>
+                    <h2>Resep yang disimpan user</h2>
+                  </div>
+                </div>
+
+                <% if (dashboardData.favoriteRecipes.length) { %>
+                  <div class="user-card-grid">
+                    <% dashboardData.favoriteRecipes.forEach((recipe) => { %>
+                      <article class="user-mini-recipe-card">
+                        <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                        <div class="user-mini-recipe-copy">
+                          <h3><%= recipe.title %></h3>
+                          <p><%= recipe.category %></p>
+                          <small><%= recipe.calories %> kkal - Rp<%= Number(recipe.estimatedPrice).toLocaleString('id-ID') %></small>
+                        </div>
+                      </article>
+                    <% }) %>
+                  </div>
+                <% } else { %>
+                  <div class="user-empty-state">
+                    <i class="fa-regular fa-heart"></i>
+                    <p>Belum ada resep favorit. Simpan resep yang kamu suka supaya muncul di sini.</p>
+                  </div>
+                <% } %>
+              </article>
+
+              <article class="user-panel">
+                <div class="user-panel-head">
+                  <div>
+                    <p class="user-panel-kicker">Recently viewed</p>
+                    <h2>Resep terakhir yang dibuka</h2>
+                  </div>
+                </div>
+
+                <% if (dashboardData.recentlyViewed.length) { %>
+                  <div class="user-card-grid">
+                    <% dashboardData.recentlyViewed.forEach((recipe) => { %>
+                      <article class="user-mini-recipe-card">
+                        <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                        <div class="user-mini-recipe-copy">
+                          <h3><%= recipe.title %></h3>
+                          <p><%= recipe.category %></p>
+                          <small><%= recipe.cookingTime %> menit - <%= recipe.difficulty %></small>
+                        </div>
+                      </article>
+                    <% }) %>
+                  </div>
+                <% } else { %>
+                  <div class="user-empty-state">
+                    <i class="fa-regular fa-clock"></i>
+                    <p>Belum ada riwayat resep. Setelah user memasak atau membuka resep, list ini akan terisi.</p>
+                  </div>
+                <% } %>
+              </article>
+            </div>
           </section>
 
           <aside class="user-dashboard-right">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Events you may be interested</p>
-                  <h2>Ide pilihan hari ini</h2>
-                </div>
-              </div>
-
-              <div class="user-event-list">
-                <article class="user-event-card">
-                  <img src="/images/6.png" alt="Breakfast combo" />
-                  <div class="user-event-copy">
-                    <h3>Breakfast combo</h3>
-                    <p><i class="fa-regular fa-clock"></i> Today | 7:00 AM</p>
-                    <small><i class="fa-regular fa-user"></i> Cook with Dara</small>
-                  </div>
-                </article>
-
-                <article class="user-event-card">
-                  <img src="/images/2.png" alt="Gym meal" />
-                  <div class="user-event-copy">
-                    <h3>Gym meal</h3>
-                    <p><i class="fa-regular fa-clock"></i> Today | 12:30 PM</p>
-                    <small><i class="fa-regular fa-user"></i> Cook with Adit</small>
-                  </div>
-                </article>
-
-                <article class="user-event-card">
-                  <img src="/images/1.png" alt="Thai flavour" />
-                  <div class="user-event-copy">
-                    <h3>Thai flavour</h3>
-                    <p><i class="fa-regular fa-clock"></i> Today | 5:30 PM</p>
-                    <small><i class="fa-regular fa-user"></i> Cook with Sela</small>
-                  </div>
-                </article>
-              </div>
-            </article>
-
             <article class="user-panel user-ai-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">AI meal assistant</p>
-                  <h2>Tempat AI ResepKu</h2>
+                  <p class="user-panel-kicker">Tips memasak</p>
+                  <h2>Biar dashboard tidak kosong</h2>
+                </div>
+              </div>
+
+              <p class="user-ai-copy"><%= dashboardData.tip %></p>
+
+              <div class="user-ai-prompts">
+                <div class="user-prompt-card">
+                  <strong>Kalori makanan</strong>
+                  <span>Cek resep yang lebih ringan langsung dari badge kalori di setiap kartu resep.</span>
+                </div>
+                <div class="user-prompt-card">
+                  <strong>Waktu & kesulitan</strong>
+                  <span>Gunakan info waktu memasak dan difficulty buat milih menu yang paling realistis hari ini.</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Mood masakan</p>
+                  <h2>Butuh ide cepat?</h2>
+                </div>
+              </div>
+
+              <div class="user-stat-list">
+                <div class="user-stat-card">
+                  <i class="fa-solid fa-pepper-hot" aria-hidden="true"></i>
+                  <strong>Lagi pengen pedes?</strong>
+                  <span>Coba cari menu nusantara atau sambal-based dish.</span>
+                </div>
+                <div class="user-stat-card">
+                  <i class="fa-solid fa-cloud" aria-hidden="true"></i>
+                  <strong>Comfort food</strong>
+                  <span>Pilih yang creamy, manis, atau berkuah hangat.</span>
+                </div>
+                <div class="user-stat-card">
+                  <i class="fa-solid fa-wallet" aria-hidden="true"></i>
+                  <strong>Budget food</strong>
+                  <span>Fokus ke menu murah dengan bahan sederhana dan cepat.</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Upload resep</p>
+                  <h2>Kalau app kamu ada fitur community</h2>
                 </div>
               </div>
 
               <p class="user-ai-copy">
-                Tanya AI untuk ide masak dari bahan yang tersedia, meal plan mingguan,
-                atau resep hemat yang tetap enak.
+                Bagikan resep andalan kamu, upload foto masakan, lalu biarkan user lain kasih like
+                atau simpan ke favorit mereka.
               </p>
 
               <div class="user-ai-actions">
-                <a class="auth-button" href="/chat-ai">Mulai AI</a>
-                <a class="auth-button auth-button-secondary" href="/chat-history">History</a>
-              </div>
-
-              <div class="user-ai-prompts">
-                <a href="/chat-ai" class="user-prompt-card">
-                  <strong>Prompt cepat</strong>
-                  <span>"Aku punya telur, ayam, dan mie. Bikin menu 3 hari."</span>
-                </a>
-                <a href="/chat-ai" class="user-prompt-card">
-                  <strong>Meal plan</strong>
-                  <span>"Buat sarapan sehat seminggu yang simple dan murah."</span>
-                </a>
+                <a class="auth-button" href="/recipes">Lihat resep</a>
+                <a class="auth-button auth-button-secondary" href="/chat-ai">Minta ide AI</a>
               </div>
             </article>
 
             <article class="user-panel user-event-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Quick stats</p>
-                  <h2>Status akun</h2>
+                  <p class="user-panel-kicker">Status akun</p>
+                  <h2>Profile ringkas user</h2>
                 </div>
               </div>
 

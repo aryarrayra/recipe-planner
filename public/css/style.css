@@ -1862,6 +1862,151 @@ a {
   font-size: 1.05rem;
 }
 
+.user-dashboard-content-modern {
+  grid-template-columns: minmax(0, 1.35fr) 360px;
+  align-items: start;
+}
+
+.user-panel-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+  gap: 18px;
+  align-items: stretch;
+  background:
+    radial-gradient(circle at top left, rgba(115, 187, 70, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(56, 156, 154, 0.12), rgba(254, 219, 113, 0.22)),
+    #ffffff;
+}
+
+.user-banner-copy h1 {
+  margin: 8px 0 10px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 0.96;
+  letter-spacing: -0.05em;
+}
+
+.user-banner-description {
+  max-width: 620px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.user-mood-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.user-mood-row span {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  box-shadow: 0 10px 20px rgba(29, 29, 29, 0.05);
+}
+
+.user-banner-card {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(56, 156, 154, 0.08);
+}
+
+.user-banner-label {
+  margin: 0;
+  color: #73bb46;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.user-banner-card h2 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.4rem;
+  line-height: 1.1;
+}
+
+.user-category-grid-modern {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.user-recipe-list-compact {
+  gap: 16px;
+}
+
+.user-recipe-card-modern {
+  grid-template-columns: 180px 1fr;
+}
+
+.user-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.user-mini-recipe-card {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 20px;
+  background: #faf9f6;
+}
+
+.user-mini-recipe-card img {
+  width: 92px;
+  height: 92px;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.user-mini-recipe-copy h3 {
+  margin: 0 0 4px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1rem;
+}
+
+.user-mini-recipe-copy p,
+.user-mini-recipe-copy small,
+.user-empty-state p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.user-section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.user-empty-state {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 20px;
+  background: #faf9f6;
+}
+
+.user-empty-state i {
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
 .user-feed-page .user-dashboard-main {
   min-width: 0;
 }
@@ -2895,6 +3040,15 @@ a {
     grid-template-columns: 170px 1fr;
   }
 
+  .user-panel-banner,
+  .user-section-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-recipe-card-modern {
+    grid-template-columns: 170px 1fr;
+  }
+
   .admin-form-grid {
     grid-template-columns: 1fr;
   }
@@ -2992,6 +3146,12 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .user-card-grid,
+  .user-section-grid,
+  .user-category-grid-modern {
+    grid-template-columns: 1fr;
+  }
+
   .user-feed-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3011,6 +3171,10 @@ a {
 
   .admin-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .user-panel-banner {
+    grid-template-columns: 1fr;
   }
 
   .admin-form-grid {
@@ -3087,6 +3251,12 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .user-card-grid,
+  .user-section-grid,
+  .user-category-grid-modern {
+    grid-template-columns: 1fr;
+  }
+
   .user-feed-filter {
     padding: 12px 14px;
   }
@@ -3123,6 +3293,20 @@ a {
   .user-ai-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .user-recipe-card,
+  .user-event-card,
+  .user-recipe-card-modern,
+  .user-mini-recipe-card {
+    grid-template-columns: 1fr;
+  }
+
+  .user-recipe-card img,
+  .user-event-card img,
+  .user-mini-recipe-card img {
+    width: 100%;
+    height: 180px;
   }
 
   .admin-link,
@@ -3259,6 +3443,11 @@ svg {
   .user-category-row,
   .user-feed-filters,
   .admin-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-card-grid,
+  .user-section-grid {
     grid-template-columns: 1fr;
   }
 
