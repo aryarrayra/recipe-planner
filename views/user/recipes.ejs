@@ -22,12 +22,12 @@
 
   <main class="user-dashboard user-feed-page">
     <div class="user-dashboard-shell">
-      <%- include('../partials/sidebar', { mode: 'user', activePage: 'recipes', user }) %>
+      <%- include('../partials/sidebar', { mode: 'user', activePage: 'fyp', user }) %>
 
       <section class="user-dashboard-main">
         <header class="user-dashboard-topbar">
           <div class="user-feed-topline">
-            <p class="user-panel-kicker">Recipe feed</p>
+            <p class="user-panel-kicker">FYP</p>
             <h1><%= feedPreset.title %></h1>
           </div>
 
@@ -142,6 +142,17 @@
                     <div class="user-feed-meta">
                       <span><i class="fa-solid fa-eye"></i> <%= recipe.views_count || 0 %> views</span>
                       <span><i class="fa-solid fa-tag"></i> <%= (recipe.tags && recipe.tags.length) ? 'Tagged recipe' : 'No tags' %></span>
+                    </div>
+
+                    <% if (recipe.warning) { %>
+                      <div class="recipe-warning-badge">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span><%= recipe.warning %></span>
+                      </div>
+                    <% } %>
+
+                    <div class="user-ai-actions">
+                      <a class="auth-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>&feed=<%= encodeURIComponent(feed) %>">Lihat resep</a>
                     </div>
                   </div>
                 </article>

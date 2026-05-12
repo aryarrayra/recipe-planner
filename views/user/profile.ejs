@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="user-dashboard user-recipe-menu-page">
+    <div class="user-dashboard-shell">
+      <%- include('../partials/sidebar', { mode: 'user', activePage: 'dashboard', user }) %>
+
+      <section class="user-dashboard-main">
+        <header class="user-dashboard-topbar user-recipe-topbar">
+          <div class="user-feed-topline">
+            <p class="user-panel-kicker">Profile</p>
+            <h1>Allergy & Food Preference</h1>
+          </div>
+
+          <div class="user-topbar-actions">
+            <a class="user-icon-button" href="/dashboard" aria-label="Kembali ke dashboard">
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            </a>
+            <div class="user-profile-pill">
+              <strong><%= user.username %></strong>
+              <span><%= user.role %></span>
+            </div>
+          </div>
+        </header>
+
+        <div class="user-recipe-menu-layout">
+          <section class="user-recipe-menu-main">
+            <article class="user-panel user-recipe-menu-hero">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Personal cooking assistant</p>
+                  <h2>Atur makanan yang ingin dihindari</h2>
+                </div>
+              </div>
+
+              <p class="user-ai-copy">
+                Setelah ini, feed resep dan rekomendasi akan otomatis menghindari menu yang tidak cocok
+                untuk preference kamu. Detail resep juga akan menampilkan warning yang relevan.
+              </p>
+
+              <% if (notice) { %>
+                <div class="auth-alert landing-alert"><%= notice %></div>
+              <% } %>
+
+              <% if (error) { %>
+                <div class="auth-alert landing-alert"><%= error %></div>
+              <% } %>
+
+              <form action="/profile/preferences" method="post" class="profile-preference-form">
+                <div class="auth-preference-grid">
+                  <% allergyOptions.forEach((option) => { %>
+                    <label class="auth-preference-chip">
+                      <input
+                        type="checkbox"
+                        name="preferences"
+                        value="<%= option.key %>"
+                        <%= preferences.includes(option.key) ? 'checked' : '' %>
+                      />
+                      <span><%= option.label %></span>
+                    </label>
+                  <% }) %>
+                </div>
+
+                <div class="user-ai-actions">
+                  <button type="submit" class="auth-button">Simpan preference</button>
+                </div>
+              </form>
+            </article>
+          </section>
+
+          <aside class="user-recipe-detail-sidebar">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Current preference</p>
+                  <h2>Yang sedang dihindari</h2>
+                </div>
+              </div>
+
+              <% if (preferences.length) { %>
+                <div class="user-recipe-detail-tags">
+                  <% preferences.forEach((item) => { %>
+                    <span><i class="fa-solid fa-shield-heart"></i> <%= (allergyOptions.find((option) => option.key === item) || {}).label || item %></span>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="user-empty-state">
+                  <i class="fa-regular fa-face-smile"></i>
+                  <p>Belum ada preference khusus. Semua resep tetap akan tampil normal.</p>
+                </div>
+              <% } %>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
