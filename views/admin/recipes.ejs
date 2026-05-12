@@ -1,5 +1,36 @@
-<% const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0)); %>
 <% const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
+<% const toIngredientLines = (value) => Array.isArray(value) ? value.map((item) => {
+     if (item && typeof item === 'object') {
+       const parts = [item.amount, item.unit, item.name].map((part) => String(part || '').trim()).filter(Boolean);
+       return parts.join(' ');
+     }
+     return String(item || '').trim();
+   }).filter(Boolean).join('\n') : ''; %>
+<% const toStepLines = (value) => Array.isArray(value) ? value.map((item) => {
+     if (item && typeof item === 'object') {
+       return String(item.instruction || item.step || '').trim();
+     }
+     return String(item || '').trim();
+   }).filter(Boolean).join('\n') : ''; %>
+<% const toTagLines = (value) => Array.isArray(value) ? value.map((item) => String(item || '').trim()).filter(Boolean).join('\n') : ''; %>
+<% const serializeRecipe = (recipe) => encodeURIComponent(JSON.stringify({
+     id: recipe.id,
+     title: recipe.title || '',
+     description: recipe.description || '',
+     image_url: recipe.image_url || '',
+     video_url: recipe.video_url || '',
+     cooking_time: recipe.cooking_time ?? '',
+     servings: recipe.servings ?? 1,
+     difficulty: recipe.difficulty || 'easy',
+     category: recipe.category || '',
+     cuisine: recipe.cuisine || '',
+     estimated_price: recipe.estimated_price ?? '',
+     price_rating: recipe.price_rating || '',
+     is_approved: !!recipe.is_approved,
+     ingredients: toIngredientLines(recipe.ingredients),
+     steps: toStepLines(recipe.steps),
+     tags: toTagLines(recipe.tags)
+   })); %>
 
 <!DOCTYPE html>
 <html lang="id">
@@ -27,7 +58,7 @@
       <section class="user-dashboard-main admin-main">
         <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
           <div class="admin-topbar-copy">
-            <p class="user-panel-kicker">Recipe management</p>
+            <p class="user-panel-kicker">Kelola resep</p>
             <h1>CRUD resep terpisah</h1>
           </div>
 
@@ -50,162 +81,542 @@
           <div class="user-panel-head">
             <div>
               <p class="user-panel-kicker">Resep</p>
-              <h1><%= selectedRecipe ? 'Edit resep yang dipilih' : 'Tambah resep baru' %></h1>
+              <h1>Kelola semua resep dari satu layar.</h1>
             </div>
             <div class="admin-hero-actions">
-              <a class="auth-button auth-button-secondary" href="/admin/dashboard">Kembali ke dashboard</a>
+              <button type="button" class="auth-button" id="openRecipeModal">
+                + Tambah Resep
+              </button>
             </div>
           </div>
           <p class="admin-hero-copy">
-            Halaman ini memusatkan seluruh operasi resep: tambah, edit, dan hapus. Data langsung
-            disimpan ke tabel <code>recipes</code> di database yang sama dengan halaman user.
+            Daftar resep tetap terlihat, sementara tambah dan edit resep dibuka lewat modal supaya alurnya lebih cepat dan tidak bikin halaman kepanjangan.
           </p>
         </section>
 
-        <div class="admin-content-grid">
-          <section class="admin-column">
-            <article class="user-panel admin-panel" id="recipe-form">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Form resep</p>
-                  <h2><%= selectedRecipe ? 'Edit resep' : 'Tambah resep' %></h2>
-                </div>
-                <% if (selectedRecipe) { %>
-                  <a class="user-panel-link" href="/admin/recipes">Batal edit</a>
-                <% } %>
-              </div>
+        <article class="user-panel">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">Daftar resep</p>
+              <h2>Data resep terbaru</h2>
+            </div>
+            <span class="user-panel-meta"><%= recipes.length %> item</span>
+          </div>
 
-              <form
-                class="admin-form"
-                action="<%= selectedRecipe ? `/admin/recipes/${selectedRecipe.id}` : '/admin/recipes' %>"
-                method="post"
-              >
-                <div class="admin-form-grid">
-                  <label class="admin-field">
-                    <span>Judul</span>
-                    <input name="title" value="<%= selectedRecipeForm.title %>" placeholder="Nama resep" required />
-                  </label>
-                  <label class="admin-field">
-                    <span>Kategori</span>
-                    <input name="category" value="<%= selectedRecipeForm.category %>" placeholder="Main course" />
-                  </label>
-                  <label class="admin-field">
-                    <span>Cuisine</span>
-                    <input name="cuisine" value="<%= selectedRecipeForm.cuisine %>" placeholder="Indonesian" />
-                  </label>
-                  <label class="admin-field">
-                    <span>Difficulty</span>
-                    <input name="difficulty" value="<%= selectedRecipeForm.difficulty %>" placeholder="easy / medium / hard" />
-                  </label>
-                  <label class="admin-field">
-                    <span>Cooking time</span>
-                    <input type="number" min="0" name="cooking_time" value="<%= selectedRecipeForm.cooking_time %>" />
-                  </label>
-                  <label class="admin-field">
-                    <span>Servings</span>
-                    <input type="number" min="1" name="servings" value="<%= selectedRecipeForm.servings %>" />
-                  </label>
-                  <label class="admin-field">
-                    <span>Estimated price</span>
-                    <input type="number" min="0" name="estimated_price" value="<%= selectedRecipeForm.estimated_price %>" />
-                  </label>
-                  <label class="admin-field">
-                    <span>Price rating</span>
-                    <input name="price_rating" value="<%= selectedRecipeForm.price_rating %>" placeholder="cheap / medium / premium" />
-                  </label>
-                  <label class="admin-field admin-field-wide">
-                    <span>Image URL</span>
-                    <input name="image_url" value="<%= selectedRecipeForm.image_url %>" placeholder="https://..." />
-                  </label>
-                  <label class="admin-field admin-field-wide">
-                    <span>Video URL</span>
-                    <input name="video_url" value="<%= selectedRecipeForm.video_url %>" placeholder="https://..." />
-                    <small class="admin-field-help">Opsional. Bisa pakai link TikTok publik, YouTube, atau video file langsung. Kalau kosong, feed user bisa ambil dari Media Library.</small>
-                  </label>
-                  <label class="admin-field admin-field-wide">
-                    <span>Description</span>
-                    <textarea name="description" rows="3" placeholder="Deskripsi singkat resep"><%= selectedRecipeForm.description %></textarea>
-                  </label>
-                  <label class="admin-field admin-field-wide">
-                    <span>Ingredients</span>
-                    <textarea name="ingredients" rows="5" placeholder="Bisa JSON array atau satu item per baris"><%= selectedRecipeForm.ingredients %></textarea>
-                  </label>
-                  <label class="admin-field admin-field-wide">
-                    <span>Steps</span>
-                    <textarea name="steps" rows="5" placeholder="Bisa JSON array atau satu item per baris"><%= selectedRecipeForm.steps %></textarea>
-                  </label>
-                  <label class="admin-field admin-field-wide">
-                    <span>Tags</span>
-                    <textarea name="tags" rows="3" placeholder="Bisa JSON array atau satu tag per baris"><%= selectedRecipeForm.tags %></textarea>
-                  </label>
-                  <label class="admin-toggle">
-                    <input type="checkbox" name="is_approved" <%= selectedRecipeForm.is_approved ? 'checked' : '' %> />
-                    <span>Approve resep</span>
-                  </label>
-                </div>
-
-                <div class="admin-form-actions">
-                  <button type="submit" class="auth-button">
-                    <%= selectedRecipe ? 'Simpan perubahan' : 'Tambah resep' %>
-                  </button>
-                </div>
-              </form>
-            </article>
-          </section>
-
-          <aside class="admin-column">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Recipe list</p>
-                  <h2>Data resep terbaru</h2>
-                </div>
-                <span class="user-panel-meta"><%= recipes.length %> item</span>
-              </div>
-
-              <div class="admin-list">
-                <% recipes.forEach((recipe) => { %>
-                  <article class="admin-list-card">
-                    <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
-                    <div class="admin-list-copy">
-                      <div class="admin-list-topline">
-                        <h3><%= recipe.title %></h3>
-                        <span class="admin-status <%= recipe.is_approved ? 'is-approved' : 'is-pending' %>">
-                          <%= recipe.is_approved ? 'Approved' : 'Pending' %>
-                        </span>
-                      </div>
-                      <p><%= recipe.description || 'Tidak ada deskripsi.' %></p>
-                      <div class="admin-meta-row">
-                        <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
-                        <span><i class="fa-solid fa-tag"></i> <%= recipe.category || 'Uncategorized' %></span>
-                        <span><i class="fa-solid fa-user"></i> <%= recipe.creator_name %></span>
-                      </div>
-                      <div class="admin-meta-row">
-                        <span><i class="fa-solid fa-coins"></i> Rp <%= Number(recipe.estimated_price || 0).toLocaleString('id-ID') %></span>
-                        <span><i class="fa-regular fa-calendar"></i> <%= formatDate(recipe.created_at) %></span>
-                      </div>
-                      <div class="admin-list-actions">
-                        <a class="admin-link" href="/admin/recipes?recipeId=<%= recipe.id %>">Edit</a>
-                        <form action="/admin/recipes/<%= recipe.id %>/delete" method="post">
-                          <button type="submit" class="admin-link is-danger">Delete</button>
-                        </form>
-                      </div>
-                    </div>
-                  </article>
-                <% }) %>
-
-                <% if (!recipes.length) { %>
-                  <div class="admin-empty-state">
-                    <h3>Belum ada resep.</h3>
-                    <p>Tambahkan resep pertama lewat form di sebelah kiri.</p>
+          <div class="admin-list">
+            <% recipes.forEach((recipe) => { %>
+              <article class="admin-list-card js-open-recipe-detail" data-recipe="<%= serializeRecipe(recipe) %>">
+                <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                <div class="admin-list-copy">
+                  <div class="admin-list-topline">
+                    <h3><%= recipe.title %></h3>
+                    <span class="admin-status <%= recipe.is_approved ? 'is-approved' : 'is-pending' %>">
+                      <%= recipe.is_approved ? 'Disetujui' : 'Menunggu' %>
+                    </span>
                   </div>
-                <% } %>
+                  <p><%= recipe.description || 'Tidak ada deskripsi.' %></p>
+                  <div class="admin-meta-row">
+                    <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
+                    <span><i class="fa-solid fa-tag"></i> <%= recipe.category || 'Uncategorized' %></span>
+                    <span><i class="fa-solid fa-user"></i> <%= recipe.creator_name %></span>
+                  </div>
+                  <div class="admin-meta-row">
+                    <span><i class="fa-solid fa-coins"></i> Rp <%= Number(recipe.estimated_price || 0).toLocaleString('id-ID') %></span>
+                    <span><i class="fa-regular fa-calendar"></i> <%= formatDate(recipe.created_at) %></span>
+                  </div>
+                  <div class="admin-list-actions">
+                    <button
+                      type="button"
+                      class="admin-link js-open-recipe-detail"
+                      data-recipe="<%= serializeRecipe(recipe) %>"
+                    >
+                      Detail
+                    </button>
+                    <button
+                      type="button"
+                      class="admin-link js-edit-recipe"
+                      data-recipe="<%= serializeRecipe(recipe) %>"
+                    >
+                      Ubah
+                    </button>
+                    <form action="/admin/recipes/<%= recipe.id %>/delete" method="post">
+                      <button type="submit" class="admin-link is-danger">Hapus</button>
+                    </form>
+                  </div>
+                </div>
+              </article>
+            <% }) %>
+
+            <% if (!recipes.length) { %>
+              <div class="admin-empty-state">
+                <h3>Belum ada resep.</h3>
+                <p>Tambah resep pertama lewat tombol di atas.</p>
               </div>
-            </article>
-          </aside>
-        </div>
+            <% } %>
+          </div>
+        </article>
       </section>
     </div>
   </main>
+
+  <dialog class="admin-modal" id="recipeModal" aria-labelledby="recipeModalTitle">
+    <form
+      class="admin-modal-card admin-form"
+      id="recipeModalForm"
+      action="/admin/recipes"
+      method="post"
+    >
+      <div class="admin-modal-head">
+        <div>
+          <p class="user-panel-kicker">Form resep</p>
+          <h2 id="recipeModalTitle">Tambah resep baru</h2>
+        </div>
+        <button type="button" class="admin-modal-close" id="closeRecipeModal" aria-label="Tutup modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="admin-form-grid admin-modal-grid">
+        <label class="admin-field">
+          <span>Judul</span>
+          <input name="title" data-field="title" placeholder="Nama resep" required />
+        </label>
+        <label class="admin-field">
+          <span>Kategori</span>
+          <input name="category" data-field="category" placeholder="Contoh: nasi, mie, dessert" />
+        </label>
+        <label class="admin-field">
+          <span>Asal masakan</span>
+          <input name="cuisine" data-field="cuisine" placeholder="Contoh: Nusantara" />
+        </label>
+        <label class="admin-field">
+          <span>Tingkat kesulitan</span>
+          <input name="difficulty" data-field="difficulty" placeholder="mudah, sedang, atau sulit" />
+        </label>
+        <label class="admin-field">
+          <span>Waktu masak (menit)</span>
+          <input type="number" min="0" name="cooking_time" data-field="cooking_time" />
+        </label>
+        <label class="admin-field">
+          <span>Servings</span>
+          <input type="number" min="1" name="servings" data-field="servings" />
+        </label>
+        <label class="admin-field">
+          <span>Perkiraan biaya (Rp)</span>
+          <input type="number" min="0" name="estimated_price" data-field="estimated_price" />
+        </label>
+        <label class="admin-field">
+          <span>Kelas harga</span>
+          <input name="price_rating" data-field="price_rating" placeholder="hemat, sedang, atau premium" />
+        </label>
+        <label class="admin-field admin-field-wide">
+          <span>Link foto</span>
+          <input name="image_url" data-field="image_url" placeholder="Tempel link foto di sini" />
+        </label>
+        <label class="admin-field admin-field-wide">
+          <span>Link video</span>
+          <input name="video_url" data-field="video_url" placeholder="Tempel link video di sini" />
+          <small class="admin-field-help">Opsional. Bisa pakai video pendek publik, YouTube, atau tautan video langsung.</small>
+        </label>
+        <label class="admin-field admin-field-wide">
+          <span>Deskripsi</span>
+          <textarea name="description" data-field="description" rows="3" placeholder="Deskripsi singkat resep"></textarea>
+        </label>
+        <label class="admin-field admin-field-wide">
+          <span>Bahan</span>
+          <textarea name="ingredients" data-field="ingredients" rows="4" placeholder="Tulis bahan per baris"></textarea>
+        </label>
+        <label class="admin-field admin-field-wide">
+          <span>Langkah masak</span>
+          <textarea name="steps" data-field="steps" rows="4" placeholder="Tulis langkah per baris"></textarea>
+        </label>
+        <label class="admin-field admin-field-wide">
+          <span>Label</span>
+          <textarea name="tags" data-field="tags" rows="3" placeholder="pedas, murah, cepat"></textarea>
+        </label>
+        <label class="admin-toggle admin-modal-toggle">
+          <input type="checkbox" name="is_approved" data-field="is_approved" />
+          <span>Setujui resep</span>
+        </label>
+      </div>
+
+      <div class="admin-form-actions admin-modal-actions">
+        <button type="button" class="auth-button auth-button-secondary" id="cancelRecipeModal">Batal</button>
+        <button type="submit" class="auth-button" id="submitRecipeModal">Tambah resep</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="admin-modal" id="recipeDetailModal" aria-labelledby="recipeDetailTitle">
+    <div class="admin-modal-card admin-detail-card">
+      <div class="admin-modal-head">
+        <div>
+          <p class="user-panel-kicker">Detail resep</p>
+          <h2 id="recipeDetailTitle">Nama resep</h2>
+        </div>
+        <button type="button" class="admin-modal-close" id="closeRecipeDetailModal" aria-label="Tutup detail">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="admin-detail-grid">
+        <div class="admin-detail-media">
+          <img id="recipeDetailImage" src="/images/1.png" alt="Detail resep" />
+          <div class="admin-detail-badges" id="recipeDetailBadges"></div>
+          <div class="admin-detail-video" id="recipeDetailVideoWrap">
+            <iframe
+              id="recipeDetailVideoFrame"
+              title="Video resep"
+              loading="lazy"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowfullscreen
+              hidden
+            ></iframe>
+            <video id="recipeDetailVideoTag" controls playsinline hidden></video>
+            <p class="admin-detail-empty admin-detail-video-empty" id="recipeDetailVideoEmpty">
+              Video resep belum tersedia
+            </p>
+          </div>
+        </div>
+
+        <div class="admin-detail-body">
+          <p class="admin-detail-description" id="recipeDetailDescription"></p>
+
+          <div class="admin-detail-meta">
+            <span><i class="fa-regular fa-clock"></i> <strong id="recipeDetailTime">-</strong> menit</span>
+            <span><i class="fa-solid fa-user-group"></i> <strong id="recipeDetailServings">-</strong> porsi</span>
+            <span><i class="fa-solid fa-tag"></i> <strong id="recipeDetailCategory">-</strong></span>
+            <span><i class="fa-solid fa-earth-asia"></i> <strong id="recipeDetailCuisine">-</strong></span>
+          </div>
+
+          <div class="admin-detail-columns">
+            <section class="admin-detail-section">
+              <div class="admin-detail-section-head">
+                <h3>Bahan</h3>
+                <span id="recipeDetailIngredientCount"></span>
+              </div>
+              <ul class="admin-detail-list" id="recipeDetailIngredients"></ul>
+            </section>
+
+            <section class="admin-detail-section">
+              <div class="admin-detail-section-head">
+                <h3>Langkah masak</h3>
+                <span id="recipeDetailStepCount"></span>
+              </div>
+              <ol class="admin-detail-list admin-detail-list-ordered" id="recipeDetailSteps"></ol>
+            </section>
+          </div>
+
+          <section class="admin-detail-section">
+            <div class="admin-detail-section-head">
+              <h3>Label</h3>
+            </div>
+            <div class="admin-detail-tags" id="recipeDetailTags"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    (() => {
+      const modal = document.getElementById('recipeModal');
+      const detailModal = document.getElementById('recipeDetailModal');
+      const openButton = document.getElementById('openRecipeModal');
+      const closeButton = document.getElementById('closeRecipeModal');
+      const cancelButton = document.getElementById('cancelRecipeModal');
+      const closeDetailButton = document.getElementById('closeRecipeDetailModal');
+      const form = document.getElementById('recipeModalForm');
+      const title = document.getElementById('recipeModalTitle');
+      const submitButton = document.getElementById('submitRecipeModal');
+      const editButtons = document.querySelectorAll('.js-edit-recipe');
+      const detailTargets = document.querySelectorAll('.js-open-recipe-detail');
+      const fieldMap = new Map();
+      const detailNodes = {
+        title: document.getElementById('recipeDetailTitle'),
+        image: document.getElementById('recipeDetailImage'),
+        badges: document.getElementById('recipeDetailBadges'),
+        videoWrap: document.getElementById('recipeDetailVideoWrap'),
+        videoFrame: document.getElementById('recipeDetailVideoFrame'),
+        videoTag: document.getElementById('recipeDetailVideoTag'),
+        videoEmpty: document.getElementById('recipeDetailVideoEmpty'),
+        description: document.getElementById('recipeDetailDescription'),
+        time: document.getElementById('recipeDetailTime'),
+        servings: document.getElementById('recipeDetailServings'),
+        category: document.getElementById('recipeDetailCategory'),
+        cuisine: document.getElementById('recipeDetailCuisine'),
+        ingredientCount: document.getElementById('recipeDetailIngredientCount'),
+        ingredients: document.getElementById('recipeDetailIngredients'),
+        stepCount: document.getElementById('recipeDetailStepCount'),
+        steps: document.getElementById('recipeDetailSteps'),
+        tags: document.getElementById('recipeDetailTags')
+      };
+
+      form.querySelectorAll('[data-field]').forEach((input) => {
+        fieldMap.set(input.dataset.field, input);
+      });
+
+      const resetForm = () => {
+        form.reset();
+        form.action = '/admin/recipes';
+        title.textContent = 'Tambah resep baru';
+        submitButton.textContent = 'Tambah resep';
+      };
+
+      const openModal = () => {
+        if (typeof modal.showModal === 'function') {
+          modal.showModal();
+        } else {
+          modal.setAttribute('open', 'open');
+        }
+      };
+
+      const closeModal = () => {
+        if (modal.open) {
+          modal.close();
+        } else {
+          modal.removeAttribute('open');
+        }
+      };
+
+      const openDetailModal = () => {
+        if (typeof detailModal.showModal === 'function') {
+          detailModal.showModal();
+        } else {
+          detailModal.setAttribute('open', 'open');
+        }
+      };
+
+      const closeDetailModal = () => {
+        if (detailModal.open) {
+          detailModal.close();
+        } else {
+          detailModal.removeAttribute('open');
+        }
+      };
+
+      const parseLines = (value) => String(value || '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      const setList = (container, items, emptyLabel) => {
+        container.innerHTML = '';
+
+        if (!items.length) {
+          const empty = document.createElement('li');
+          empty.className = 'admin-detail-empty';
+          empty.textContent = emptyLabel;
+          container.appendChild(empty);
+          return;
+        }
+
+        items.forEach((item) => {
+          const el = document.createElement('li');
+          el.textContent = item;
+          container.appendChild(el);
+        });
+      };
+
+      const getYouTubeEmbedUrl = (url) => {
+        try {
+          const parsed = new URL(url);
+          const hostname = parsed.hostname.replace(/^www\./, '');
+
+          if (hostname === 'youtu.be') {
+            const videoId = parsed.pathname.split('/').filter(Boolean)[0];
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+          }
+
+          if (hostname.endsWith('youtube.com')) {
+            const videoId = parsed.searchParams.get('v');
+            if (videoId) {
+              return `https://www.youtube.com/embed/${videoId}`;
+            }
+
+            const parts = parsed.pathname.split('/').filter(Boolean);
+            const embedIndex = parts.indexOf('embed');
+            if (embedIndex >= 0 && parts[embedIndex + 1]) {
+              return `https://www.youtube.com/embed/${parts[embedIndex + 1]}`;
+            }
+
+            const shortsIndex = parts.indexOf('shorts');
+            if (shortsIndex >= 0 && parts[shortsIndex + 1]) {
+              return `https://www.youtube.com/embed/${parts[shortsIndex + 1]}`;
+            }
+          }
+        } catch (error) {
+          return null;
+        }
+
+        return null;
+      };
+
+      const fillForm = (recipe) => {
+        resetForm();
+        form.action = recipe.id ? `/admin/recipes/${recipe.id}` : '/admin/recipes';
+        title.textContent = recipe.id ? 'Edit resep' : 'Tambah resep baru';
+        submitButton.textContent = recipe.id ? 'Simpan perubahan' : 'Tambah resep';
+
+        Object.entries(recipe).forEach(([key, value]) => {
+          const field = fieldMap.get(key);
+          if (!field) return;
+
+          if (field.type === 'checkbox') {
+            field.checked = Boolean(value);
+            return;
+          }
+
+          field.value = value ?? '';
+        });
+      };
+
+      const fillDetail = (recipe) => {
+        detailNodes.title.textContent = recipe.title || 'Detail resep';
+        detailNodes.image.src = recipe.image_url || '/images/1.png';
+        detailNodes.image.alt = recipe.title || 'Detail resep';
+        detailNodes.description.textContent = recipe.description || 'Tidak ada deskripsi.';
+        detailNodes.time.textContent = recipe.cooking_time || 0;
+        detailNodes.servings.textContent = recipe.servings || 1;
+        detailNodes.category.textContent = recipe.category || 'Belum diisi';
+        detailNodes.cuisine.textContent = recipe.cuisine || 'Belum diisi';
+
+        const ingredients = parseLines(recipe.ingredients);
+        const steps = parseLines(recipe.steps);
+        const tags = parseLines(recipe.tags);
+
+        detailNodes.ingredientCount.textContent = `${ingredients.length} item`;
+        detailNodes.stepCount.textContent = `${steps.length} langkah`;
+
+        setList(detailNodes.ingredients, ingredients, 'Bahan belum diisi');
+        setList(detailNodes.steps, steps, 'Langkah belum diisi');
+
+        detailNodes.tags.innerHTML = '';
+        if (!tags.length) {
+          const empty = document.createElement('span');
+          empty.className = 'admin-detail-empty';
+          empty.textContent = 'Label belum diisi';
+          detailNodes.tags.appendChild(empty);
+        } else {
+          tags.forEach((tag) => {
+            const chip = document.createElement('span');
+            chip.className = 'admin-detail-tag';
+            chip.textContent = tag;
+            detailNodes.tags.appendChild(chip);
+          });
+        }
+
+        detailNodes.badges.innerHTML = '';
+        [recipe.is_approved ? 'Disetujui' : 'Menunggu', recipe.difficulty || 'Mudah', recipe.price_rating || 'Harga belum diisi'].forEach((label) => {
+          const badge = document.createElement('span');
+          badge.className = 'admin-detail-badge';
+          badge.textContent = label;
+          detailNodes.badges.appendChild(badge);
+        });
+
+        if (recipe.video_url) {
+          const embedUrl = getYouTubeEmbedUrl(recipe.video_url);
+          detailNodes.videoEmpty.hidden = true;
+          detailNodes.videoWrap.classList.add('has-video');
+
+          if (embedUrl) {
+            detailNodes.videoTag.hidden = true;
+            detailNodes.videoTag.removeAttribute('src');
+            detailNodes.videoFrame.hidden = false;
+            detailNodes.videoFrame.src = embedUrl;
+          } else {
+            detailNodes.videoFrame.hidden = true;
+            detailNodes.videoFrame.removeAttribute('src');
+            detailNodes.videoTag.hidden = false;
+            detailNodes.videoTag.src = recipe.video_url;
+          }
+        } else {
+          detailNodes.videoWrap.classList.remove('has-video');
+          detailNodes.videoFrame.hidden = true;
+          detailNodes.videoFrame.removeAttribute('src');
+          detailNodes.videoTag.hidden = true;
+          detailNodes.videoTag.removeAttribute('src');
+          detailNodes.videoEmpty.hidden = false;
+        }
+      };
+
+      openButton?.addEventListener('click', () => {
+        resetForm();
+        openModal();
+      });
+
+      editButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const raw = button.getAttribute('data-recipe') || '';
+          const recipe = JSON.parse(decodeURIComponent(raw));
+          fillForm(recipe);
+          openModal();
+        });
+      });
+
+      detailTargets.forEach((target) => {
+        target.addEventListener('click', (event) => {
+          const actionable = event.target.closest('button, form, a, input, label');
+          if (actionable && actionable !== target) {
+            return;
+          }
+
+          const raw = target.getAttribute('data-recipe') || '';
+          const recipe = JSON.parse(decodeURIComponent(raw));
+          fillDetail(recipe);
+          openDetailModal();
+        });
+      });
+
+      [closeButton, cancelButton].forEach((button) => button?.addEventListener('click', closeModal));
+      closeDetailButton?.addEventListener('click', closeDetailModal);
+
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+
+      detailModal.addEventListener('click', (event) => {
+        if (event.target === detailModal) {
+          closeDetailModal();
+        }
+      });
+
+      detailModal.addEventListener('close', () => {
+        if (detailNodes.videoFrame) {
+          detailNodes.videoFrame.removeAttribute('src');
+        }
+        if (detailNodes.videoTag) {
+          detailNodes.videoTag.removeAttribute('src');
+          detailNodes.videoTag.load?.();
+        }
+      });
+
+      const selectedRecipe = <%- JSON.stringify(selectedRecipe ? {
+        id: selectedRecipe.id,
+        title: selectedRecipeForm.title,
+        description: selectedRecipeForm.description,
+        image_url: selectedRecipeForm.image_url,
+        video_url: selectedRecipeForm.video_url,
+        cooking_time: selectedRecipeForm.cooking_time,
+        servings: selectedRecipeForm.servings,
+        difficulty: selectedRecipeForm.difficulty,
+        category: selectedRecipeForm.category,
+        cuisine: selectedRecipeForm.cuisine,
+        estimated_price: selectedRecipeForm.estimated_price,
+        price_rating: selectedRecipeForm.price_rating,
+        is_approved: selectedRecipeForm.is_approved,
+        ingredients: selectedRecipeForm.ingredients,
+        steps: selectedRecipeForm.steps,
+        tags: selectedRecipeForm.tags
+      } : null) %>;
+
+      if (selectedRecipe) {
+        fillForm(selectedRecipe);
+        openModal();
+      }
+    })();
+  </script>
 </body>
 </html>

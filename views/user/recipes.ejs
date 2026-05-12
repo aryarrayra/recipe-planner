@@ -50,7 +50,7 @@
               </div>
 
               <p class="user-ai-copy">
-                <%= feedPreset.description %> Kalau resep belum punya `video_url`, feed akan ambil dari media library yang sudah diisi admin. Kalau kategori belum ada video yang cocok, feed pakai media aktif lain.
+                <%= feedPreset.description %> Kalau resep belum punya `video_url`, feed akan menampilkan gambar resep saja. Kalau kategori belum ada video yang cocok, feed tetap aman tampil tanpa video.
               </p>
 
               <div class="user-ai-actions">
@@ -150,7 +150,7 @@
               <% if (!recipes.length) { %>
                 <article class="user-feed-empty">
                   <h3>Belum ada video resep yang siap ditampilkan.</h3>
-                  <p>Tambahkan media di halaman admin, atau isi `video_url` pada resep yang di-approve supaya feed tetap hidup.</p>
+                  <p>Isi `video_url` pada resep yang di-approve supaya feed tetap hidup.</p>
                 </article>
               <% } %>
             </div>
@@ -197,11 +197,11 @@
               </div>
 
               <p class="user-ai-copy">
-                Kalau `video_url` kosong, feed tetap bisa menampilkan video dari media library admin berdasarkan kategori dan cuisine, lalu fallback ke media aktif lain kalau belum ada yang cocok.
+                Kalau `video_url` kosong, feed tetap bisa menampilkan gambar resep dan detail resep berdasarkan kategori dan cuisine.
               </p>
 
               <div class="user-ai-actions">
-                <span class="user-panel-meta">Admin bisa isi media library dari halaman khusus admin.</span>
+                <span class="user-panel-meta">Admin cukup isi `video_url` langsung di halaman resep.</span>
               </div>
             </article>
           </aside>

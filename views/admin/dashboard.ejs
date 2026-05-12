@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
@@ -14,11 +14,13 @@
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
   <% const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
   <% const defaultAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}`; %>
+  <% const analyticsData = analytics || { today: { recipe_count: 0, active_users_count: 0, likes_count: 0, wishlist_count: 0 }, week: { recipe_count: 0, active_users_count: 0, likes_count: 0, wishlist_count: 0 }, month: { recipe_count: 0, active_users_count: 0, likes_count: 0, wishlist_count: 0 }, ranges: { daily: { labels: [], recipes: [], activeUsers: [], wishlist: [], likes: [] }, weekly: { labels: [], recipes: [], activeUsers: [], wishlist: [], likes: [] }, monthly: { labels: [], recipes: [], activeUsers: [], wishlist: [], likes: [] } }, engagementRecipes: [], summary: { likes: 0, wishlist: 0 }, defaultRange: 'daily' }; %>
 
   <main class="user-dashboard admin-dashboard">
     <div class="user-dashboard-shell admin-shell">
@@ -45,11 +47,10 @@
               <p class="user-panel-kicker">Overview</p>
               <h1>Kelola data aplikasi dari satu dashboard.</h1>
             </div>
-            <div class="admin-hero-actions">
-              <a class="auth-button" href="/admin/recipes">Kelola resep</a>
-              <a class="auth-button auth-button-secondary" href="/admin/media">Media library</a>
-              <a class="auth-button auth-button-secondary" href="/admin/users">Kelola user</a>
-            </div>
+          <div class="admin-hero-actions">
+            <a class="auth-button" href="/admin/recipes">Kelola resep</a>
+            <a class="auth-button auth-button-secondary" href="/admin/users">Kelola user</a>
+          </div>
           </div>
 
           <p class="admin-hero-copy">
@@ -77,6 +78,82 @@
               <span>User aktif</span>
               <strong><%= metrics.user_count || 0 %></strong>
               <small>Role non-admin</small>
+            </article>
+          </div>
+        </section>
+
+        <section class="admin-analytics-panel user-panel">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">Statistik pertumbuhan</p>
+              <h2>Resep, user aktif, likes, dan wishlist</h2>
+            </div>
+            <span class="user-panel-meta">Data sementara dari tabel yang sudah ada</span>
+          </div>
+
+          <div class="admin-analytics-periods">
+            <article class="admin-analytics-card">
+              <span>Hari ini</span>
+              <strong><%= analyticsData.today.recipe_count || 0 %> resep</strong>
+              <small><%= analyticsData.today.active_users_count || 0 %> user aktif &middot; <%= analyticsData.today.likes_count || 0 %> likes &middot; <%= analyticsData.today.wishlist_count || 0 %> wishlist</small>
+            </article>
+            <article class="admin-analytics-card">
+              <span>7 hari</span>
+              <strong><%= analyticsData.week.recipe_count || 0 %> resep</strong>
+              <small><%= analyticsData.week.active_users_count || 0 %> user aktif &middot; <%= analyticsData.week.likes_count || 0 %> likes &middot; <%= analyticsData.week.wishlist_count || 0 %> wishlist</small>
+            </article>
+            <article class="admin-analytics-card">
+              <span>30 hari</span>
+              <strong><%= analyticsData.month.recipe_count || 0 %> resep</strong>
+              <small><%= analyticsData.month.active_users_count || 0 %> user aktif &middot; <%= analyticsData.month.likes_count || 0 %> likes &middot; <%= analyticsData.month.wishlist_count || 0 %> wishlist</small>
+            </article>
+          </div>
+
+          <div class="admin-chart-grid">
+            <article class="admin-chart-card">
+              <div class="admin-chart-head">
+                <div>
+                  <p class="user-panel-kicker">Tren mingguan</p>
+                  <h3>Pertumbuhan resep dan aktivitas user</h3>
+                </div>
+                <label class="admin-chart-filter">
+                  <span>Periode</span>
+                  <select id="adminTrendRange">
+                    <option value="daily">Harian</option>
+                    <option value="weekly">Mingguan</option>
+                    <option value="monthly">Bulanan</option>
+                  </select>
+                </label>
+              </div>
+              <canvas id="adminTrendChart" height="140"></canvas>
+            </article>
+
+            <article class="admin-chart-card">
+              <div class="admin-chart-head">
+                <div>
+                  <p class="user-panel-kicker">Engagement per resep</p>
+                  <h3>Likes dan wishlist resep tertentu</h3>
+                </div>
+                <label class="admin-chart-filter">
+                  <span>Resep</span>
+                  <select id="adminRecipeSelect"></select>
+                </label>
+              </div>
+              <div class="admin-recipe-analytics" id="adminRecipeAnalytics">
+                <div>
+                  <span>Resep dipilih</span>
+                  <strong id="adminRecipeTitle">-</strong>
+                </div>
+                <div>
+                  <span>Likes</span>
+                  <strong id="adminRecipeLikes">0</strong>
+                </div>
+                <div>
+                  <span>Wishlist</span>
+                  <strong id="adminRecipeWishlist">0</strong>
+                </div>
+              </div>
+              <canvas id="adminEngagementChart" height="140"></canvas>
             </article>
           </div>
         </section>
@@ -166,5 +243,195 @@
       </section>
     </div>
   </main>
+
+  <script>
+    (() => {
+      const analytics = <%- JSON.stringify(analyticsData) %>;
+
+      const trendCanvas = document.getElementById('adminTrendChart');
+      const engagementCanvas = document.getElementById('adminEngagementChart');
+      const trendRangeSelect = document.getElementById('adminTrendRange');
+      const recipeSelect = document.getElementById('adminRecipeSelect');
+      const recipeTitle = document.getElementById('adminRecipeTitle');
+      const recipeLikes = document.getElementById('adminRecipeLikes');
+      const recipeWishlist = document.getElementById('adminRecipeWishlist');
+
+      if (!window.Chart || !trendCanvas || !engagementCanvas) {
+        return;
+      }
+
+      const sharedGridColor = 'rgba(29, 29, 29, 0.08)';
+      const sharedLabelColor = '#6b7280';
+      const accent = '#389c9a';
+      const accentLight = '#bfe5e4';
+      const lime = '#7ac943';
+      const sand = '#f6e7a6';
+      const engagementRecipes = Array.isArray(analytics.engagementRecipes) ? analytics.engagementRecipes : [];
+      const selectedRecipeId = recipeSelect?.value || (engagementRecipes[0] && engagementRecipes[0].id) || '';
+
+      const trendChart = new Chart(trendCanvas, {
+        type: 'line',
+        data: {
+          labels: analytics.ranges[analytics.defaultRange || 'daily'].labels,
+          datasets: [
+            {
+              label: 'Resep baru',
+              data: analytics.ranges[analytics.defaultRange || 'daily'].recipes,
+              borderColor: accent,
+              backgroundColor: 'rgba(56, 156, 154, 0.12)',
+              tension: 0.35,
+              fill: true,
+              pointRadius: 3
+            },
+            {
+              label: 'User aktif',
+              data: analytics.ranges[analytics.defaultRange || 'daily'].activeUsers,
+              borderColor: lime,
+              backgroundColor: 'rgba(122, 201, 67, 0.12)',
+              tension: 0.35,
+              fill: true,
+              pointRadius: 3
+            },
+            {
+              label: 'Wishlist',
+              data: analytics.ranges[analytics.defaultRange || 'daily'].wishlist,
+              borderColor: '#e2a93b',
+              backgroundColor: 'rgba(226, 169, 59, 0.12)',
+              tension: 0.35,
+              fill: true,
+              pointRadius: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: sharedLabelColor,
+                usePointStyle: true,
+                pointStyle: 'circle'
+              }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: sharedGridColor },
+              ticks: { color: sharedLabelColor }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: sharedGridColor },
+              ticks: { color: sharedLabelColor, precision: 0 }
+            }
+          }
+        }
+      });
+
+      const engagementChart = new Chart(engagementCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Likes', 'Wishlist'],
+          datasets: [
+            {
+              data: [0, 0],
+              backgroundColor: [accent, sand],
+              borderWidth: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '66%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: sharedLabelColor,
+                usePointStyle: true,
+                pointStyle: 'circle'
+              }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false
+            }
+          },
+        }
+      });
+
+      const populateRecipeSelect = () => {
+        if (!recipeSelect) {
+          return;
+        }
+
+        recipeSelect.innerHTML = '';
+
+        engagementRecipes.forEach((recipe, index) => {
+          const option = document.createElement('option');
+          option.value = recipe.id;
+          option.textContent = recipe.title;
+          if (!recipeSelect.value && index === 0) {
+            option.selected = true;
+          }
+          recipeSelect.appendChild(option);
+        });
+
+        if (!recipeSelect.value && engagementRecipes[0]) {
+          recipeSelect.value = engagementRecipes[0].id;
+        }
+      };
+
+      const updateRecipeAnalytics = (recipeId) => {
+        const recipe = engagementRecipes.find((item) => String(item.id) === String(recipeId)) || engagementRecipes[0];
+
+        if (!recipe) {
+          engagementChart.data.datasets[0].data = [0, 0];
+          engagementChart.update();
+          if (recipeTitle) recipeTitle.textContent = '-';
+          if (recipeLikes) recipeLikes.textContent = '0';
+          if (recipeWishlist) recipeWishlist.textContent = '0';
+          return;
+        }
+
+        if (recipeTitle) recipeTitle.textContent = recipe.title || '-';
+        if (recipeLikes) recipeLikes.textContent = String(recipe.likes_count || 0);
+        if (recipeWishlist) recipeWishlist.textContent = String(recipe.wishlist_count || 0);
+
+        engagementChart.data.datasets[0].data = [Number(recipe.likes_count || 0), Number(recipe.wishlist_count || 0)];
+        engagementChart.update();
+      };
+
+      populateRecipeSelect();
+
+      const setChartRange = (rangeKey) => {
+        const range = analytics.ranges[rangeKey] || analytics.ranges.daily;
+
+        trendChart.data.labels = range.labels;
+        trendChart.data.datasets[0].data = range.recipes;
+        trendChart.data.datasets[1].data = range.activeUsers;
+        trendChart.data.datasets[2].data = range.wishlist;
+        trendChart.update();
+      };
+
+      trendRangeSelect?.addEventListener('change', (event) => {
+        setChartRange(event.target.value);
+      });
+
+      recipeSelect?.addEventListener('change', (event) => {
+        updateRecipeAnalytics(event.target.value);
+      });
+
+      setChartRange(trendRangeSelect?.value || analytics.defaultRange || 'daily');
+      updateRecipeAnalytics(selectedRecipeId || (recipeSelect && recipeSelect.value));
+    })();
+  </script>
 </body>
 </html>
+
