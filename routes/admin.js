@@ -65,20 +65,6 @@ function recipeFormData(recipe = {}) {
     };
 }
 
-function mediaFormData(media = {}) {
-    return {
-        title: media.title || '',
-        platform: media.platform || 'youtube',
-        media_url: media.media_url || '',
-        category: media.category || '',
-        cuisine: media.cuisine || '',
-        sort_order: media.sort_order ?? 0,
-        is_active: media.is_active ?? true,
-        tags: Array.isArray(media.tags) ? JSON.stringify(media.tags, null, 2) : '',
-        recipe_id: media.recipe_id || ''
-    };
-}
-
 function userFormData(user = {}) {
     return {
         username: user.username || '',
@@ -87,28 +73,6 @@ function userFormData(user = {}) {
         avatar_url: user.avatar_url || '',
         bio: user.bio || '',
         password: ''
-    };
-}
-
-function formatMediaPayload(body) {
-    const tags = parseFlexibleArray(body.tags, []);
-
-    return {
-        title: normalizeText(body.title),
-        platform: normalizeText(body.platform) || 'youtube',
-        media_url: optionalText(body.media_url),
-        category: optionalText(body.category),
-        cuisine: optionalText(body.cuisine),
-        sort_order: toInt(body.sort_order, 0),
-        is_active: body.is_active === 'on' || body.is_active === 'true',
-        recipe_id: optionalText(body.recipe_id) || null,
-        tags: buildRecipeArray(tags, (item) => {
-            if (item && typeof item === 'object') {
-                return item;
-            }
-
-            return String(item);
-        })
     };
 }
 
@@ -191,7 +155,7 @@ function buildFeedClause(feed, alias = 'r') {
 }
 
 async function fetchDashboardData() {
-    const [userMetrics, recipeMetrics, recipeRows, userRows] = await Promise.all([
+    const [userMetrics, recipeMetrics, recipeRows, userRows, analyticsRows, dailyRows, weeklyRows, monthlyRows, engagementRecipeRows] = await Promise.all([
         pool.query(`
             SELECT
                 COUNT(*)::int AS users_count,
@@ -203,7 +167,9 @@ async function fetchDashboardData() {
             SELECT
                 COUNT(*)::int AS recipes_count,
                 COUNT(*) FILTER (WHERE is_approved = true)::int AS approved_recipes_count,
-                COUNT(*) FILTER (WHERE is_approved = false)::int AS pending_recipes_count
+                COUNT(*) FILTER (WHERE is_approved = false)::int AS pending_recipes_count,
+                COALESCE(SUM(likes_count), 0)::int AS total_likes,
+                COALESCE((SELECT COUNT(*) FROM user_favorites), 0)::int AS total_wishlist
             FROM recipes
         `),
         pool.query(`
@@ -234,16 +200,255 @@ async function fetchDashboardData() {
             FROM users
             ORDER BY created_at DESC
             LIMIT 4
+        `),
+        pool.query(`
+            WITH windows AS (
+                SELECT 'today' AS period, CURRENT_DATE::timestamp AS start_at, (CURRENT_DATE + INTERVAL '1 day')::timestamp AS end_at
+                UNION ALL
+                SELECT 'week' AS period, (CURRENT_DATE - INTERVAL '6 days')::timestamp AS start_at, (CURRENT_DATE + INTERVAL '1 day')::timestamp AS end_at
+                UNION ALL
+                SELECT 'month' AS period, (CURRENT_DATE - INTERVAL '29 days')::timestamp AS start_at, (CURRENT_DATE + INTERVAL '1 day')::timestamp AS end_at
+            ),
+            recipe_counts AS (
+                SELECT w.period, COUNT(r.id)::int AS recipe_count
+                FROM windows w
+                LEFT JOIN recipes r ON r.created_at >= w.start_at AND r.created_at < w.end_at
+                GROUP BY w.period
+            ),
+            wishlist_counts AS (
+                SELECT w.period, COUNT(uf.id)::int AS wishlist_count
+                FROM windows w
+                LEFT JOIN user_favorites uf ON uf.created_at >= w.start_at AND uf.created_at < w.end_at
+                GROUP BY w.period
+            ),
+            like_counts AS (
+                SELECT w.period, COALESCE(SUM(r.likes_count), 0)::int AS likes_count
+                FROM windows w
+                LEFT JOIN recipes r ON r.created_at >= w.start_at AND r.created_at < w.end_at
+                GROUP BY w.period
+            ),
+            active_users AS (
+                SELECT w.period, COUNT(DISTINCT activity.user_id)::int AS active_users_count
+                FROM windows w
+                LEFT JOIN (
+                    SELECT user_id, created_at AS event_time FROM user_favorites
+                    UNION ALL
+                    SELECT user_id, cooking_date AS event_time FROM cooking_history
+                ) activity ON activity.event_time >= w.start_at AND activity.event_time < w.end_at
+                GROUP BY w.period
+            )
+            SELECT
+                w.period,
+                COALESCE(rc.recipe_count, 0) AS recipe_count,
+                COALESCE(wc.wishlist_count, 0) AS wishlist_count,
+                COALESCE(lc.likes_count, 0) AS likes_count,
+                COALESCE(au.active_users_count, 0) AS active_users_count
+            FROM windows w
+            LEFT JOIN recipe_counts rc ON rc.period = w.period
+            LEFT JOIN wishlist_counts wc ON wc.period = w.period
+            LEFT JOIN like_counts lc ON lc.period = w.period
+            LEFT JOIN active_users au ON au.period = w.period
+            ORDER BY CASE w.period WHEN 'today' THEN 1 WHEN 'week' THEN 2 ELSE 3 END
+        `),
+        pool.query(`
+            WITH buckets AS (
+                SELECT generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, INTERVAL '1 day')::date AS bucket
+            ),
+            recipe_series AS (
+                SELECT date_trunc('day', r.created_at)::date AS bucket, COUNT(r.id)::int AS recipe_count
+                FROM recipes r
+                WHERE r.created_at >= CURRENT_DATE - INTERVAL '6 days'
+                GROUP BY 1
+            ),
+            active_series AS (
+                SELECT date_trunc('day', activity.event_time)::date AS bucket, COUNT(DISTINCT activity.user_id)::int AS active_users_count
+                FROM (
+                    SELECT user_id, created_at AS event_time FROM user_favorites
+                    UNION ALL
+                    SELECT user_id, cooking_date AS event_time FROM cooking_history
+                ) activity
+                WHERE activity.event_time >= CURRENT_DATE - INTERVAL '6 days'
+                GROUP BY 1
+            ),
+            wishlist_series AS (
+                SELECT date_trunc('day', uf.created_at)::date AS bucket, COUNT(uf.id)::int AS wishlist_count
+                FROM user_favorites uf
+                WHERE uf.created_at >= CURRENT_DATE - INTERVAL '6 days'
+                GROUP BY 1
+            ),
+            like_series AS (
+                SELECT date_trunc('day', r.created_at)::date AS bucket, COALESCE(SUM(r.likes_count), 0)::int AS likes_count
+                FROM recipes r
+                WHERE r.created_at >= CURRENT_DATE - INTERVAL '6 days'
+                GROUP BY 1
+            )
+            SELECT
+                b.bucket,
+                COALESCE(rs.recipe_count, 0) AS recipe_count,
+                COALESCE(asv.active_users_count, 0) AS active_users_count,
+                COALESCE(ws.wishlist_count, 0) AS wishlist_count,
+                COALESCE(ls.likes_count, 0) AS likes_count
+            FROM buckets b
+            LEFT JOIN recipe_series rs ON rs.bucket = b.bucket
+            LEFT JOIN active_series asv ON asv.bucket = b.bucket
+            LEFT JOIN wishlist_series ws ON ws.bucket = b.bucket
+            LEFT JOIN like_series ls ON ls.bucket = b.bucket
+            ORDER BY b.bucket
+        `),
+        pool.query(`
+            WITH buckets AS (
+                SELECT generate_series(date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks', date_trunc('week', CURRENT_DATE), INTERVAL '1 week')::date AS bucket
+            ),
+            recipe_series AS (
+                SELECT date_trunc('week', r.created_at)::date AS bucket, COUNT(r.id)::int AS recipe_count
+                FROM recipes r
+                WHERE r.created_at >= date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks'
+                GROUP BY 1
+            ),
+            active_series AS (
+                SELECT date_trunc('week', activity.event_time)::date AS bucket, COUNT(DISTINCT activity.user_id)::int AS active_users_count
+                FROM (
+                    SELECT user_id, created_at AS event_time FROM user_favorites
+                    UNION ALL
+                    SELECT user_id, cooking_date AS event_time FROM cooking_history
+                ) activity
+                WHERE activity.event_time >= date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks'
+                GROUP BY 1
+            ),
+            wishlist_series AS (
+                SELECT date_trunc('week', uf.created_at)::date AS bucket, COUNT(uf.id)::int AS wishlist_count
+                FROM user_favorites uf
+                WHERE uf.created_at >= date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks'
+                GROUP BY 1
+            ),
+            like_series AS (
+                SELECT date_trunc('week', r.created_at)::date AS bucket, COALESCE(SUM(r.likes_count), 0)::int AS likes_count
+                FROM recipes r
+                WHERE r.created_at >= date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks'
+                GROUP BY 1
+            )
+            SELECT
+                b.bucket,
+                COALESCE(rs.recipe_count, 0) AS recipe_count,
+                COALESCE(asv.active_users_count, 0) AS active_users_count,
+                COALESCE(ws.wishlist_count, 0) AS wishlist_count,
+                COALESCE(ls.likes_count, 0) AS likes_count
+            FROM buckets b
+            LEFT JOIN recipe_series rs ON rs.bucket = b.bucket
+            LEFT JOIN active_series asv ON asv.bucket = b.bucket
+            LEFT JOIN wishlist_series ws ON ws.bucket = b.bucket
+            LEFT JOIN like_series ls ON ls.bucket = b.bucket
+            ORDER BY b.bucket
+        `),
+        pool.query(`
+            WITH buckets AS (
+                SELECT generate_series(date_trunc('month', CURRENT_DATE) - INTERVAL '11 months', date_trunc('month', CURRENT_DATE), INTERVAL '1 month')::date AS bucket
+            ),
+            recipe_series AS (
+                SELECT date_trunc('month', r.created_at)::date AS bucket, COUNT(r.id)::int AS recipe_count
+                FROM recipes r
+                WHERE r.created_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
+                GROUP BY 1
+            ),
+            active_series AS (
+                SELECT date_trunc('month', activity.event_time)::date AS bucket, COUNT(DISTINCT activity.user_id)::int AS active_users_count
+                FROM (
+                    SELECT user_id, created_at AS event_time FROM user_favorites
+                    UNION ALL
+                    SELECT user_id, cooking_date AS event_time FROM cooking_history
+                ) activity
+                WHERE activity.event_time >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
+                GROUP BY 1
+            ),
+            wishlist_series AS (
+                SELECT date_trunc('month', uf.created_at)::date AS bucket, COUNT(uf.id)::int AS wishlist_count
+                FROM user_favorites uf
+                WHERE uf.created_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
+                GROUP BY 1
+            ),
+            like_series AS (
+                SELECT date_trunc('month', r.created_at)::date AS bucket, COALESCE(SUM(r.likes_count), 0)::int AS likes_count
+                FROM recipes r
+                WHERE r.created_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
+                GROUP BY 1
+            )
+            SELECT
+                b.bucket,
+                COALESCE(rs.recipe_count, 0) AS recipe_count,
+                COALESCE(asv.active_users_count, 0) AS active_users_count,
+                COALESCE(ws.wishlist_count, 0) AS wishlist_count,
+                COALESCE(ls.likes_count, 0) AS likes_count
+            FROM buckets b
+            LEFT JOIN recipe_series rs ON rs.bucket = b.bucket
+            LEFT JOIN active_series asv ON asv.bucket = b.bucket
+            LEFT JOIN wishlist_series ws ON ws.bucket = b.bucket
+            LEFT JOIN like_series ls ON ls.bucket = b.bucket
+            ORDER BY b.bucket
+        `),
+        pool.query(`
+            SELECT
+                r.id,
+                r.title,
+                r.image_url,
+                COALESCE(r.likes_count, 0)::int AS likes_count,
+                COALESCE(f.wishlist_count, 0)::int AS wishlist_count
+            FROM recipes r
+            LEFT JOIN (
+                SELECT recipe_id, COUNT(*)::int AS wishlist_count
+                FROM user_favorites
+                GROUP BY recipe_id
+            ) f ON f.recipe_id = r.id
+            ORDER BY r.likes_count DESC, wishlist_count DESC, r.created_at DESC
+            LIMIT 12
         `)
     ]);
+
+    const analyticsMap = new Map((analyticsRows.rows || []).map((row) => [row.period, row]));
+    const analytics = {
+        today: analyticsMap.get('today') || { recipe_count: 0, wishlist_count: 0, likes_count: 0, active_users_count: 0 },
+        week: analyticsMap.get('week') || { recipe_count: 0, wishlist_count: 0, likes_count: 0, active_users_count: 0 },
+        month: analyticsMap.get('month') || { recipe_count: 0, wishlist_count: 0, likes_count: 0, active_users_count: 0 },
+        ranges: {
+            daily: mapTimelineSeries(dailyRows.rows || [], { day: '2-digit', month: 'short' }),
+            weekly: mapTimelineSeries(weeklyRows.rows || [], { day: '2-digit', month: 'short' }),
+            monthly: mapTimelineSeries(monthlyRows.rows || [], { month: 'short', year: 'numeric' })
+        },
+        engagementRecipes: (engagementRecipeRows.rows || []).map((row) => ({
+            id: row.id,
+            title: row.title,
+            likes_count: Number(row.likes_count || 0),
+            wishlist_count: Number(row.wishlist_count || 0),
+            image_url: row.image_url || ''
+        })),
+        summary: {
+            likes: Number((recipeMetrics.rows[0] && recipeMetrics.rows[0].total_likes) || 0),
+            wishlist: Number((recipeMetrics.rows[0] && recipeMetrics.rows[0].total_wishlist) || 0)
+        },
+        defaultRange: 'daily'
+    };
 
     return {
         metrics: {
             ...(userMetrics.rows[0] || {}),
             ...(recipeMetrics.rows[0] || {})
         },
+        analytics,
         recentRecipes: recipeRows.rows,
         recentUsers: userRows.rows
+    };
+}
+
+function formatTimelineLabels(rows, formatOptions) {
+    return rows.map((row) => new Date(row.bucket).toLocaleDateString('id-ID', formatOptions));
+}
+
+function mapTimelineSeries(rows, formatOptions) {
+    return {
+        labels: formatTimelineLabels(rows, formatOptions),
+        recipes: rows.map((row) => Number(row.recipe_count || 0)),
+        activeUsers: rows.map((row) => Number(row.active_users_count || 0)),
+        wishlist: rows.map((row) => Number(row.wishlist_count || 0)),
+        likes: rows.map((row) => Number(row.likes_count || 0))
     };
 }
 
@@ -348,63 +553,6 @@ async function fetchUsersPageData(userId = '') {
     };
 }
 
-async function fetchMediaPageData(mediaId = '') {
-    const [mediaResult, selectedMediaResult, recipeOptionsResult] = await Promise.all([
-        pool.query(`
-            SELECT
-                m.id,
-                m.title,
-                m.platform,
-                m.media_url,
-                m.category,
-                m.cuisine,
-                m.sort_order,
-                m.is_active,
-                m.tags,
-                m.recipe_id,
-                m.created_at,
-                COALESCE(r.title, 'Tidak terhubung') AS recipe_title
-            FROM recipe_media_sources m
-            LEFT JOIN recipes r ON r.id = m.recipe_id
-            ORDER BY m.sort_order DESC, m.created_at DESC
-            LIMIT 12
-        `),
-        mediaId
-            ? pool.query(
-                  `
-                SELECT
-                    id,
-                    title,
-                    platform,
-                    media_url,
-                    category,
-                    cuisine,
-                    sort_order,
-                    is_active,
-                    tags,
-                    recipe_id
-                FROM recipe_media_sources
-                WHERE id = $1
-                LIMIT 1
-                `,
-                  [mediaId]
-              )
-            : Promise.resolve({ rows: [] }),
-        pool.query(`
-            SELECT id, title
-            FROM recipes
-            ORDER BY created_at DESC
-            LIMIT 50
-        `)
-    ]);
-
-    return {
-        mediaSources: mediaResult.rows,
-        selectedMedia: selectedMediaResult.rows[0] || null,
-        recipeOptions: recipeOptionsResult.rows
-    };
-}
-
 function renderDashboard(res, req, data, extras = {}) {
     res.render('admin/dashboard', {
         title: 'Admin Dashboard - AI Recipe Planner',
@@ -432,17 +580,6 @@ function renderUsersPage(res, req, data, extras = {}) {
         user: req.session.user,
         activePage: 'users',
         selectedUserForm: userFormData(data.selectedUser || {}),
-        ...data,
-        ...extras
-    });
-}
-
-function renderMediaPage(res, req, data, extras = {}) {
-    res.render('admin/media', {
-        title: 'Kelola Media Feed - AI Recipe Planner',
-        user: req.session.user,
-        activePage: 'media',
-        selectedMediaForm: mediaFormData(data.selectedMedia || {}),
         ...data,
         ...extras
     });
@@ -489,16 +626,7 @@ router.get('/users', async (req, res) => {
 });
 
 router.get('/media', async (req, res) => {
-    try {
-        const data = await fetchMediaPageData(normalizeText(req.query.mediaId));
-        renderMediaPage(res, req, data, {
-            notice: normalizeText(req.query.notice),
-            error: normalizeText(req.query.error)
-        });
-    } catch (error) {
-        console.error('Admin media error:', error.message);
-        res.status(500).send('Gagal memuat halaman media admin.');
-    }
+    return res.redirect('/admin/recipes');
 });
 
 router.post('/recipes', async (req, res) => {
@@ -679,116 +807,6 @@ router.post('/users', async (req, res) => {
     } catch (error) {
         console.error('Create user error:', error.message);
         return res.redirect('/admin/users?error=Gagal+menambah+user');
-    }
-});
-
-router.post('/media', async (req, res) => {
-    try {
-        const payload = formatMediaPayload(req.body);
-
-        if (!payload.title) {
-            return res.redirect('/admin/media?error=Judul+media+wajib+diisi');
-        }
-
-        if (!['tiktok', 'youtube', 'internal'].includes(payload.platform)) {
-            return res.redirect('/admin/media?error=Platform+media+tidak+valid');
-        }
-
-        await pool.query(
-            `
-            INSERT INTO recipe_media_sources (
-                title,
-                platform,
-                media_url,
-                category,
-                cuisine,
-                tags,
-                recipe_id,
-                sort_order,
-                is_active
-            )
-            VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9)
-            `,
-            [
-                payload.title,
-                payload.platform,
-                payload.media_url,
-                payload.category,
-                payload.cuisine,
-                JSON.stringify(payload.tags),
-                payload.recipe_id,
-                payload.sort_order,
-                payload.is_active
-            ]
-        );
-
-        return res.redirect('/admin/media?notice=Media+berhasil+ditambahkan');
-    } catch (error) {
-        console.error('Create media error:', error.message);
-        return res.redirect('/admin/media?error=Gagal+menambah+media');
-    }
-});
-
-router.post('/media/:id', async (req, res) => {
-    const mediaId = normalizeText(req.params.id);
-
-    try {
-        const payload = formatMediaPayload(req.body);
-
-        if (!payload.title) {
-            return res.redirect(`/admin/media?mediaId=${encodeURIComponent(mediaId)}&error=Judul+media+wajib+diisi`);
-        }
-
-        if (!['tiktok', 'youtube', 'internal'].includes(payload.platform)) {
-            return res.redirect(`/admin/media?mediaId=${encodeURIComponent(mediaId)}&error=Platform+media+tidak+valid`);
-        }
-
-        await pool.query(
-            `
-            UPDATE recipe_media_sources
-            SET
-                title = $1,
-                platform = $2,
-                media_url = $3,
-                category = $4,
-                cuisine = $5,
-                tags = $6::jsonb,
-                recipe_id = $7,
-                sort_order = $8,
-                is_active = $9,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = $10
-            `,
-            [
-                payload.title,
-                payload.platform,
-                payload.media_url,
-                payload.category,
-                payload.cuisine,
-                JSON.stringify(payload.tags),
-                payload.recipe_id,
-                payload.sort_order,
-                payload.is_active,
-                mediaId
-            ]
-        );
-
-        return res.redirect('/admin/media?notice=Media+berhasil+diupdate');
-    } catch (error) {
-        console.error('Update media error:', error.message);
-        return res.redirect(`/admin/media?mediaId=${encodeURIComponent(mediaId)}&error=Gagal+update+media`);
-    }
-});
-
-router.post('/media/:id/delete', async (req, res) => {
-    const mediaId = normalizeText(req.params.id);
-
-    try {
-        await pool.query('DELETE FROM recipe_media_sources WHERE id = $1', [mediaId]);
-        return res.redirect('/admin/media?notice=Media+berhasil+dihapus');
-    } catch (error) {
-        console.error('Delete media error:', error.message);
-        return res.redirect('/admin/media?error=Gagal+hapus+media');
     }
 });
 

@@ -500,56 +500,6 @@ function normalizeVideoUrl(url) {
     }
 }
 
-function normalizeMediaSource(media = {}) {
-    const platform = String(media.platform || '').trim().toLowerCase();
-    const value = String(media.media_url || '').trim();
-
-    if (!value) {
-        return { kind: null, src: null };
-    }
-
-    try {
-        const parsed = new URL(value);
-        const host = parsed.hostname.replace(/^www\./, '');
-
-        if (platform === 'tiktok' || host.includes('tiktok.com')) {
-            const pathParts = parsed.pathname.split('/').filter(Boolean);
-            const videoIndex = pathParts.indexOf('video');
-            const videoId =
-                videoIndex >= 0 && pathParts[videoIndex + 1]
-                    ? pathParts[videoIndex + 1]
-                    : pathParts[pathParts.length - 1];
-
-            return videoId
-                ? {
-                      kind: 'tiktok',
-                      src: value,
-                      postUrl: value,
-                      videoId
-                  }
-                : { kind: 'direct', src: value };
-        }
-
-        if (platform === 'youtube' || host === 'youtu.be') {
-            const videoId = parsed.pathname.split('/').filter(Boolean)[0];
-            return videoId
-                ? { kind: 'youtube', src: `https://www.youtube.com/embed/${videoId}` }
-                : { kind: 'direct', src: value };
-        }
-
-        if (host.includes('youtube.com')) {
-            const videoId = parsed.searchParams.get('v');
-            if (videoId) {
-                return { kind: 'youtube', src: `https://www.youtube.com/embed/${videoId}` };
-            }
-        }
-
-        return { kind: 'direct', src: value };
-    } catch (error) {
-        return { kind: 'direct', src: value };
-    }
-}
-
 function buildFeedPreset(feed) {
     const presets = {
         random: {
@@ -638,9 +588,8 @@ router.get('/recipes', async (req, res) => {
 
         const feed = String(req.query.feed || 'random').trim().toLowerCase();
         const recipeFeed = buildFeedClause(feed, 'r');
-        const mediaFeed = buildFeedClause(feed, 'm');
-        const [recipeResult, mediaResult, allMediaResult] = await Promise.all([
-            pool.query(`
+        const recipeResult = await pool.query(
+            `
             SELECT
                 r.id,
                 r.title,
@@ -661,54 +610,16 @@ router.get('/recipes', async (req, res) => {
             ${recipeFeed.clause}
             ORDER BY RANDOM()
             LIMIT 12
-            `, recipeFeed.params),
-            pool.query(`
-            SELECT
-                m.id,
-                m.title,
-                m.platform,
-                m.media_url,
-                m.category,
-                m.cuisine,
-                m.tags,
-                m.recipe_id,
-                m.sort_order,
-                m.created_at
-            FROM recipe_media_sources m
-            WHERE m.is_active = true
-            ${mediaFeed.clause}
-            ORDER BY m.sort_order DESC, m.created_at DESC, RANDOM()
-            LIMIT 12
-            `, mediaFeed.params),
-            pool.query(`
-            SELECT
-                m.id,
-                m.title,
-                m.platform,
-                m.media_url,
-                m.category,
-                m.cuisine,
-                m.tags,
-                m.recipe_id,
-                m.sort_order,
-                m.created_at
-            FROM recipe_media_sources m
-            WHERE m.is_active = true
-            ORDER BY m.sort_order DESC, m.created_at DESC, RANDOM()
-            LIMIT 12
-            `)
-        ]);
+            `,
+            recipeFeed.params
+        );
 
-        const mediaSources = mediaResult.rows.length ? mediaResult.rows : allMediaResult.rows;
-        const recipes = recipeResult.rows.map((recipe, index) => {
+        const recipes = recipeResult.rows.map((recipe) => {
             const directVideoSource = normalizeVideoUrl(recipe.video_url);
-            const linkedMediaSource =
-                mediaSources.find((item) => String(item.recipe_id || '') === String(recipe.id || '')) ||
-                mediaSources[index % Math.max(mediaSources.length, 1)];
 
             return {
                 ...recipe,
-                videoSource: directVideoSource.kind ? directVideoSource : normalizeMediaSource(linkedMediaSource || {})
+                videoSource: directVideoSource.kind ? directVideoSource : null
             };
         });
 
