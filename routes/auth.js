@@ -9,6 +9,170 @@ function normalizeEmail(value) {
     return String(value || '').trim().toLowerCase();
 }
 
+function getGreetingLabel(date = new Date()) {
+    const hour = date.getHours();
+
+    if (hour < 11) {
+        return 'Selamat pagi';
+    }
+
+    if (hour < 15) {
+        return 'Selamat siang';
+    }
+
+    if (hour < 18) {
+        return 'Selamat sore';
+    }
+
+    return 'Selamat malam';
+}
+
+function getFirstName(username = '') {
+    return String(username || '')
+        .trim()
+        .split(/\s+|_|-/)
+        .filter(Boolean)[0] || 'Chef';
+}
+
+function mapRecipeCard(recipe, fallbackImage = '/images/1.png') {
+    const tags = Array.isArray(recipe.tags) ? recipe.tags.slice(0, 2) : [];
+
+    return {
+        id: recipe.id,
+        title: recipe.title,
+        description: recipe.description,
+        imageUrl: recipe.image_url || fallbackImage,
+        cookingTime: recipe.cooking_time || 0,
+        difficulty: recipe.difficulty || 'easy',
+        calories: recipe.calories || 0,
+        category: recipe.category || 'recipe',
+        estimatedPrice: recipe.estimated_price || 0,
+        likesCount: recipe.likes_count || 0,
+        viewsCount: recipe.views_count || 0,
+        tags
+    };
+}
+
+function getCookingTip() {
+    const tips = [
+        'Panaskan wajan dulu sebelum menumis supaya bumbu lebih harum.',
+        'Tambahkan garam sedikit demi sedikit agar rasa lebih terkontrol.',
+        'Simpan bahan yang sudah dipotong di wadah terpisah biar proses masak lebih cepat.',
+        'Kalau masak pedas, tambahkan sedikit gula untuk menyeimbangkan rasa.',
+        'Cicipi di akhir proses masak supaya level asin dan pedas pas.'
+    ];
+
+    return tips[Math.floor(Math.random() * tips.length)];
+}
+
+function getFallbackDashboard(user) {
+    return {
+        greeting: getGreetingLabel(),
+        firstName: getFirstName(user.username),
+        searchPlaceholder: 'Cari makanan, bahan, atau kategori',
+        categories: [
+            { label: 'Makanan berat', image: '/images/2.png' },
+            { label: 'Dessert', image: '/images/3.png' },
+            { label: 'Minuman', image: '/images/6.png' },
+            { label: 'Cemilan', image: '/images/1.png' },
+            { label: 'Healthy food', image: '/images/5.png' },
+            { label: 'Budget food', image: '/images/4.png' }
+        ],
+        moods: ['Lagi pengen pedes?', 'Comfort food', 'Masak cepat', 'Menu hemat'],
+        trendingRecipes: [
+            mapRecipeCard({
+                id: 'sample-1',
+                title: 'Nasi Goreng Jawa',
+                description: 'Menu rumahan yang cepat, gurih, dan cocok untuk sarapan atau makan malam.',
+                image_url: '/images/2.png',
+                cooking_time: 15,
+                difficulty: 'easy',
+                calories: 520,
+                category: 'main course',
+                estimated_price: 12000,
+                likes_count: 89,
+                views_count: 342,
+                tags: ['nusantara', 'pedas']
+            }),
+            mapRecipeCard({
+                id: 'sample-2',
+                title: 'Pisang Coklat Lumer',
+                description: 'Cemilan manis yang gampang dibuat saat ingin sesuatu yang comfort.',
+                image_url: '/images/3.png',
+                cooking_time: 12,
+                difficulty: 'easy',
+                calories: 280,
+                category: 'dessert',
+                estimated_price: 9000,
+                likes_count: 63,
+                views_count: 218,
+                tags: ['manis', 'cemilan']
+            }),
+            mapRecipeCard({
+                id: 'sample-3',
+                title: 'Es Kopi Susu Gula Aren',
+                description: 'Minuman segar untuk boost mood dengan bahan yang sederhana.',
+                image_url: '/images/6.png',
+                cooking_time: 8,
+                difficulty: 'easy',
+                calories: 190,
+                category: 'drink',
+                estimated_price: 15000,
+                likes_count: 57,
+                views_count: 176,
+                tags: ['minuman', 'segar']
+            })
+        ],
+        recommendedRecipes: [
+            mapRecipeCard({
+                id: 'sample-4',
+                title: 'Ayam Bakar Teflon',
+                description: 'Cocok untuk kamu yang suka menu gurih dan praktis tanpa alat ribet.',
+                image_url: '/images/4.png',
+                cooking_time: 25,
+                difficulty: 'medium',
+                calories: 410,
+                category: 'main course',
+                estimated_price: 18000,
+                likes_count: 48,
+                views_count: 150,
+                tags: ['gurih', 'praktis']
+            }),
+            mapRecipeCard({
+                id: 'sample-5',
+                title: 'Salad Buah Yogurt',
+                description: 'Pilihan ringan untuk mood yang ingin makan segar dan manis.',
+                image_url: '/images/5.png',
+                cooking_time: 10,
+                difficulty: 'easy',
+                calories: 240,
+                category: 'healthy food',
+                estimated_price: 14000,
+                likes_count: 41,
+                views_count: 130,
+                tags: ['healthy', 'fresh']
+            })
+        ],
+        recentlyViewed: [],
+        favoriteRecipes: [],
+        dailyChallenge: mapRecipeCard({
+            id: 'sample-6',
+            title: 'Nasi Goreng Jawa',
+            description: 'Hari ini coba masak menu rumahan yang cepat dan selalu aman.',
+            image_url: '/images/2.png',
+            cooking_time: 15,
+            difficulty: 'easy',
+            calories: 520,
+            category: 'main course',
+            estimated_price: 12000,
+            likes_count: 89,
+            views_count: 342,
+            tags: ['challenge']
+        }),
+        tip: getCookingTip()
+    };
+}
+
 function renderAuthError(res, view, message, values = {}) {
     return res.status(400).render(view, {
         title: view === 'login' ? 'Login - AI Recipe Planner' : 'Register - AI Recipe Planner',
@@ -144,7 +308,7 @@ router.post('/logout', (req, res) => {
     });
 });
 
-router.get('/dashboard', (req, res) => {
+router.get('/dashboard', async (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
     }
@@ -155,10 +319,137 @@ router.get('/dashboard', (req, res) => {
 
     preventBack(req, res, () => {});
 
-    res.render('user/dashboard', {
-        title: 'Dashboard - AI Recipe Planner',
-        user: req.session.user
-    });
+    const fallback = getFallbackDashboard(req.session.user);
+
+    try {
+        const userId = req.session.user.id;
+
+        const [trendingResult, favoriteResult, recentResult, preferenceResult, dailyChallengeResult] = await Promise.all([
+            pool.query(
+                `
+                    SELECT id, title, description, image_url, cooking_time, difficulty, calories,
+                           category, estimated_price, likes_count, views_count, tags
+                    FROM recipes
+                    WHERE is_approved = true
+                    ORDER BY views_count DESC, likes_count DESC, created_at DESC
+                    LIMIT 4
+                `
+            ),
+            pool.query(
+                `
+                    SELECT r.id, r.title, r.description, r.image_url, r.cooking_time, r.difficulty,
+                           r.calories, r.category, r.estimated_price, r.likes_count, r.views_count,
+                           r.tags
+                    FROM user_favorites uf
+                    JOIN recipes r ON r.id = uf.recipe_id
+                    WHERE uf.user_id = $1 AND r.is_approved = true
+                    ORDER BY uf.created_at DESC
+                    LIMIT 4
+                `,
+                [userId]
+            ),
+            pool.query(
+                `
+                    WITH ranked_history AS (
+                        SELECT
+                            r.id, r.title, r.description, r.image_url, r.cooking_time, r.difficulty,
+                            r.calories, r.category, r.estimated_price, r.likes_count, r.views_count,
+                            r.tags, ch.cooking_date,
+                            ROW_NUMBER() OVER (PARTITION BY r.id ORDER BY ch.cooking_date DESC) AS recipe_rank
+                        FROM cooking_history ch
+                        JOIN recipes r ON r.id = ch.recipe_id
+                        WHERE ch.user_id = $1 AND r.is_approved = true
+                    )
+                    SELECT id, title, description, image_url, cooking_time, difficulty, calories,
+                           category, estimated_price, likes_count, views_count, tags, cooking_date
+                    FROM ranked_history
+                    WHERE recipe_rank = 1
+                    ORDER BY cooking_date DESC
+                    LIMIT 4
+                `,
+                [userId]
+            ),
+            pool.query(
+                `
+                    WITH recent_categories AS (
+                        SELECT r.category, MAX(ch.cooking_date) AS last_seen
+                        FROM cooking_history ch
+                        JOIN recipes r ON r.id = ch.recipe_id
+                        WHERE ch.user_id = $1 AND r.category IS NOT NULL
+                        GROUP BY r.category
+                    ),
+                    favorite_categories AS (
+                        SELECT r.category, MAX(uf.created_at) AS last_saved
+                        FROM user_favorites uf
+                        JOIN recipes r ON r.id = uf.recipe_id
+                        WHERE uf.user_id = $1 AND r.category IS NOT NULL
+                        GROUP BY r.category
+                    ),
+                    ranked_categories AS (
+                        SELECT category
+                        FROM (
+                            SELECT category, last_seen AS rank_time FROM recent_categories
+                            UNION ALL
+                            SELECT category, last_saved AS rank_time FROM favorite_categories
+                        ) preference_feed
+                        ORDER BY rank_time DESC
+                        LIMIT 3
+                    )
+                    SELECT id, title, description, image_url, cooking_time, difficulty, calories,
+                           category, estimated_price, likes_count, views_count, tags
+                    FROM recipes
+                    WHERE is_approved = true
+                    AND (
+                        category IN (SELECT category FROM ranked_categories)
+                        OR NOT EXISTS (SELECT 1 FROM ranked_categories)
+                    )
+                    ORDER BY likes_count DESC, views_count DESC, created_at DESC
+                    LIMIT 4
+                `,
+                [userId]
+            ),
+            pool.query(
+                `
+                    SELECT id, title, description, image_url, cooking_time, difficulty, calories,
+                           category, estimated_price, likes_count, views_count, tags
+                    FROM recipes
+                    WHERE is_approved = true
+                    ORDER BY RANDOM()
+                    LIMIT 1
+                `
+            )
+        ]);
+
+        const dashboardData = {
+            ...fallback,
+            trendingRecipes: trendingResult.rows.length
+                ? trendingResult.rows.map((recipe) => mapRecipeCard(recipe, fallback.categories[0].image))
+                : fallback.trendingRecipes,
+            favoriteRecipes: favoriteResult.rows.map((recipe) => mapRecipeCard(recipe, fallback.categories[4].image)),
+            recentlyViewed: recentResult.rows.map((recipe) => mapRecipeCard(recipe, fallback.categories[2].image)),
+            recommendedRecipes: preferenceResult.rows.length
+                ? preferenceResult.rows.map((recipe) => mapRecipeCard(recipe, fallback.categories[1].image))
+                : fallback.recommendedRecipes,
+            dailyChallenge: dailyChallengeResult.rows[0]
+                ? mapRecipeCard(dailyChallengeResult.rows[0], fallback.categories[0].image)
+                : fallback.dailyChallenge,
+            tip: getCookingTip()
+        };
+
+        res.render('user/dashboard', {
+            title: 'Dashboard - AI Recipe Planner',
+            user: req.session.user,
+            dashboardData
+        });
+    } catch (error) {
+        console.error('User dashboard error:', error.message);
+
+        res.render('user/dashboard', {
+            title: 'Dashboard - AI Recipe Planner',
+            user: req.session.user,
+            dashboardData: fallback
+        });
+    }
 });
 
 function normalizeVideoUrl(url) {
