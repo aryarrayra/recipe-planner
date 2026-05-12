@@ -4,64 +4,101 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title><%= title %></title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
-<body>
+<body class="chat-page">
   <div class="page-bg"></div>
-  <header class="site-header">
-    <a class="brand" href="/">
-      <span class="brand-mark">AI</span>
-      <span class="brand-text">Recipe Planner</span>
-    </a>
-    <nav class="top-nav">
-      <a href="/">Landing</a>
-      <a href="/chat-ai">Chat AI</a>
-      <a href="/chat-history">Chat History</a>
-      <a href="/api/recipes">Recipes API</a>
-    </nav>
-    <a class="nav-cta" href="/">Home</a>
-  </header>
 
-  <main class="chat-layout">
-    <section class="chat-panel">
-      <div class="panel-head">
-        <span class="section-kicker">Chat AI</span>
-        <h1>Uji percakapan AI untuk resep dan meal planning.</h1>
-        <p class="lead">Tulis bahan, budget, atau tujuan makan kamu. Respons dihasilkan dari Gemini free tier dan histori chat disimpan per sesi.</p>
-      </div>
+  <main class="user-dashboard chat-dashboard">
+    <div class="user-dashboard-shell chat-dashboard-shell">
+      <%- include('partials/sidebar', { mode: 'user', activePage: 'chat', user }) %>
 
-      <div class="chat-window" id="chatWindow" aria-live="polite"></div>
+      <section class="user-dashboard-main chat-main">
+        <header class="user-dashboard-topbar chat-dashboard-topbar">
+          <div class="chat-topbar-copy">
+            <p class="user-panel-kicker">AI chat</p>
+            <h1>Chat AI model WhatsApp</h1>
+            <p class="chat-topbar-note">Enter langsung kirim, Shift+Enter buat baris baru, dan foto bisa dilampirkan sebelum pesan dikirim.</p>
+          </div>
+          <div class="user-topbar-actions chat-topbar-actions">
+            <button type="button" class="button button-secondary" id="clearChat">Clear chat</button>
+            <a class="button button-secondary" href="/chat-history">Lihat history</a>
+          </div>
+        </header>
 
-      <form class="chat-form" id="chatForm">
-        <textarea id="chatInput" rows="3" placeholder="Contoh: saya punya telur, mie, dan ayam. Buatkan menu hemat untuk 3 hari."></textarea>
-        <div class="chat-actions">
-          <button type="submit" class="button button-primary">Kirim</button>
-          <button type="button" class="button button-secondary" id="resetChat">Reset chat</button>
-          <a class="button button-secondary" href="/chat-history">Lihat history</a>
-        </div>
-      </form>
-    </section>
+        <section class="chat-window-shell">
+          <div class="chat-topbar">
+            <div class="chat-peer">
+              <div class="chat-avatar">AI</div>
+              <div>
+                <strong>Recipe Assistant</strong>
+                <span>online</span>
+              </div>
+            </div>
+            <div class="chat-topbar-actions">
+              <a class="button button-secondary" href="/chat-history">Riwayat sesi</a>
+            </div>
+          </div>
 
-    <aside class="side-panel">
-      <div class="feature-card">
-        <div class="icon-badge">01</div>
-        <h3>Prompt cepat</h3>
-        <p>Kirim konteks singkat untuk cek arah jawaban AI.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon-badge">02</div>
-        <h3>Output terstruktur</h3>
-        <p>Response dibikin dalam format yang gampang dirender di UI.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon-badge">03</div>
-        <h3>Histori tersimpan</h3>
-        <p>Setiap pesan user dan jawaban AI masuk ke database per sesi.</p>
-      </div>
-    </aside>
+          <div class="chat-feed" id="chatWindow" aria-live="polite"></div>
+
+          <form class="chat-composer" id="chatForm" enctype="multipart/form-data">
+            <div class="composer-toolbar" role="toolbar" aria-label="Formatting toolbar">
+              <button type="button" class="composer-tool" data-command="bold"><strong>B</strong></button>
+              <button type="button" class="composer-tool" data-command="italic"><em>I</em></button>
+              <button type="button" class="composer-tool" data-command="underline"><u>U</u></button>
+              <button type="button" class="composer-tool" data-command="insertUnorderedList">List</button>
+              <button type="button" class="composer-tool" data-command="insertOrderedList">1. List</button>
+              <button type="button" class="composer-tool" data-command="createLink">Link</button>
+              <button type="button" class="composer-tool" data-command="removeFormat">Clear</button>
+            </div>
+
+            <div class="composer-body">
+              <label class="attachment-chip" for="chatPhoto">
+                <span>+</span>
+                <input type="file" id="chatPhoto" accept="image/*" hidden />
+                <span>Foto</span>
+              </label>
+
+              <div class="composer-input-wrap">
+                <div
+                  id="chatInput"
+                  class="composer-input"
+                  contenteditable="true"
+                  role="textbox"
+                  aria-multiline="true"
+                  aria-label="Tulis pesan"
+                  data-placeholder="Tulis pesan, Shift+Enter untuk baris baru, Enter untuk kirim."
+                ></div>
+                <div class="attachment-preview" id="attachmentPreview" hidden>
+                  <img id="attachmentPreviewImg" alt="Preview foto" />
+                  <div class="attachment-preview-copy">
+                    <strong>Foto siap dikirim</strong>
+                    <span id="attachmentPreviewName">Belum ada file</span>
+                  </div>
+                  <button type="button" class="attachment-remove" id="removeAttachment">Hapus</button>
+                </div>
+              </div>
+
+              <button type="submit" class="send-button" id="sendButton" aria-label="Kirim pesan">
+                <span>Kirim</span>
+                <span>Enter</span>
+              </button>
+            </div>
+          </form>
+        </section>
+      </section>
+    </div>
   </main>
 
   <script>

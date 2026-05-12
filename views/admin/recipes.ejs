@@ -1,0 +1,211 @@
+<% const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0)); %>
+<% const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="user-dashboard admin-dashboard">
+    <div class="user-dashboard-shell admin-shell">
+      <%- include('../partials/sidebar', { mode: 'admin', activePage, user }) %>
+
+      <section class="user-dashboard-main admin-main">
+        <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
+          <div class="admin-topbar-copy">
+            <p class="user-panel-kicker">Recipe management</p>
+            <h1>CRUD resep terpisah</h1>
+          </div>
+
+          <div class="user-topbar-actions">
+            <div class="user-profile-pill">
+              <strong><%= user.username %></strong>
+              <span><%= user.role %></span>
+            </div>
+          </div>
+        </header>
+
+        <% if (notice || error) { %>
+          <div class="admin-banner <%= error ? 'is-error' : 'is-success' %>">
+            <i class="fa-solid <%= error ? 'fa-triangle-exclamation' : 'fa-circle-check' %>" aria-hidden="true"></i>
+            <span><%= error || notice %></span>
+          </div>
+        <% } %>
+
+        <section class="admin-hero-panel">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">Resep</p>
+              <h1><%= selectedRecipe ? 'Edit resep yang dipilih' : 'Tambah resep baru' %></h1>
+            </div>
+            <div class="admin-hero-actions">
+              <a class="auth-button auth-button-secondary" href="/admin/dashboard">Kembali ke dashboard</a>
+            </div>
+          </div>
+          <p class="admin-hero-copy">
+            Halaman ini memusatkan seluruh operasi resep: tambah, edit, dan hapus. Data langsung
+            disimpan ke tabel <code>recipes</code> di database yang sama dengan halaman user.
+          </p>
+        </section>
+
+        <div class="admin-content-grid">
+          <section class="admin-column">
+            <article class="user-panel admin-panel" id="recipe-form">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Form resep</p>
+                  <h2><%= selectedRecipe ? 'Edit resep' : 'Tambah resep' %></h2>
+                </div>
+                <% if (selectedRecipe) { %>
+                  <a class="user-panel-link" href="/admin/recipes">Batal edit</a>
+                <% } %>
+              </div>
+
+              <form
+                class="admin-form"
+                action="<%= selectedRecipe ? `/admin/recipes/${selectedRecipe.id}` : '/admin/recipes' %>"
+                method="post"
+              >
+                <div class="admin-form-grid">
+                  <label class="admin-field">
+                    <span>Judul</span>
+                    <input name="title" value="<%= selectedRecipeForm.title %>" placeholder="Nama resep" required />
+                  </label>
+                  <label class="admin-field">
+                    <span>Kategori</span>
+                    <input name="category" value="<%= selectedRecipeForm.category %>" placeholder="Main course" />
+                  </label>
+                  <label class="admin-field">
+                    <span>Cuisine</span>
+                    <input name="cuisine" value="<%= selectedRecipeForm.cuisine %>" placeholder="Indonesian" />
+                  </label>
+                  <label class="admin-field">
+                    <span>Difficulty</span>
+                    <input name="difficulty" value="<%= selectedRecipeForm.difficulty %>" placeholder="easy / medium / hard" />
+                  </label>
+                  <label class="admin-field">
+                    <span>Cooking time</span>
+                    <input type="number" min="0" name="cooking_time" value="<%= selectedRecipeForm.cooking_time %>" />
+                  </label>
+                  <label class="admin-field">
+                    <span>Servings</span>
+                    <input type="number" min="1" name="servings" value="<%= selectedRecipeForm.servings %>" />
+                  </label>
+                  <label class="admin-field">
+                    <span>Estimated price</span>
+                    <input type="number" min="0" name="estimated_price" value="<%= selectedRecipeForm.estimated_price %>" />
+                  </label>
+                  <label class="admin-field">
+                    <span>Price rating</span>
+                    <input name="price_rating" value="<%= selectedRecipeForm.price_rating %>" placeholder="cheap / medium / premium" />
+                  </label>
+                  <label class="admin-field admin-field-wide">
+                    <span>Image URL</span>
+                    <input name="image_url" value="<%= selectedRecipeForm.image_url %>" placeholder="https://..." />
+                  </label>
+                  <label class="admin-field admin-field-wide">
+                    <span>Video URL</span>
+                    <input name="video_url" value="<%= selectedRecipeForm.video_url %>" placeholder="https://..." />
+                    <small class="admin-field-help">Opsional. Bisa pakai link TikTok publik, YouTube, atau video file langsung. Kalau kosong, feed user bisa ambil dari Media Library.</small>
+                  </label>
+                  <label class="admin-field admin-field-wide">
+                    <span>Description</span>
+                    <textarea name="description" rows="3" placeholder="Deskripsi singkat resep"><%= selectedRecipeForm.description %></textarea>
+                  </label>
+                  <label class="admin-field admin-field-wide">
+                    <span>Ingredients</span>
+                    <textarea name="ingredients" rows="5" placeholder="Bisa JSON array atau satu item per baris"><%= selectedRecipeForm.ingredients %></textarea>
+                  </label>
+                  <label class="admin-field admin-field-wide">
+                    <span>Steps</span>
+                    <textarea name="steps" rows="5" placeholder="Bisa JSON array atau satu item per baris"><%= selectedRecipeForm.steps %></textarea>
+                  </label>
+                  <label class="admin-field admin-field-wide">
+                    <span>Tags</span>
+                    <textarea name="tags" rows="3" placeholder="Bisa JSON array atau satu tag per baris"><%= selectedRecipeForm.tags %></textarea>
+                  </label>
+                  <label class="admin-toggle">
+                    <input type="checkbox" name="is_approved" <%= selectedRecipeForm.is_approved ? 'checked' : '' %> />
+                    <span>Approve resep</span>
+                  </label>
+                </div>
+
+                <div class="admin-form-actions">
+                  <button type="submit" class="auth-button">
+                    <%= selectedRecipe ? 'Simpan perubahan' : 'Tambah resep' %>
+                  </button>
+                </div>
+              </form>
+            </article>
+          </section>
+
+          <aside class="admin-column">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Recipe list</p>
+                  <h2>Data resep terbaru</h2>
+                </div>
+                <span class="user-panel-meta"><%= recipes.length %> item</span>
+              </div>
+
+              <div class="admin-list">
+                <% recipes.forEach((recipe) => { %>
+                  <article class="admin-list-card">
+                    <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                    <div class="admin-list-copy">
+                      <div class="admin-list-topline">
+                        <h3><%= recipe.title %></h3>
+                        <span class="admin-status <%= recipe.is_approved ? 'is-approved' : 'is-pending' %>">
+                          <%= recipe.is_approved ? 'Approved' : 'Pending' %>
+                        </span>
+                      </div>
+                      <p><%= recipe.description || 'Tidak ada deskripsi.' %></p>
+                      <div class="admin-meta-row">
+                        <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
+                        <span><i class="fa-solid fa-tag"></i> <%= recipe.category || 'Uncategorized' %></span>
+                        <span><i class="fa-solid fa-user"></i> <%= recipe.creator_name %></span>
+                      </div>
+                      <div class="admin-meta-row">
+                        <span><i class="fa-solid fa-coins"></i> Rp <%= Number(recipe.estimated_price || 0).toLocaleString('id-ID') %></span>
+                        <span><i class="fa-regular fa-calendar"></i> <%= formatDate(recipe.created_at) %></span>
+                      </div>
+                      <div class="admin-list-actions">
+                        <a class="admin-link" href="/admin/recipes?recipeId=<%= recipe.id %>">Edit</a>
+                        <form action="/admin/recipes/<%= recipe.id %>/delete" method="post">
+                          <button type="submit" class="admin-link is-danger">Delete</button>
+                        </form>
+                      </div>
+                    </div>
+                  </article>
+                <% }) %>
+
+                <% if (!recipes.length) { %>
+                  <div class="admin-empty-state">
+                    <h3>Belum ada resep.</h3>
+                    <p>Tambahkan resep pertama lewat form di sebelah kiri.</p>
+                  </div>
+                <% } %>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

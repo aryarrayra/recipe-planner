@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
+  <% const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
+
+  <main class="user-dashboard user-feed-page">
+    <div class="user-dashboard-shell">
+      <%- include('../partials/sidebar', { mode: 'user', activePage: 'recipes', user }) %>
+
+      <section class="user-dashboard-main">
+        <header class="user-dashboard-topbar">
+          <div class="user-feed-topline">
+            <p class="user-panel-kicker">Recipe feed</p>
+            <h1><%= feedPreset.title %></h1>
+          </div>
+
+          <div class="user-topbar-actions">
+            <div class="user-profile-pill">
+              <strong><%= user.username %></strong>
+              <span><%= user.role %></span>
+            </div>
+          </div>
+        </header>
+
+        <div class="user-feed-layout">
+          <section class="user-feed-column">
+            <article class="user-panel user-feed-hero">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">For you</p>
+                  <h2>Feed resep seperti TikTok atau Shorts</h2>
+                </div>
+              </div>
+
+              <p class="user-ai-copy">
+                <%= feedPreset.description %> Kalau resep belum punya `video_url`, feed akan ambil dari media library yang sudah diisi admin. Kalau kategori belum ada video yang cocok, feed pakai media aktif lain.
+              </p>
+
+              <div class="user-ai-actions">
+                <a class="auth-button" href="/dashboard">Kembali ke dashboard</a>
+                <a class="auth-button auth-button-secondary" href="/chat-ai">AI bantu resep</a>
+              </div>
+            </article>
+
+            <div class="user-feed-filters">
+              <% feedOptions.forEach((item) => { %>
+                <form class="user-feed-filter-form" action="/recipes" method="get">
+                  <input type="hidden" name="feed" value="<%= item.value %>" />
+                  <button
+                    type="submit"
+                    class="user-feed-filter <%= feed === item.value ? 'is-active' : '' %>"
+                  >
+                    <strong><%= item.label %></strong>
+                    <span><%= item.hint %></span>
+                  </button>
+                </form>
+              <% }) %>
+            </div>
+
+            <div class="user-feed-list">
+              <% recipes.forEach((recipe, index) => { %>
+                <article class="user-feed-card">
+                  <div class="user-feed-media">
+                    <% if (recipe.videoSource && recipe.videoSource.kind === 'youtube') { %>
+                      <iframe
+                        src="<%= recipe.videoSource.src %>?autoplay=1&mute=1&loop=1&playlist=<%= recipe.videoSource.src.split('/').pop() %>"
+                        title="<%= recipe.title %>"
+                        allow="autoplay; encrypted-media; picture-in-picture"
+                        allowfullscreen
+                        loading="lazy"
+                      ></iframe>
+                    <% } else if (recipe.videoSource && recipe.videoSource.kind === 'tiktok') { %>
+                      <blockquote
+                        class="tiktok-embed"
+                        cite="<%= recipe.videoSource.postUrl || recipe.videoSource.src %>"
+                        data-video-id="<%= recipe.videoSource.videoId %>"
+                        style="max-width: 605px; min-width: 325px;"
+                      >
+                        <section>
+                          <a target="_blank" rel="noreferrer" href="<%= recipe.videoSource.postUrl || recipe.videoSource.src %>">
+                            Lihat di TikTok
+                          </a>
+                        </section>
+                      </blockquote>
+                    <% } else if (recipe.videoSource && recipe.videoSource.src) { %>
+                      <video autoplay muted loop playsinline poster="<%= recipe.image_url || '/images/1.png' %>">
+                        <source src="<%= recipe.videoSource.src %>" />
+                      </video>
+                    <% } else { %>
+                      <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                    <% } %>
+
+                    <div class="user-feed-media-overlay">
+                      <span class="user-feed-rank">#<%= index + 1 %></span>
+                      <div class="user-feed-media-actions">
+                        <button type="button" class="user-feed-icon-btn"><i class="fa-regular fa-heart"></i></button>
+                        <button type="button" class="user-feed-icon-btn"><i class="fa-regular fa-bookmark"></i></button>
+                        <button type="button" class="user-feed-icon-btn"><i class="fa-solid fa-share-nodes"></i></button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="user-feed-copy">
+                    <div class="user-panel-head">
+                      <div>
+                        <p class="user-panel-kicker"><%= recipe.creator_name %></p>
+                        <h2><%= recipe.title %></h2>
+                      </div>
+                      <span class="user-panel-meta"><i class="fa-regular fa-calendar"></i> <%= formatDate(recipe.created_at) %></span>
+                    </div>
+
+                    <p class="user-feed-description"><%= recipe.description || 'Resep ini bisa kamu coba langsung dari feed.' %></p>
+
+                    <div class="user-recipe-tags">
+                      <% if (recipe.cooking_time) { %>
+                        <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time %> min</span>
+                      <% } %>
+                      <span><i class="fa-solid fa-star"></i> <%= recipe.likes_count || 0 %> likes</span>
+                      <span><i class="fa-solid fa-bookmark"></i> <%= recipe.saves_count || 0 %> saves</span>
+                      <% if (recipe.estimated_price) { %>
+                        <span><i class="fa-solid fa-coins"></i> Rp <%= formatPrice(recipe.estimated_price) %></span>
+                      <% } %>
+                    </div>
+
+                    <div class="user-feed-meta">
+                      <span><i class="fa-solid fa-eye"></i> <%= recipe.views_count || 0 %> views</span>
+                      <span><i class="fa-solid fa-tag"></i> <%= (recipe.tags && recipe.tags.length) ? 'Tagged recipe' : 'No tags' %></span>
+                    </div>
+                  </div>
+                </article>
+              <% }) %>
+
+              <% if (!recipes.length) { %>
+                <article class="user-feed-empty">
+                  <h3>Belum ada video resep yang siap ditampilkan.</h3>
+                  <p>Tambahkan media di halaman admin, atau isi `video_url` pada resep yang di-approve supaya feed tetap hidup.</p>
+                </article>
+              <% } %>
+            </div>
+
+            <% if (hasTikTokEmbed) { %>
+              <script async src="https://www.tiktok.com/embed.js"></script>
+            <% } %>
+          </section>
+
+          <aside class="user-feed-sidebar">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Trending</p>
+                  <h2>Format yang cocok untuk feed</h2>
+                </div>
+              </div>
+
+              <div class="user-stat-list">
+                <div class="user-stat-card">
+                  <i class="fa-solid fa-video" aria-hidden="true"></i>
+                  <strong>Video pendek</strong>
+                  <span>Durasi singkat biar mirip Shorts dan TikTok</span>
+                </div>
+                <div class="user-stat-card">
+                  <i class="fa-solid fa-signal" aria-hidden="true"></i>
+                  <strong>Random feed</strong>
+                  <span>Diambil acak dari resep approved database</span>
+                </div>
+                <div class="user-stat-card">
+                  <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+                  <strong>Action bar</strong>
+                  <span>Like, save, share, dan info resep di kanan bawah</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="user-panel user-ai-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Next step</p>
+                  <h2>Tambah video resep baru</h2>
+                </div>
+              </div>
+
+              <p class="user-ai-copy">
+                Kalau `video_url` kosong, feed tetap bisa menampilkan video dari media library admin berdasarkan kategori dan cuisine, lalu fallback ke media aktif lain kalau belum ada yang cocok.
+              </p>
+
+              <div class="user-ai-actions">
+                <span class="user-panel-meta">Admin bisa isi media library dari halaman khusus admin.</span>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
