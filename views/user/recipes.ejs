@@ -19,8 +19,12 @@
 <body>
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
   <% const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
+  <% const serializedRecipes = JSON.stringify(recipes || []).replace(/</g, '\\u003c'); %>
+  <% const activeRecipeId = activeRecipe ? String(activeRecipe.id) : ''; %>
+  <% const activeRecipeUrl = activeRecipe ? `/recipes?feed=${encodeURIComponent(feed || 'random')}&recipeId=${encodeURIComponent(activeRecipe.id)}` : '/recipes'; %>
+  <% const activeRecipeDetailUrl = activeRecipe ? `/recipe-detail?feed=${encodeURIComponent(feed || 'random')}&recipeId=${encodeURIComponent(activeRecipe.id)}` : '/recipe-detail'; %>
 
-  <main class="user-dashboard user-feed-page">
+  <main class="user-dashboard user-feed-page user-fyp-page">
     <div class="user-dashboard-shell">
       <%- include('../partials/sidebar', { mode: 'user', activePage: 'fyp', user }) %>
 
@@ -32,6 +36,9 @@
           </div>
 
           <div class="user-topbar-actions">
+            <a class="auth-button auth-button-secondary" href="/shopping-list">
+              Shopping List
+            </a>
             <div class="user-profile-pill">
               <strong><%= user.username %></strong>
               <span><%= user.role %></span>
@@ -39,163 +46,178 @@
           </div>
         </header>
 
-        <div class="user-feed-layout">
-          <section class="user-feed-column">
-            <article class="user-panel user-feed-hero">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">For you</p>
-                  <h2>Feed resep seperti TikTok atau Shorts</h2>
+        <div class="user-fyp-layout">
+          <section class="user-fyp-main">
+            <% if (activeRecipe) { %>
+              <article class="user-panel user-fyp-feature">
+                <div class="user-panel-head user-fyp-feature-head">
+                  <div>
+                    <p class="user-panel-kicker"><%= activeRecipe.originPlace || activeRecipe.cuisine %> • <%= activeRecipe.category %></p>
+                    <h1><%= activeRecipe.title %></h1>
+                  </div>
+                  <div class="user-fyp-author">
+                    <span>Uploaded by <strong><%= activeRecipe.creatorName %></strong></span>
+                  </div>
                 </div>
-              </div>
 
-              <p class="user-ai-copy">
-                <%= feedPreset.description %> Kalau resep belum punya `video_url`, feed akan menampilkan gambar resep saja. Kalau kategori belum ada video yang cocok, feed tetap aman tampil tanpa video.
-              </p>
+                <div class="user-recipe-detail-tags user-fyp-metrics" id="selectedRecipeStats">
+                  <span><i class="fa-regular fa-clock"></i> <strong id="selectedRecipeTime"><%= activeRecipe.cookingTime %></strong> min</span>
+                  <span><i class="fa-solid fa-star"></i> <strong id="selectedRecipeLikes"><%= activeRecipe.likesCount %></strong> likes</span>
+                  <span><i class="fa-solid fa-bookmark"></i> <strong id="selectedRecipeSaves"><%= activeRecipe.savesCount %></strong> saves</span>
+                  <span><i class="fa-solid fa-coins"></i> Rp <strong id="selectedRecipePrice"><%= formatPrice(activeRecipe.estimatedPrice) %></strong></span>
+                  <span><i class="fa-solid fa-fire"></i> <strong id="selectedRecipeCalories"><%= activeRecipe.calories %></strong> kkal</span>
+                  <span><i class="fa-solid fa-signal"></i> <strong id="selectedRecipeDifficulty"><%= activeRecipe.difficulty %></strong></span>
+                </div>
 
-              <div class="user-ai-actions">
-                <a class="auth-button" href="/dashboard">Kembali ke dashboard</a>
-                <a class="auth-button auth-button-secondary" href="/chat-ai">AI bantu resep</a>
-              </div>
-            </article>
+                <% if (activeRecipe.warning) { %>
+                  <div class="recipe-warning-badge recipe-warning-panel">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span><%= activeRecipe.warning %></span>
+                  </div>
+                <% } %>
 
-            <div class="user-feed-filters">
-              <% feedOptions.forEach((item) => { %>
-                <form class="user-feed-filter-form" action="/recipes" method="get">
-                  <input type="hidden" name="feed" value="<%= item.value %>" />
-                  <button
-                    type="submit"
-                    class="user-feed-filter <%= feed === item.value ? 'is-active' : '' %>"
-                  >
-                    <strong><%= item.label %></strong>
-                    <span><%= item.hint %></span>
-                  </button>
-                </form>
-              <% }) %>
-            </div>
-
-            <div class="user-feed-list">
-              <% recipes.forEach((recipe, index) => { %>
-                <article class="user-feed-card">
-                  <div class="user-feed-media">
-                    <% if (recipe.videoSource && recipe.videoSource.kind === 'youtube') { %>
+                <div class="user-recipe-detail-grid user-fyp-detail-grid">
+                  <div class="user-recipe-visual">
+                    <% if (activeRecipe.videoSource && activeRecipe.videoSource.kind === 'youtube') { %>
                       <iframe
-                        src="<%= recipe.videoSource.src %>?autoplay=1&mute=1&loop=1&playlist=<%= recipe.videoSource.src.split('/').pop() %>"
-                        title="<%= recipe.title %>"
+                        src="<%= activeRecipe.videoSource.src %>?autoplay=1&mute=1"
+                        title="<%= activeRecipe.title %>"
                         allow="autoplay; encrypted-media; picture-in-picture"
                         allowfullscreen
                         loading="lazy"
                       ></iframe>
-                    <% } else if (recipe.videoSource && recipe.videoSource.kind === 'tiktok') { %>
+                    <% } else if (activeRecipe.videoSource && activeRecipe.videoSource.kind === 'direct' && activeRecipe.videoSource.src) { %>
+                      <video controls poster="<%= activeRecipe.imageUrl %>">
+                        <source src="<%= activeRecipe.videoSource.src %>" />
+                      </video>
+                    <% } else if (activeRecipe.videoSource && activeRecipe.videoSource.kind === 'tiktok' && activeRecipe.videoSource.postUrl) { %>
                       <blockquote
                         class="tiktok-embed"
-                        cite="<%= recipe.videoSource.postUrl || recipe.videoSource.src %>"
-                        data-video-id="<%= recipe.videoSource.videoId %>"
-                        style="max-width: 605px; min-width: 325px;"
+                        cite="<%= activeRecipe.videoSource.postUrl %>"
+                        data-video-id="<%= activeRecipe.videoSource.videoId %>"
+                        style="max-width: 100%; min-width: 100%;"
                       >
                         <section>
-                          <a target="_blank" rel="noreferrer" href="<%= recipe.videoSource.postUrl || recipe.videoSource.src %>">
+                          <a target="_blank" rel="noreferrer" href="<%= activeRecipe.videoSource.postUrl %>">
                             Lihat di TikTok
                           </a>
                         </section>
                       </blockquote>
-                    <% } else if (recipe.videoSource && recipe.videoSource.src) { %>
-                      <video autoplay muted loop playsinline poster="<%= recipe.image_url || '/images/1.png' %>">
-                        <source src="<%= recipe.videoSource.src %>" />
-                      </video>
                     <% } else { %>
-                      <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                      <img src="<%= activeRecipe.imageUrl %>" alt="<%= activeRecipe.title %>" />
                     <% } %>
-
-                    <div class="user-feed-media-overlay">
-                      <span class="user-feed-rank">#<%= index + 1 %></span>
-                      <div class="user-feed-media-actions">
-                        <button type="button" class="user-feed-icon-btn"><i class="fa-regular fa-heart"></i></button>
-                        <button type="button" class="user-feed-icon-btn"><i class="fa-regular fa-bookmark"></i></button>
-                        <button type="button" class="user-feed-icon-btn"><i class="fa-solid fa-share-nodes"></i></button>
-                      </div>
-                    </div>
                   </div>
 
-                  <div class="user-feed-copy">
-                    <div class="user-panel-head">
-                      <div>
-                        <p class="user-panel-kicker"><%= recipe.creator_name %></p>
-                        <h2><%= recipe.title %></h2>
+                  <div class="user-recipe-sidecards">
+                    <article class="user-recipe-mini-panel">
+                      <h3>Ingredients</h3>
+                      <div class="user-recipe-ingredient-list">
+                        <% activeRecipe.ingredients.forEach((ingredient) => { %>
+                          <label class="user-recipe-ingredient-item">
+                            <input type="checkbox" />
+                            <span><%= ingredient.display || ingredient.name %></span>
+                          </label>
+                        <% }) %>
                       </div>
-                      <span class="user-panel-meta"><i class="fa-regular fa-calendar"></i> <%= formatDate(recipe.created_at) %></span>
-                    </div>
+                    </article>
 
-                    <p class="user-feed-description"><%= recipe.description || 'Resep ini bisa kamu coba langsung dari feed.' %></p>
+                    <article class="user-recipe-mini-panel">
+                      <h3>Keterangan video resep</h3>
+                      <p class="user-recipe-detail-description"><%= activeRecipe.description %></p>
+                    </article>
 
-                    <div class="user-recipe-tags">
-                      <% if (recipe.cooking_time) { %>
-                        <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time %> min</span>
-                      <% } %>
-                      <span><i class="fa-solid fa-star"></i> <%= recipe.likes_count || 0 %> likes</span>
-                      <span><i class="fa-solid fa-bookmark"></i> <%= recipe.saves_count || 0 %> saves</span>
-                      <% if (recipe.estimated_price) { %>
-                        <span><i class="fa-solid fa-coins"></i> Rp <%= formatPrice(recipe.estimated_price) %></span>
-                      <% } %>
-                    </div>
-
-                    <div class="user-feed-meta">
-                      <span><i class="fa-solid fa-eye"></i> <%= recipe.views_count || 0 %> views</span>
-                      <span><i class="fa-solid fa-tag"></i> <%= (recipe.tags && recipe.tags.length) ? 'Tagged recipe' : 'No tags' %></span>
-                    </div>
-
-                    <% if (recipe.warning) { %>
-                      <div class="recipe-warning-badge">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span><%= recipe.warning %></span>
+                    <article class="user-recipe-mini-panel">
+                      <h3>Recipe summary</h3>
+                      <div class="user-recipe-summary-list">
+                        <span><strong>Biaya</strong> Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
+                        <span><strong>Waktu</strong> <%= activeRecipe.cookingTime %> menit</span>
+                        <span><strong>Difficulty</strong> <%= activeRecipe.difficulty %></span>
+                        <span><strong>Servings</strong> <%= activeRecipe.servings %> porsi</span>
                       </div>
-                    <% } %>
-
-                    <div class="user-ai-actions">
-                      <a class="auth-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>&feed=<%= encodeURIComponent(feed) %>">Lihat resep</a>
-                    </div>
+                    </article>
                   </div>
-                </article>
-              <% }) %>
+                </div>
 
-              <% if (!recipes.length) { %>
-                <article class="user-feed-empty">
-                  <h3>Belum ada video resep yang siap ditampilkan.</h3>
-                  <p>Isi `video_url` pada resep yang di-approve supaya feed tetap hidup.</p>
-                </article>
-              <% } %>
-            </div>
-
-            <% if (hasTikTokEmbed) { %>
-              <script async src="https://www.tiktok.com/embed.js"></script>
+                <div class="user-recipe-action-row">
+                  <button
+                    type="button"
+                    class="user-recipe-action-btn"
+                    id="selectedRecipeFavorite"
+                    data-action="favorite"
+                    data-recipe-id="<%= activeRecipe.id %>"
+                  >
+                    <i class="fa-<%= activeRecipe.isFavorite ? 'solid' : 'regular' %> fa-heart"></i>
+                    <span><%= activeRecipe.isFavorite ? 'Hapus dari favorit' : 'Simpan ke favorit' %></span>
+                  </button>
+                  <a class="user-recipe-action-btn" href="<%= activeRecipeDetailUrl %>">
+                    <i class="fa-regular fa-eye"></i>
+                    <span>Buka detail resep</span>
+                  </a>
+                  <a class="user-recipe-action-btn" href="/shopping-list">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Shopping list</span>
+                  </a>
+                  <button type="button" class="user-recipe-action-btn is-primary" id="selectedRecipeShare" data-action="share">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span>Share</span>
+                  </button>
+                </div>
+              </article>
+            <% } else { %>
+              <article class="user-panel user-feed-empty">
+                <h3>Belum ada resep yang bisa ditampilkan.</h3>
+                <p>Coba ganti filter atau tambahkan resep approved dulu dari halaman admin.</p>
+              </article>
             <% } %>
           </section>
 
-          <aside class="user-feed-sidebar">
+          <aside class="user-fyp-sidebar">
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Trending</p>
-                  <h2>Format yang cocok untuk feed</h2>
+                  <p class="user-panel-kicker">Active events</p>
+                  <h2>Activity di resep ini</h2>
                 </div>
+                <span class="user-panel-link">View all</span>
               </div>
 
               <div class="user-stat-list">
                 <div class="user-stat-card">
-                  <i class="fa-solid fa-video" aria-hidden="true"></i>
-                  <strong>Video pendek</strong>
-                  <span>Durasi singkat biar mirip Shorts dan TikTok</span>
+                  <i class="fa-solid fa-users"></i>
+                  <strong><%= activityData.viewsCount %> pembaca</strong>
+                  <span>Resep ini sedang ramai dibuka user lain.</span>
                 </div>
                 <div class="user-stat-card">
-                  <i class="fa-solid fa-signal" aria-hidden="true"></i>
-                  <strong>Random feed</strong>
-                  <span>Diambil acak dari resep approved database</span>
+                  <i class="fa-solid fa-bookmark"></i>
+                  <strong><%= activityData.savesCount %> simpan</strong>
+                  <span>Bisa dijadikan menu andalan minggu ini.</span>
                 </div>
                 <div class="user-stat-card">
-                  <i class="fa-solid fa-bolt" aria-hidden="true"></i>
-                  <strong>Action bar</strong>
-                  <span>Like, save, share, dan info resep di kanan bawah</span>
+                  <i class="fa-solid fa-heart"></i>
+                  <strong><%= activityData.likesCount %> likes</strong>
+                  <span>Engagement resep yang lagi naik.</span>
                 </div>
+              </div>
+            </article>
+
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Reviews & ratings</p>
+                  <h2>Feedback user</h2>
+                </div>
+              </div>
+
+              <div class="user-recipe-review-list">
+                <% reviews.forEach((review) => { %>
+                  <article class="user-recipe-review-item">
+                    <div class="user-recipe-review-head">
+                      <strong><%= review.name %></strong>
+                      <span><%= '★'.repeat(review.rating) %></span>
+                    </div>
+                    <p><%= review.note %></p>
+                  </article>
+                <% }) %>
               </div>
             </article>
 
@@ -203,16 +225,16 @@
               <div class="user-panel-head">
                 <div>
                   <p class="user-panel-kicker">Next step</p>
-                  <h2>Tambah video resep baru</h2>
+                  <h2>Video resep vertikal</h2>
                 </div>
               </div>
 
               <p class="user-ai-copy">
-                Kalau `video_url` kosong, feed tetap bisa menampilkan gambar resep dan detail resep berdasarkan kategori dan cuisine.
+                Kamu bisa pilih resep lain dari menu kiri untuk mengganti tampilan detail di tengah.
               </p>
 
               <div class="user-ai-actions">
-                <span class="user-panel-meta">Admin cukup isi `video_url` langsung di halaman resep.</span>
+                <span class="user-panel-meta">Klik resep di kiri untuk pindah detail.</span>
               </div>
             </article>
           </aside>
@@ -220,5 +242,207 @@
       </section>
     </div>
   </main>
+
+  <% if (hasTikTokEmbed) { %>
+    <script async src="https://www.tiktok.com/embed.js"></script>
+  <% } %>
+
+  <script>
+    (() => {
+      const recipes = <%- serializedRecipes %>;
+      const recipeMap = new Map(recipes.map((recipe) => [String(recipe.id), recipe]));
+      const selectedRecipeSnapshot = <%- JSON.stringify(activeRecipe || null).replace(/</g, '\\u003c') %>;
+      const selectedRecipeId = String(<%- JSON.stringify(activeRecipe ? activeRecipe.id : '') %>);
+      const selectedRecipeLike = document.getElementById('selectedRecipeLikes');
+      const selectedRecipeSave = document.getElementById('selectedRecipeSaves');
+      const selectedRecipeTime = document.getElementById('selectedRecipeTime');
+      const selectedRecipePrice = document.getElementById('selectedRecipePrice');
+      const selectedRecipeCalories = document.getElementById('selectedRecipeCalories');
+      const selectedRecipeDifficulty = document.getElementById('selectedRecipeDifficulty');
+      const selectedRecipeFavorite = document.getElementById('selectedRecipeFavorite');
+      const selectedRecipeShare = document.getElementById('selectedRecipeShare');
+      const escapeSelector = (value) => {
+        if (window.CSS && typeof window.CSS.escape === 'function') {
+          return window.CSS.escape(String(value || ''));
+        }
+
+        return String(value || '').replace(/"/g, '\\"');
+      };
+
+      const updateRecipeCardState = (recipe) => {
+        const card = document.querySelector(`.user-fyp-menu-card[data-recipe-id="${escapeSelector(recipe.id)}"]`);
+        if (!card) {
+          return;
+        }
+
+        card.classList.toggle('is-favorite', Boolean(recipe.isFavorite));
+
+        const heartButton = card.querySelector('.js-favorite-btn');
+        if (heartButton) {
+          heartButton.classList.toggle('is-active', Boolean(recipe.isFavorite));
+          heartButton.setAttribute('aria-pressed', recipe.isFavorite ? 'true' : 'false');
+          heartButton.setAttribute('aria-label', recipe.isFavorite ? 'Hapus dari favorit' : 'Simpan ke favorit');
+          const icon = heartButton.querySelector('i');
+          if (icon) {
+            icon.className = recipe.isFavorite ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+          }
+        }
+
+        const title = card.querySelector('.user-panel-head h2');
+        if (title && recipe.title) {
+          title.textContent = recipe.title;
+        }
+
+        const stats = card.querySelector('.user-fyp-menu-meta');
+        if (stats) {
+          const spans = stats.querySelectorAll('span');
+          if (spans[0]) spans[0].innerHTML = `<i class="fa-solid fa-star"></i> ${recipe.likesCount || 0}`;
+          if (spans[1]) spans[1].innerHTML = `<i class="fa-solid fa-bookmark"></i> ${recipe.savesCount || 0}`;
+          if (spans[2]) spans[2].innerHTML = `<i class="fa-solid fa-list-check"></i> ${(recipe.ingredients || []).length}`;
+        }
+      };
+
+      const updateSelectedRecipeState = (recipe) => {
+        if (!recipe || String(recipe.id) !== selectedRecipeId) {
+          return;
+        }
+
+        if (selectedRecipeLike) {
+          selectedRecipeLike.textContent = recipe.likesCount || 0;
+        }
+
+        if (selectedRecipeSave) {
+          selectedRecipeSave.textContent = recipe.savesCount || 0;
+        }
+
+        if (selectedRecipeTime) {
+          selectedRecipeTime.textContent = recipe.cookingTime || 0;
+        }
+
+        if (selectedRecipePrice) {
+          selectedRecipePrice.textContent = Number(recipe.estimatedPrice || 0).toLocaleString('id-ID');
+        }
+
+        if (selectedRecipeCalories) {
+          selectedRecipeCalories.textContent = recipe.calories || 0;
+        }
+
+        if (selectedRecipeDifficulty) {
+          selectedRecipeDifficulty.textContent = recipe.difficulty || 'easy';
+        }
+
+        if (selectedRecipeFavorite) {
+          selectedRecipeFavorite.dataset.recipeId = String(recipe.id);
+          selectedRecipeFavorite.innerHTML = recipe.isFavorite
+            ? '<i class="fa-solid fa-heart"></i><span>Hapus dari favorit</span>'
+            : '<i class="fa-regular fa-heart"></i><span>Simpan ke favorit</span>';
+        }
+      };
+
+      const toggleFavorite = async (recipeId) => {
+        const recipe = recipeMap.get(String(recipeId));
+        if (!recipe) {
+          return;
+        }
+
+        const response = await fetch(`/api/recipes/${encodeURIComponent(recipeId)}/favorite`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Gagal mengubah favorit.');
+        }
+
+        recipe.isFavorite = Boolean(result.favorited);
+        recipe.savesCount = Number(result.savesCount || 0);
+        updateRecipeCardState(recipe);
+        updateSelectedRecipeState(recipe);
+      };
+
+      document.querySelectorAll('.user-fyp-menu-card[data-recipe-id]').forEach((card) => {
+        const recipeId = card.getAttribute('data-recipe-id');
+
+        card.addEventListener('click', (event) => {
+          const actionButton = event.target.closest('[data-action]');
+          if (actionButton && actionButton.dataset.action === 'favorite') {
+            return;
+          }
+
+          if (actionButton && actionButton.dataset.action === 'share') {
+            navigator.clipboard?.writeText?.(`${window.location.origin}/recipes?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=${encodeURIComponent(recipeId || '')}`);
+            return;
+          }
+
+          if (actionButton && actionButton.dataset.action === 'detail') {
+            window.location.href = `/recipe-detail?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=${encodeURIComponent(recipeId || '')}`;
+            return;
+          }
+
+          window.location.href = `/recipes?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=${encodeURIComponent(recipeId || '')}`;
+        });
+
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            window.location.href = `/recipes?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=${encodeURIComponent(recipeId || '')}`;
+          }
+        });
+      });
+
+      document.querySelectorAll('.js-favorite-btn').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          const recipeId = button.dataset.recipeId;
+          if (!recipeId) {
+            return;
+          }
+
+          try {
+            button.disabled = true;
+            await toggleFavorite(recipeId);
+          } catch (error) {
+            console.error(error);
+            alert(error.message || 'Gagal mengubah favorit.');
+          } finally {
+            button.disabled = false;
+          }
+        });
+      });
+
+      if (selectedRecipeFavorite) {
+        selectedRecipeFavorite.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          const recipeId = selectedRecipeFavorite.dataset.recipeId;
+          if (!recipeId) {
+            return;
+          }
+
+          try {
+            selectedRecipeFavorite.disabled = true;
+            await toggleFavorite(recipeId);
+          } catch (error) {
+            console.error(error);
+            alert(error.message || 'Gagal mengubah favorit.');
+          } finally {
+            selectedRecipeFavorite.disabled = false;
+          }
+        });
+      }
+
+      if (selectedRecipeShare) {
+        selectedRecipeShare.addEventListener('click', () => {
+          navigator.clipboard?.writeText?.(`${window.location.origin}${window.location.pathname}?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=<%= encodeURIComponent(activeRecipe ? activeRecipe.id : '') %>`);
+        });
+      }
+
+      if (selectedRecipeSnapshot && selectedRecipeSnapshot.id && !recipeMap.has(String(selectedRecipeSnapshot.id))) {
+        recipeMap.set(String(selectedRecipeSnapshot.id), selectedRecipeSnapshot);
+      }
+    })();
+  </script>
 </body>
 </html>

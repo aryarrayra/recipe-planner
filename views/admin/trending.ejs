@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <% const categories = Array.isArray(categories) ? categories : []; %>
+  <% const recookRecipes = Array.isArray(recookRecipes) ? recookRecipes : []; %>
+
+  <main class="user-dashboard admin-dashboard">
+    <div class="user-dashboard-shell admin-shell">
+      <%- include('../partials/sidebar', { mode: 'admin', activePage, user }) %>
+
+      <section class="user-dashboard-main admin-main">
+        <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
+          <div class="admin-topbar-copy">
+            <p class="user-panel-kicker">Trending kategori</p>
+            <h1>Kategori trending dan daily recook</h1>
+          </div>
+
+          <div class="user-topbar-actions">
+            <div class="user-profile-pill">
+              <strong><%= user.username %></strong>
+              <span><%= user.role %></span>
+            </div>
+          </div>
+        </header>
+
+        <section class="admin-hero-panel">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">Ringkasan</p>
+              <h1>Pantau kategori yang paling sering dipakai dan pilih kandidat recook harian.</h1>
+            </div>
+          </div>
+
+          <p class="admin-hero-copy">
+            Fokus halaman ini adalah kategori trending. Resep tidak lagi jadi menu utama admin,
+            jadi pemantauan dibuat lebih ringan dan terarah.
+          </p>
+
+          <div class="admin-stat-grid">
+            <article class="admin-stat-card">
+              <span>Total kategori</span>
+              <strong><%= categories.length %></strong>
+              <small>Top kategori yang aktif</small>
+            </article>
+            <article class="admin-stat-card">
+              <span>Daily recook</span>
+              <strong><%= categories[0] ? categories[0].category : '-' %></strong>
+              <small><%= categories[0] ? `${categories[0].recipe_count} item` : 'Belum ada data' %></small>
+            </article>
+            <article class="admin-stat-card">
+              <span>Kandidat recook</span>
+              <strong><%= recookRecipes.length %></strong>
+              <small>Rekomendasi yang bisa dipilih nanti</small>
+            </article>
+            <article class="admin-stat-card">
+              <span>Fokus</span>
+              <strong>Kategori</strong>
+              <small>Daily recook dan trending</small>
+            </article>
+          </div>
+        </section>
+
+        <div class="admin-content-grid">
+          <section class="admin-column">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Kategori populer</p>
+                  <h2>Daftar kategori trending</h2>
+                </div>
+                <span class="user-panel-meta"><%= categories.length %> item</span>
+              </div>
+
+              <div class="admin-list">
+                <% if (categories.length) { %>
+                  <% categories.forEach((item, index) => { %>
+                    <article class="admin-list-card admin-media-card">
+                      <div class="admin-media-preview">
+                        <i class="fa-solid fa-layer-group"></i>
+                      </div>
+                      <div class="admin-list-copy">
+                        <div class="admin-list-topline">
+                          <h3><%= item.category %></h3>
+                          <span class="admin-status is-approved">#<%= index + 1 %></span>
+                        </div>
+                        <p><%= item.recipe_count %> item masuk kategori ini.</p>
+                        <div class="admin-meta-row">
+                          <span><i class="fa-solid fa-heart"></i> <%= item.likes_count %> likes</span>
+                          <span><i class="fa-solid fa-eye"></i> <%= item.views_count %> views</span>
+                        </div>
+                      </div>
+                    </article>
+                  <% }) %>
+                <% } else { %>
+                  <div class="admin-empty-state">
+                    <h3>Belum ada kategori trending.</h3>
+                    <p>Kategori akan muncul setelah resep terisi.</p>
+                  </div>
+                <% } %>
+              </div>
+            </article>
+          </section>
+
+          <aside class="admin-column">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Daily recook</p>
+                  <h2>Kandidat menu untuk hari ini</h2>
+                </div>
+              </div>
+
+              <div class="admin-list">
+                <% if (recookRecipes.length) { %>
+                  <% recookRecipes.forEach((recipe) => { %>
+                    <article class="admin-list-card">
+                      <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                      <div class="admin-list-copy">
+                        <div class="admin-list-topline">
+                          <h3><%= recipe.title %></h3>
+                          <span class="admin-status is-neutral"><%= recipe.category || 'Uncategorized' %></span>
+                        </div>
+                        <p><%= recipe.likes_count %> likes - <%= recipe.views_count %> views</p>
+                        <div class="admin-meta-row">
+                          <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
+                        </div>
+                      </div>
+                    </article>
+                  <% }) %>
+                <% } else { %>
+                  <div class="admin-empty-state">
+                    <h3>Belum ada kandidat recook.</h3>
+                    <p>Data akan terisi setelah resep masuk ke sistem.</p>
+                  </div>
+                <% } %>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

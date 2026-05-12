@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <% const reports = Array.isArray(reports) ? reports : []; %>
+  <% const totals = totals || { open: 0, resolved: 0 }; %>
+
+  <main class="user-dashboard admin-dashboard">
+    <div class="user-dashboard-shell admin-shell">
+      <%- include('../partials/sidebar', { mode: 'admin', activePage, user }) %>
+
+      <section class="user-dashboard-main admin-main">
+        <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
+          <div class="admin-topbar-copy">
+            <p class="user-panel-kicker">Report user</p>
+            <h1>Daftar dan penanganan laporan</h1>
+          </div>
+
+          <div class="user-topbar-actions">
+            <div class="user-profile-pill">
+              <strong><%= user.username %></strong>
+              <span><%= user.role %></span>
+            </div>
+          </div>
+        </header>
+
+        <section class="admin-hero-panel">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">Ringkasan</p>
+              <h1>Halaman ini disiapkan untuk laporan user yang akan diproses admin.</h1>
+            </div>
+          </div>
+
+          <p class="admin-hero-copy">
+            Saat modul report user sudah aktif, laporan akan bisa ditinjau, dipilah, dan
+            diselesaikan dari sini. Untuk sekarang, alurnya masih disiapkan supaya tidak mengganggu
+            fokus utama admin.
+          </p>
+
+          <div class="admin-stat-grid">
+            <article class="admin-stat-card">
+              <span>Laporan terbuka</span>
+              <strong><%= totals.open || 0 %></strong>
+              <small>Menunggu tindak lanjut</small>
+            </article>
+            <article class="admin-stat-card">
+              <span>Laporan selesai</span>
+              <strong><%= totals.resolved || 0 %></strong>
+              <small>Sudah ditangani</small>
+            </article>
+            <article class="admin-stat-card">
+              <span>Status</span>
+              <strong>Scaffold</strong>
+              <small>Siap dipakai nanti</small>
+            </article>
+            <article class="admin-stat-card">
+              <span>Fokus</span>
+              <strong>User</strong>
+              <small>Bukan resep</small>
+            </article>
+          </div>
+        </section>
+
+        <div class="admin-content-grid">
+          <section class="admin-column">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Queue</p>
+                  <h2>Laporan masuk</h2>
+                </div>
+              </div>
+
+              <% if (reports.length) { %>
+                <div class="admin-list">
+                  <% reports.forEach((report) => { %>
+                    <article class="admin-user-card">
+                      <div class="admin-media-preview">
+                        <i class="fa-solid fa-flag"></i>
+                      </div>
+                      <div class="admin-user-copy">
+                        <div class="admin-list-topline">
+                          <h3><%= report.title || 'Laporan user' %></h3>
+                          <span class="admin-status is-pending"><%= report.status || 'open' %></span>
+                        </div>
+                        <p><%= report.details || 'Tidak ada detail laporan.' %></p>
+                      </div>
+                    </article>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="admin-empty-state">
+                  <h3>Belum ada laporan user.</h3>
+                  <p>Begitu modul report siap, laporan akan muncul di sini untuk diproses.</p>
+                </div>
+              <% } %>
+            </article>
+          </section>
+
+          <aside class="admin-column">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Panduan</p>
+                  <h2>Alur penanganan laporan</h2>
+                </div>
+              </div>
+
+              <div class="admin-empty-state">
+                <h3>Belum diaktifkan</h3>
+                <p>Ketika laporan user sudah tersedia, admin bisa menindaklanjuti dari panel ini tanpa harus pindah konteks.</p>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

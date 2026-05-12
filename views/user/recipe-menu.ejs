@@ -59,6 +59,13 @@
                   <strong>Semua</strong>
                   <span>All recipes</span>
                 </a>
+                <a
+                  class="user-feed-filter <%= ['indonesia', 'nusantara', 'indonesia/nusantara'].includes(String(selectedCategory || '').toLowerCase()) ? 'is-active' : '' %>"
+                  href="/recipe-menu?category=Indonesia%2FNusantara"
+                >
+                  <strong>Indonesia/Nusantara</strong>
+                  <span>Resep lokal</span>
+                </a>
                 <% categories.forEach((item) => { %>
                   <a
                     class="user-feed-filter <%= selectedCategory === item ? 'is-active' : '' %>"
@@ -76,7 +83,7 @@
                 <article class="user-panel user-recipe-menu-card">
                   <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
                   <div class="user-recipe-menu-copy">
-                    <p class="user-panel-kicker"><%= recipe.category %></p>
+                    <p class="user-panel-kicker"><%= recipe.originPlace || recipe.cuisine || recipe.category %></p>
                     <h2><%= recipe.title %></h2>
                     <p><%= recipe.description || 'Resep ini siap dibuka dan dimasak langkah demi langkah.' %></p>
 
@@ -112,6 +119,17 @@
                 </article>
               <% } %>
             </div>
+
+            <% if (hasMoreRecipes && nextPageUrl) { %>
+              <div class="user-recipe-load-more-wrap">
+                <a class="auth-button user-recipe-load-more" href="<%= nextPageUrl %>">
+                  Load More
+                </a>
+                <p class="user-recipe-load-more-note">
+                  Menampilkan <%= Math.min(currentPage * pageSize, recipes.length) %> resep. Klik untuk memuat resep berikutnya.
+                </p>
+              </div>
+            <% } %>
           </section>
 
           <aside class="user-recipe-detail-sidebar">

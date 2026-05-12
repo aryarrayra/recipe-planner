@@ -18,6 +18,8 @@
 </head>
 <body>
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
+  <% const serializedRecipes = JSON.stringify(recipes || []).replace(/</g, '\\u003c'); %>
+  <% const activeRecipeId = activeRecipe ? String(activeRecipe.id) : ''; %>
 
   <main class="user-dashboard user-feed-page user-recipe-detail-page">
     <div class="user-dashboard-shell">
@@ -44,54 +46,43 @@
         </header>
 
         <% if (activeRecipe) { %>
-          <div class="user-recipe-detail-layout">
-            <aside class="user-recipe-rail">
-              <article class="user-panel user-recipe-rail-panel">
-                <div class="user-panel-head">
-                  <div>
-                    <p class="user-panel-kicker">Recipe menu</p>
-                    <h2><%= feedPreset.title %></h2>
-                  </div>
-                </div>
-
-                <div class="user-feed-filters user-feed-filters-compact">
-                  <% feedOptions.forEach((item) => { %>
-                    <form class="user-feed-filter-form" action="/recipe-detail" method="get">
-                      <button
-                        type="submit"
-                        name="feed"
-                        value="<%= item.value %>"
-                        class="user-feed-filter <%= feed === item.value ? 'is-active' : '' %>"
-                      >
-                        <strong><%= item.label %></strong>
-                        <span><%= item.hint %></span>
-                      </button>
-                    </form>
-                  <% }) %>
-                </div>
-
-                <div class="user-recipe-rail-list">
-                  <% recipes.forEach((recipe) => { %>
-                    <a
-                      class="user-recipe-rail-item <%= String(recipe.id) === String(activeRecipe.id) ? 'is-active' : '' %>"
-                      href="/recipe-detail?feed=<%= encodeURIComponent(feed) %>&recipeId=<%= encodeURIComponent(recipe.id) %><%= search ? `&q=${encodeURIComponent(search)}` : '' %>"
-                    >
-                      <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
-                      <div class="user-recipe-rail-copy">
-                        <strong><%= recipe.title %></strong>
-                        <span><%= recipe.cookingTime %> menit • <%= recipe.difficulty %></span>
-                      </div>
-                    </a>
-                  <% }) %>
-                </div>
-              </article>
-            </aside>
-
+          <div class="user-recipe-detail-layout user-recipe-detail-layout-no-rail">
             <section class="user-recipe-detail-main">
               <article class="user-panel user-recipe-detail-panel">
+                <div class="user-recipe-visual user-recipe-hero-media">
+                  <% if (activeRecipe.videoSource && activeRecipe.videoSource.kind === 'youtube') { %>
+                    <iframe
+                      src="<%= activeRecipe.videoSource.src %>"
+                      title="<%= activeRecipe.title %>"
+                      allow="autoplay; encrypted-media; picture-in-picture"
+                      allowfullscreen
+                      loading="lazy"
+                    ></iframe>
+                  <% } else if (activeRecipe.videoSource && activeRecipe.videoSource.src && activeRecipe.videoSource.kind === 'direct') { %>
+                    <video controls poster="<%= activeRecipe.imageUrl %>">
+                      <source src="<%= activeRecipe.videoSource.src %>" />
+                    </video>
+                  <% } else if (activeRecipe.videoSource && activeRecipe.videoSource.kind === 'tiktok' && activeRecipe.videoSource.postUrl) { %>
+                    <blockquote
+                      class="tiktok-embed"
+                      cite="<%= activeRecipe.videoSource.postUrl %>"
+                      data-video-id="<%= activeRecipe.videoSource.videoId %>"
+                      style="max-width: 100%; min-width: 100%;"
+                    >
+                      <section>
+                        <a target="_blank" rel="noreferrer" href="<%= activeRecipe.videoSource.postUrl %>">
+                          Lihat di TikTok
+                        </a>
+                      </section>
+                    </blockquote>
+                  <% } else { %>
+                    <img src="<%= activeRecipe.imageUrl %>" alt="<%= activeRecipe.title %>" />
+                  <% } %>
+                </div>
+
                 <div class="user-panel-head user-recipe-detail-head">
-                  <div>
-                    <p class="user-panel-kicker"><%= activeRecipe.category %> • <%= activeRecipe.cuisine %></p>
+                  <div class="user-recipe-detail-head-main">
+                    <p class="user-panel-kicker"><%= activeRecipe.originPlace || activeRecipe.cuisine %> &bull; <%= activeRecipe.category %></p>
                     <h1><%= activeRecipe.title %></h1>
                   </div>
                   <div class="user-recipe-author">
@@ -116,24 +107,6 @@
                 <% } %>
 
                 <div class="user-recipe-detail-grid">
-                  <div class="user-recipe-visual">
-                    <% if (activeRecipe.videoSource && activeRecipe.videoSource.kind === 'youtube') { %>
-                      <iframe
-                        src="<%= activeRecipe.videoSource.src %>"
-                        title="<%= activeRecipe.title %>"
-                        allow="autoplay; encrypted-media; picture-in-picture"
-                        allowfullscreen
-                        loading="lazy"
-                      ></iframe>
-                    <% } else if (activeRecipe.videoSource && activeRecipe.videoSource.src && activeRecipe.videoSource.kind === 'direct') { %>
-                      <video controls poster="<%= activeRecipe.imageUrl %>">
-                        <source src="<%= activeRecipe.videoSource.src %>" />
-                      </video>
-                    <% } else { %>
-                      <img src="<%= activeRecipe.imageUrl %>" alt="<%= activeRecipe.title %>" />
-                    <% } %>
-                  </div>
-
                   <div class="user-recipe-sidecards">
                     <article class="user-recipe-mini-panel">
                       <h3>Ingredients</h3>
@@ -161,7 +134,7 @@
                       <h3>Food info</h3>
                       <div class="recipe-food-info-list">
                         <% activeRecipe.foodInfo.badges.forEach((badge) => { %>
-                          <span class="recipe-food-info-badge is-<%= badge.tone %>"><%= badge.tone === 'safe' ? '✅' : badge.tone === 'warn' ? '⚠' : '❌' %> <%= badge.text %></span>
+                          <span class="recipe-food-info-badge is-<%= badge.tone %>"><%- badge.tone === 'safe' ? '&#10003;' : badge.tone === 'warn' ? '&#9888;' : '&#10060;' %> <%= badge.text %></span>
                         <% }) %>
                       </div>
                     </article>
@@ -171,11 +144,28 @@
                 <p class="user-recipe-detail-description"><%= activeRecipe.description %></p>
 
                 <div class="user-recipe-action-row">
-                  <button type="button" class="user-recipe-action-btn"><i class="fa-regular fa-bookmark"></i> Save Recipe</button>
-                  <button type="button" class="user-recipe-action-btn"><i class="fa-regular fa-file-pdf"></i> Export PDF</button>
-                  <button type="button" class="user-recipe-action-btn"><i class="fa-regular fa-heart"></i> Favorite</button>
-                  <button type="button" class="user-recipe-action-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
-                  <button type="button" class="user-recipe-action-btn is-primary"><i class="fa-solid fa-fire-burner"></i> Cook Mode</button>
+                  <button
+                    type="button"
+                    class="user-recipe-action-btn"
+                    id="recipeDetailFavorite"
+                    data-action="favorite"
+                    data-recipe-id="<%= activeRecipe.id %>"
+                  >
+                    <i class="fa-<%= activeRecipe.isFavorite ? 'solid' : 'regular' %> fa-heart"></i>
+                    <span><%= activeRecipe.isFavorite ? 'Hapus dari favorit' : 'Simpan ke favorit' %></span>
+                  </button>
+                  <a class="user-recipe-action-btn" href="/shopping-list">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Shopping list</span>
+                  </a>
+                  <a class="user-recipe-action-btn" href="/recipes?feed=<%= encodeURIComponent(feed) %>&recipeId=<%= encodeURIComponent(activeRecipe.id) %>">
+                    <i class="fa-solid fa-compass"></i>
+                    <span>Buka FYP</span>
+                  </a>
+                  <button type="button" class="user-recipe-action-btn is-primary" id="recipeDetailShare" data-action="share">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span>Share</span>
+                  </button>
                 </div>
               </article>
 
@@ -248,7 +238,7 @@
                     <article class="user-recipe-review-item">
                       <div class="user-recipe-review-head">
                         <strong><%= review.name %></strong>
-                        <span><%= '★'.repeat(review.rating) %></span>
+                        <span><%- '&#9733;'.repeat(review.rating) %></span>
                       </div>
                       <p><%= review.note %></p>
                     </article>
@@ -271,8 +261,8 @@
                         <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
                         <div class="user-mini-recipe-copy">
                           <h3><%= recipe.title %></h3>
-                          <p><%= recipe.category %></p>
-                          <small><%= recipe.cookingTime %> menit • <%= recipe.difficulty %></small>
+                          <p><%= recipe.originPlace || recipe.cuisine || recipe.category %></p>
+                          <small><%= recipe.cookingTime %> menit &bull; <%= recipe.difficulty %></small>
                         </div>
                       </a>
                     <% }) %>
@@ -280,7 +270,7 @@
                 <% } else { %>
                   <div class="user-empty-state">
                     <i class="fa-regular fa-folder-open"></i>
-                    <p>Belum ada resep terkait untuk kategori ini.</p>
+                    <p>Belum ada resep terkait untuk asal masakan ini.</p>
                   </div>
                 <% } %>
               </article>
@@ -301,40 +291,182 @@
       const cards = Array.from(document.querySelectorAll('[data-step-card]'));
       const nextButton = document.getElementById('nextStepButton');
       const progressLabel = document.getElementById('stepProgressLabel');
-
-      if (!cards.length || !nextButton) {
-        return;
-      }
-
-      let visibleCount = Math.max(1, cards.filter((card) => card.classList.contains('is-visible')).length);
-
-      const syncState = () => {
-        cards.forEach((card, index) => {
-          card.classList.toggle('is-visible', index < visibleCount);
-        });
-
-        if (progressLabel) {
-          progressLabel.textContent = `${Math.min(visibleCount, cards.length)} / ${cards.length}`;
+      const recipes = <%- serializedRecipes %>;
+      const recipeMap = new Map(recipes.map((recipe) => [String(recipe.id), recipe]));
+      const selectedRecipeSnapshot = <%- JSON.stringify(activeRecipe || null).replace(/</g, '\\u003c') %>;
+      const selectedFavoriteButton = document.getElementById('recipeDetailFavorite');
+      const selectedShareButton = document.getElementById('recipeDetailShare');
+      const selectedRecipeId = String(<%- JSON.stringify(activeRecipe ? activeRecipe.id : '') %>);
+      const escapeSelector = (value) => {
+        if (window.CSS && typeof window.CSS.escape === 'function') {
+          return window.CSS.escape(String(value || ''));
         }
 
-        nextButton.textContent = visibleCount >= cards.length
-          ? (nextButton.dataset.finishedLabel || 'Done')
-          : 'Lanjut';
+        return String(value || '').replace(/"/g, '\\"');
       };
 
-      nextButton.addEventListener('click', () => {
-        if (visibleCount < cards.length) {
-          visibleCount += 1;
-          syncState();
-          return;
+      if (!cards.length || !nextButton) {
+        // Still keep the page interactive for favorites/sharing below.
+      } else {
+        let visibleCount = Math.max(1, cards.filter((card) => card.classList.contains('is-visible')).length);
+
+        const syncState = () => {
+          cards.forEach((card, index) => {
+            card.classList.toggle('is-visible', index < visibleCount);
+          });
+
+          if (progressLabel) {
+            progressLabel.textContent = `${Math.min(visibleCount, cards.length)} / ${cards.length}`;
+          }
+
+          nextButton.textContent = visibleCount >= cards.length
+            ? (nextButton.dataset.finishedLabel || 'Done')
+            : 'Lanjut';
+        };
+
+        nextButton.addEventListener('click', () => {
+          if (visibleCount < cards.length) {
+            visibleCount += 1;
+            syncState();
+            return;
+          }
+
+          if (nextButton.dataset.finishUrl) {
+            window.location.href = nextButton.dataset.finishUrl;
+          }
+        });
+
+        syncState();
+      }
+
+      const updateFavoriteState = (recipe) => {
+        const card = document.querySelector(`.user-fyp-menu-card[data-recipe-id="${escapeSelector(recipe.id)}"]`);
+        const button = selectedFavoriteButton && String(selectedFavoriteButton.dataset.recipeId) === String(recipe.id)
+          ? selectedFavoriteButton
+          : null;
+
+        if (card) {
+          card.classList.toggle('is-favorite', Boolean(recipe.isFavorite));
+          const heartButton = card.querySelector('.js-favorite-btn');
+          if (heartButton) {
+            heartButton.classList.toggle('is-active', Boolean(recipe.isFavorite));
+            heartButton.setAttribute('aria-pressed', recipe.isFavorite ? 'true' : 'false');
+            heartButton.setAttribute('aria-label', recipe.isFavorite ? 'Hapus dari favorit' : 'Simpan ke favorit');
+            const icon = heartButton.querySelector('i');
+            if (icon) {
+              icon.className = recipe.isFavorite ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+            }
+          }
         }
 
-        if (nextButton.dataset.finishUrl) {
-          window.location.href = nextButton.dataset.finishUrl;
+        if (button) {
+          button.innerHTML = recipe.isFavorite
+            ? '<i class="fa-solid fa-heart"></i><span>Hapus dari favorit</span>'
+            : '<i class="fa-regular fa-heart"></i><span>Simpan ke favorit</span>';
         }
+      };
+
+      const toggleFavorite = async (recipeId) => {
+        const response = await fetch(`/api/recipes/${encodeURIComponent(recipeId)}/favorite`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Gagal mengubah favorit.');
+        }
+
+        const recipe = recipeMap.get(String(recipeId));
+        if (recipe) {
+          recipe.isFavorite = Boolean(result.favorited);
+          recipe.savesCount = Number(result.savesCount || 0);
+          updateFavoriteState(recipe);
+        }
+      };
+
+      document.querySelectorAll('.user-fyp-menu-card[data-recipe-id]').forEach((card) => {
+        const recipeId = card.getAttribute('data-recipe-id');
+
+        card.addEventListener('click', (event) => {
+          const actionButton = event.target.closest('[data-action]');
+          if (actionButton && actionButton.dataset.action === 'favorite') {
+            return;
+          }
+
+          if (actionButton && actionButton.dataset.action === 'share') {
+            navigator.clipboard?.writeText?.(`${window.location.origin}/recipes?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=${encodeURIComponent(recipeId || '')}`);
+            return;
+          }
+
+          if (actionButton && actionButton.dataset.action === 'detail') {
+            window.location.href = `/recipe-detail?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=${encodeURIComponent(recipeId || '')}`;
+            return;
+          }
+
+          window.location.href = `/recipes?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=${encodeURIComponent(recipeId || '')}`;
+        });
+
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            window.location.href = `/recipes?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=${encodeURIComponent(recipeId || '')}`;
+          }
+        });
       });
 
-      syncState();
+      document.querySelectorAll('.js-favorite-btn').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          const recipeId = button.dataset.recipeId;
+          if (!recipeId) {
+            return;
+          }
+
+          try {
+            button.disabled = true;
+            await toggleFavorite(recipeId);
+          } catch (error) {
+            console.error(error);
+            alert(error.message || 'Gagal mengubah favorit.');
+          } finally {
+            button.disabled = false;
+          }
+        });
+      });
+
+      if (selectedFavoriteButton) {
+        selectedFavoriteButton.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          const recipeId = selectedFavoriteButton.dataset.recipeId;
+          if (!recipeId) {
+            return;
+          }
+
+          try {
+            selectedFavoriteButton.disabled = true;
+            await toggleFavorite(recipeId);
+          } catch (error) {
+            console.error(error);
+            alert(error.message || 'Gagal mengubah favorit.');
+          } finally {
+            selectedFavoriteButton.disabled = false;
+          }
+        });
+      }
+
+      if (selectedShareButton) {
+        selectedShareButton.addEventListener('click', () => {
+          navigator.clipboard?.writeText?.(`${window.location.origin}/recipes?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=<%= encodeURIComponent(activeRecipe ? activeRecipe.id : '') %>`);
+        });
+      }
+
+      if (selectedRecipeSnapshot && selectedRecipeSnapshot.id && !recipeMap.has(String(selectedRecipeSnapshot.id))) {
+        recipeMap.set(String(selectedRecipeSnapshot.id), selectedRecipeSnapshot);
+      }
     })();
   </script>
 </body>
