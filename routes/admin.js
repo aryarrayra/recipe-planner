@@ -155,7 +155,7 @@ function buildFeedClause(feed, alias = 'r') {
 }
 
 async function fetchDashboardData() {
-    const [userMetrics, recipeMetrics, recipeRows, userRows, analyticsRows, dailyRows, weeklyRows, monthlyRows, engagementRecipeRows] = await Promise.all([
+    const [userMetrics, recipeMetrics, categoryRows, recipeRows, userRows, analyticsRows, dailyRows, weeklyRows, monthlyRows, engagementRecipeRows] = await Promise.all([
         pool.query(`
             SELECT
                 COUNT(*)::int AS users_count,
@@ -171,6 +171,17 @@ async function fetchDashboardData() {
                 COALESCE(SUM(likes_count), 0)::int AS total_likes,
                 COALESCE((SELECT COUNT(*) FROM user_favorites), 0)::int AS total_wishlist
             FROM recipes
+        `),
+        pool.query(`
+            SELECT
+                COALESCE(category, 'Uncategorized') AS category,
+                COUNT(*)::int AS recipe_count,
+                COALESCE(SUM(likes_count), 0)::int AS likes_count,
+                COALESCE(SUM(views_count), 0)::int AS views_count
+            FROM recipes
+            GROUP BY COALESCE(category, 'Uncategorized')
+            ORDER BY recipe_count DESC, likes_count DESC, views_count DESC, category ASC
+            LIMIT 6
         `),
         pool.query(`
             SELECT
@@ -424,6 +435,12 @@ async function fetchDashboardData() {
             likes: Number((recipeMetrics.rows[0] && recipeMetrics.rows[0].total_likes) || 0),
             wishlist: Number((recipeMetrics.rows[0] && recipeMetrics.rows[0].total_wishlist) || 0)
         },
+        topCategories: (categoryRows.rows || []).map((row) => ({
+            category: row.category,
+            recipe_count: Number(row.recipe_count || 0),
+            likes_count: Number(row.likes_count || 0),
+            views_count: Number(row.views_count || 0)
+        })),
         defaultRange: 'daily'
     };
 
@@ -553,6 +570,55 @@ async function fetchUsersPageData(userId = '') {
     };
 }
 
+async function fetchTrendingPageData() {
+    const [categoryRows, recookRows] = await Promise.all([
+        pool.query(`
+            SELECT
+                COALESCE(category, 'Uncategorized') AS category,
+                COUNT(*)::int AS recipe_count,
+                COALESCE(SUM(likes_count), 0)::int AS likes_count,
+                COALESCE(SUM(views_count), 0)::int AS views_count
+            FROM recipes
+            GROUP BY COALESCE(category, 'Uncategorized')
+            ORDER BY recipe_count DESC, likes_count DESC, views_count DESC, category ASC
+            LIMIT 12
+        `),
+        pool.query(`
+            SELECT
+                id,
+                title,
+                image_url,
+                category,
+                COALESCE(cooking_time, 0)::int AS cooking_time,
+                COALESCE(likes_count, 0)::int AS likes_count,
+                COALESCE(views_count, 0)::int AS views_count
+            FROM recipes
+            ORDER BY likes_count DESC, views_count DESC, created_at DESC
+            LIMIT 6
+        `)
+    ]);
+
+    return {
+        categories: (categoryRows.rows || []).map((row) => ({
+            category: row.category,
+            recipe_count: Number(row.recipe_count || 0),
+            likes_count: Number(row.likes_count || 0),
+            views_count: Number(row.views_count || 0)
+        })),
+        recookRecipes: recookRows.rows || []
+    };
+}
+
+async function fetchReportsPageData() {
+    return {
+        reports: [],
+        totals: {
+            open: 0,
+            resolved: 0
+        }
+    };
+}
+
 function renderDashboard(res, req, data, extras = {}) {
     res.render('admin/dashboard', {
         title: 'Admin Dashboard - AI Recipe Planner',
@@ -585,6 +651,26 @@ function renderUsersPage(res, req, data, extras = {}) {
     });
 }
 
+function renderTrendingPage(res, req, data, extras = {}) {
+    res.render('admin/trending', {
+        title: 'Trending & Daily Recook - AI Recipe Planner',
+        user: req.session.user,
+        activePage: 'trending',
+        ...data,
+        ...extras
+    });
+}
+
+function renderReportsPage(res, req, data, extras = {}) {
+    res.render('admin/reports', {
+        title: 'Report User - AI Recipe Planner',
+        user: req.session.user,
+        activePage: 'reports',
+        ...data,
+        ...extras
+    });
+}
+
 router.get('/', (req, res) => {
     res.redirect('/admin/dashboard');
 });
@@ -600,16 +686,7 @@ router.get('/dashboard', async (req, res) => {
 });
 
 router.get('/recipes', async (req, res) => {
-    try {
-        const data = await fetchRecipesPageData(normalizeText(req.query.recipeId));
-        renderRecipesPage(res, req, data, {
-            notice: normalizeText(req.query.notice),
-            error: normalizeText(req.query.error)
-        });
-    } catch (error) {
-        console.error('Admin recipes error:', error.message);
-        res.status(500).send('Gagal memuat halaman resep admin.');
-    }
+    return res.redirect('/admin/dashboard?notice=Fokus+resep+ditunda+sementara');
 });
 
 router.get('/users', async (req, res) => {
@@ -625,146 +702,46 @@ router.get('/users', async (req, res) => {
     }
 });
 
+router.get('/trending', async (req, res) => {
+    try {
+        const data = await fetchTrendingPageData();
+        renderTrendingPage(res, req, data, {
+            notice: normalizeText(req.query.notice),
+            error: normalizeText(req.query.error)
+        });
+    } catch (error) {
+        console.error('Admin trending error:', error.message);
+        res.status(500).send('Gagal memuat halaman trending admin.');
+    }
+});
+
+router.get('/reports', async (req, res) => {
+    try {
+        const data = await fetchReportsPageData();
+        renderReportsPage(res, req, data, {
+            notice: normalizeText(req.query.notice),
+            error: normalizeText(req.query.error)
+        });
+    } catch (error) {
+        console.error('Admin reports error:', error.message);
+        res.status(500).send('Gagal memuat halaman report admin.');
+    }
+});
+
 router.get('/media', async (req, res) => {
-    return res.redirect('/admin/recipes');
+    return res.redirect('/admin/dashboard');
 });
 
 router.post('/recipes', async (req, res) => {
-    try {
-        const payload = formatRecipePayload(req.body);
-
-        if (!payload.title) {
-            return res.redirect('/admin/recipes?error=Judul+resep+wajib+diisi');
-        }
-
-        if (!payload.ingredients.length || !payload.steps.length) {
-            return res.redirect('/admin/recipes?error=Ingredients+dan+steps+tidak+boleh+kosong');
-        }
-
-        await pool.query(
-            `
-            INSERT INTO recipes (
-                title,
-                description,
-                image_url,
-                video_url,
-                cooking_time,
-                servings,
-                difficulty,
-                ingredients,
-                steps,
-                category,
-                cuisine,
-                tags,
-                estimated_price,
-                price_rating,
-                created_by,
-                source,
-                is_approved
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12::jsonb, $13, $14, $15, $16, $17)
-            `,
-            [
-                payload.title,
-                payload.description,
-                payload.image_url,
-                payload.video_url,
-                payload.cooking_time,
-                payload.servings,
-                payload.difficulty,
-                JSON.stringify(payload.ingredients),
-                JSON.stringify(payload.steps),
-                payload.category,
-                payload.cuisine,
-                JSON.stringify(payload.tags),
-                payload.estimated_price,
-                payload.price_rating,
-                req.session.user.id,
-                'admin',
-                payload.is_approved
-            ]
-        );
-
-        return res.redirect('/admin/recipes?notice=Resep+berhasil+ditambahkan');
-    } catch (error) {
-        console.error('Create recipe error:', error.message);
-        return res.redirect('/admin/recipes?error=Gagal+menambah+resep');
-    }
+    return res.redirect('/admin/dashboard?notice=Resep+ditunda+sementara');
 });
 
 router.post('/recipes/:id', async (req, res) => {
-    const recipeId = normalizeText(req.params.id);
-
-    try {
-        const payload = formatRecipePayload(req.body);
-
-        if (!payload.title) {
-            return res.redirect(`/admin/recipes?recipeId=${encodeURIComponent(recipeId)}&error=Judul+resep+wajib+diisi`);
-        }
-
-        if (!payload.ingredients.length || !payload.steps.length) {
-            return res.redirect(`/admin/recipes?recipeId=${encodeURIComponent(recipeId)}&error=Ingredients+dan+steps+tidak+boleh+kosong`);
-        }
-
-        await pool.query(
-            `
-            UPDATE recipes
-            SET
-                title = $1,
-                description = $2,
-                image_url = $3,
-                video_url = $4,
-                cooking_time = $5,
-                servings = $6,
-                difficulty = $7,
-                ingredients = $8::jsonb,
-                steps = $9::jsonb,
-                category = $10,
-                cuisine = $11,
-                tags = $12::jsonb,
-                estimated_price = $13,
-                price_rating = $14,
-                is_approved = $15,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = $16
-            `,
-            [
-                payload.title,
-                payload.description,
-                payload.image_url,
-                payload.video_url,
-                payload.cooking_time,
-                payload.servings,
-                payload.difficulty,
-                JSON.stringify(payload.ingredients),
-                JSON.stringify(payload.steps),
-                payload.category,
-                payload.cuisine,
-                JSON.stringify(payload.tags),
-                payload.estimated_price,
-                payload.price_rating,
-                payload.is_approved,
-                recipeId
-            ]
-        );
-
-        return res.redirect('/admin/recipes?notice=Resep+berhasil+diupdate');
-    } catch (error) {
-        console.error('Update recipe error:', error.message);
-        return res.redirect(`/admin/recipes?recipeId=${encodeURIComponent(recipeId)}&error=Gagal+update+resep`);
-    }
+    return res.redirect('/admin/dashboard?notice=Resep+ditunda+sementara');
 });
 
 router.post('/recipes/:id/delete', async (req, res) => {
-    const recipeId = normalizeText(req.params.id);
-
-    try {
-        await pool.query('DELETE FROM recipes WHERE id = $1', [recipeId]);
-        return res.redirect('/admin/recipes?notice=Resep+berhasil+dihapus');
-    } catch (error) {
-        console.error('Delete recipe error:', error.message);
-        return res.redirect('/admin/recipes?error=Gagal+hapus+resep');
-    }
+    return res.redirect('/admin/dashboard?notice=Resep+ditunda+sementara');
 });
 
 router.post('/users', async (req, res) => {

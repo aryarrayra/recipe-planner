@@ -21,6 +21,7 @@
   <% const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
   <% const defaultAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}`; %>
   <% const analyticsData = analytics || { today: { recipe_count: 0, active_users_count: 0, likes_count: 0, wishlist_count: 0 }, week: { recipe_count: 0, active_users_count: 0, likes_count: 0, wishlist_count: 0 }, month: { recipe_count: 0, active_users_count: 0, likes_count: 0, wishlist_count: 0 }, ranges: { daily: { labels: [], recipes: [], activeUsers: [], wishlist: [], likes: [] }, weekly: { labels: [], recipes: [], activeUsers: [], wishlist: [], likes: [] }, monthly: { labels: [], recipes: [], activeUsers: [], wishlist: [], likes: [] } }, engagementRecipes: [], summary: { likes: 0, wishlist: 0 }, defaultRange: 'daily' }; %>
+  <% const topCategoriesData = typeof topCategories !== 'undefined' && Array.isArray(topCategories) ? topCategories : []; %>
 
   <main class="user-dashboard admin-dashboard">
     <div class="user-dashboard-shell admin-shell">
@@ -45,17 +46,18 @@
           <div class="user-panel-head">
             <div>
               <p class="user-panel-kicker">Overview</p>
-              <h1>Kelola data aplikasi dari satu dashboard.</h1>
+              <h1>Kelola user, trending, recook harian, dan report dari satu dashboard.</h1>
             </div>
-          <div class="admin-hero-actions">
-            <a class="auth-button" href="/admin/recipes">Kelola resep</a>
-            <a class="auth-button auth-button-secondary" href="/admin/users">Kelola user</a>
-          </div>
+            <div class="admin-hero-actions">
+              <a class="auth-button auth-button-secondary" href="/admin/users">Kelola user</a>
+              <a class="auth-button" href="/admin/trending">Trending kategori</a>
+              <a class="auth-button auth-button-secondary" href="/admin/reports">Report user</a>
+            </div>
           </div>
 
           <p class="admin-hero-copy">
-            Dashboard ini menampilkan ringkasan metrik inti dan update terbaru. Operasi CRUD resep
-            dan user dipindahkan ke halaman masing-masing lewat sidebar supaya alurnya lebih jelas.
+            Dashboard ini menampilkan ringkasan user, kategori trending, daily recook, dan laporan user.
+            Pengelolaan resep ditunda sementara supaya fokus admin lebih rapi.
           </p>
 
           <div class="admin-stat-grid">
@@ -65,19 +67,19 @@
               <small><%= metrics.admin_count || 0 %> admin</small>
             </article>
             <article class="admin-stat-card">
-              <span>Total resep</span>
-              <strong><%= metrics.recipes_count || 0 %></strong>
-              <small><%= metrics.approved_recipes_count || 0 %> approved</small>
+              <span>Kategori trending</span>
+              <strong><%= topCategoriesData.length %></strong>
+              <small>Top kategori dari konten yang ada</small>
             </article>
             <article class="admin-stat-card">
-              <span>Pending review</span>
-              <strong><%= metrics.pending_recipes_count || 0 %></strong>
-              <small>Menunggu approval</small>
+              <span>Daily recook</span>
+              <strong><%= topCategoriesData[0] ? topCategoriesData[0].recipe_count : 0 %></strong>
+              <small><%= topCategoriesData[0] ? topCategoriesData[0].category : 'Belum ada data' %></small>
             </article>
             <article class="admin-stat-card">
-              <span>User aktif</span>
-              <strong><%= metrics.user_count || 0 %></strong>
-              <small>Role non-admin</small>
+              <span>Report user</span>
+              <strong>0</strong>
+              <small>Menunggu tabel report</small>
             </article>
           </div>
         </section>
@@ -85,75 +87,46 @@
         <section class="admin-analytics-panel user-panel">
           <div class="user-panel-head">
             <div>
-              <p class="user-panel-kicker">Statistik pertumbuhan</p>
-              <h2>Resep, user aktif, likes, dan wishlist</h2>
+              <p class="user-panel-kicker">Trending kategori</p>
+              <h2>Kategori populer dan recook harian</h2>
             </div>
-            <span class="user-panel-meta">Data sementara dari tabel yang sudah ada</span>
+            <span class="user-panel-meta">Fokus admin sekarang ada di kategori dan laporan user</span>
+          </div>
+
+          <div class="admin-category-list">
+            <% if (topCategoriesData.length) { %>
+              <% topCategoriesData.slice(0, 6).forEach((item, index) => { %>
+                <article class="admin-category-card">
+                  <div class="admin-category-rank">#<%= index + 1 %></div>
+                  <div class="admin-category-copy">
+                    <h3><%= item.category %></h3>
+                    <p><%= item.recipe_count %> item <span>&middot;</span> <%= item.likes_count %> likes <span>&middot;</span> <%= item.views_count %> views</p>
+                  </div>
+                </article>
+              <% }) %>
+            <% } else { %>
+              <div class="admin-empty-state">
+                <h3>Belum ada kategori trending.</h3>
+                <p>Data akan muncul setelah konten terisi.</p>
+              </div>
+            <% } %>
           </div>
 
           <div class="admin-analytics-periods">
             <article class="admin-analytics-card">
-              <span>Hari ini</span>
-              <strong><%= analyticsData.today.recipe_count || 0 %> resep</strong>
-              <small><%= analyticsData.today.active_users_count || 0 %> user aktif &middot; <%= analyticsData.today.likes_count || 0 %> likes &middot; <%= analyticsData.today.wishlist_count || 0 %> wishlist</small>
+              <span>Daily recook</span>
+              <strong><%= topCategoriesData[0] ? topCategoriesData[0].category : '-' %></strong>
+              <small><%= topCategoriesData[0] ? `${topCategoriesData[0].recipe_count} item` : 'Belum ada rekomendasi' %></small>
             </article>
             <article class="admin-analytics-card">
-              <span>7 hari</span>
-              <strong><%= analyticsData.week.recipe_count || 0 %> resep</strong>
-              <small><%= analyticsData.week.active_users_count || 0 %> user aktif &middot; <%= analyticsData.week.likes_count || 0 %> likes &middot; <%= analyticsData.week.wishlist_count || 0 %> wishlist</small>
+              <span>Report user</span>
+              <strong>0 report</strong>
+              <small>Siapkan alur laporan dulu sebelum dipakai.</small>
             </article>
             <article class="admin-analytics-card">
-              <span>30 hari</span>
-              <strong><%= analyticsData.month.recipe_count || 0 %> resep</strong>
-              <small><%= analyticsData.month.active_users_count || 0 %> user aktif &middot; <%= analyticsData.month.likes_count || 0 %> likes &middot; <%= analyticsData.month.wishlist_count || 0 %> wishlist</small>
-            </article>
-          </div>
-
-          <div class="admin-chart-grid">
-            <article class="admin-chart-card">
-              <div class="admin-chart-head">
-                <div>
-                  <p class="user-panel-kicker">Tren mingguan</p>
-                  <h3>Pertumbuhan resep dan aktivitas user</h3>
-                </div>
-                <label class="admin-chart-filter">
-                  <span>Periode</span>
-                  <select id="adminTrendRange">
-                    <option value="daily">Harian</option>
-                    <option value="weekly">Mingguan</option>
-                    <option value="monthly">Bulanan</option>
-                  </select>
-                </label>
-              </div>
-              <canvas id="adminTrendChart" height="140"></canvas>
-            </article>
-
-            <article class="admin-chart-card">
-              <div class="admin-chart-head">
-                <div>
-                  <p class="user-panel-kicker">Engagement per resep</p>
-                  <h3>Likes dan wishlist resep tertentu</h3>
-                </div>
-                <label class="admin-chart-filter">
-                  <span>Resep</span>
-                  <select id="adminRecipeSelect"></select>
-                </label>
-              </div>
-              <div class="admin-recipe-analytics" id="adminRecipeAnalytics">
-                <div>
-                  <span>Resep dipilih</span>
-                  <strong id="adminRecipeTitle">-</strong>
-                </div>
-                <div>
-                  <span>Likes</span>
-                  <strong id="adminRecipeLikes">0</strong>
-                </div>
-                <div>
-                  <span>Wishlist</span>
-                  <strong id="adminRecipeWishlist">0</strong>
-                </div>
-              </div>
-              <canvas id="adminEngagementChart" height="140"></canvas>
+              <span>Menu utama</span>
+              <strong>User</strong>
+              <small>Trending kategori, daily recook, dan report user.</small>
             </article>
           </div>
         </section>
@@ -163,38 +136,36 @@
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Recent recipes</p>
-                  <h2>Resep terbaru</h2>
+                  <p class="user-panel-kicker">Daily recook</p>
+                  <h2>Prioritas kategori hari ini</h2>
                 </div>
-                <a class="user-panel-link" href="/admin/recipes">Lihat semua</a>
+                <a class="user-panel-link" href="/admin/trending">Lihat detail</a>
               </div>
 
               <div class="admin-list">
-                <% recentRecipes.forEach((recipe) => { %>
-                  <article class="admin-list-card">
-                    <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
-                    <div class="admin-list-copy">
-                      <div class="admin-list-topline">
-                        <h3><%= recipe.title %></h3>
-                        <span class="admin-status <%= recipe.is_approved ? 'is-approved' : 'is-pending' %>">
-                          <%= recipe.is_approved ? 'Approved' : 'Pending' %>
-                        </span>
+                <% if (topCategoriesData.length) { %>
+                  <% topCategoriesData.slice(0, 4).forEach((item, index) => { %>
+                    <article class="admin-list-card admin-media-card">
+                      <div class="admin-media-preview">
+                        <i class="fa-solid fa-layer-group"></i>
                       </div>
-                      <p><%= recipe.description || 'Tidak ada deskripsi.' %></p>
-                      <div class="admin-meta-row">
-                        <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
-                        <span><i class="fa-solid fa-tag"></i> <%= recipe.category || 'Uncategorized' %></span>
-                        <span><i class="fa-solid fa-user"></i> <%= recipe.creator_name %></span>
+                      <div class="admin-list-copy">
+                        <div class="admin-list-topline">
+                          <h3><%= item.category %></h3>
+                          <span class="admin-status is-approved">#<%= index + 1 %></span>
+                        </div>
+                        <p><%= item.recipe_count %> item masuk kategori ini.</p>
+                        <div class="admin-meta-row">
+                          <span><i class="fa-solid fa-heart"></i> <%= item.likes_count %> likes</span>
+                          <span><i class="fa-solid fa-eye"></i> <%= item.views_count %> views</span>
+                        </div>
                       </div>
-                      <small><i class="fa-regular fa-calendar"></i> <%= formatDate(recipe.created_at) %></small>
-                    </div>
-                  </article>
-                <% }) %>
-
-                <% if (!recentRecipes.length) { %>
+                    </article>
+                  <% }) %>
+                <% } else { %>
                   <div class="admin-empty-state">
-                    <h3>Belum ada resep.</h3>
-                    <p>Tambahkan resep pertama dari halaman resep admin.</p>
+                    <h3>Belum ada kategori trending.</h3>
+                    <p>Konten akan muncul setelah data kategori mulai terisi.</p>
                   </div>
                 <% } %>
               </div>

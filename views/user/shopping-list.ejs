@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
+  <% const data = shoppingListData || { favoriteRecipes: [], ingredients: [], sections: { bahan: [], bumbu: [], alat: [], lainnya: [] }, estimatedBudget: 0, totalRecipes: 0, totalIngredients: 0, budgetTarget: null, budgetDelta: null }; %>
+  <% const budgetInput = data.budgetTarget !== null ? Number(data.budgetTarget).toLocaleString('id-ID') : ''; %>
+
+  <main class="user-dashboard user-shopping-page">
+    <div class="user-dashboard-shell">
+      <%- include('../partials/sidebar', { mode: 'user', activePage: 'shopping-list', user }) %>
+
+      <section class="user-dashboard-main">
+        <header class="user-dashboard-topbar">
+          <div class="user-feed-topline">
+            <p class="user-panel-kicker">Shopping list</p>
+            <h1>Rekap bahan dan budget</h1>
+          </div>
+
+          <div class="user-topbar-actions">
+            <div class="user-profile-pill">
+              <strong><%= user.username %></strong>
+              <span><%= user.role %></span>
+            </div>
+          </div>
+        </header>
+
+        <section class="user-panel user-panel-hero">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">Ringkasan</p>
+              <h2>Belanja dari resep favorit lebih rapi</h2>
+            </div>
+          </div>
+
+          <form class="shopping-budget-bar" action="/shopping-list" method="get">
+              <label class="shopping-budget-field">
+                <span>Budget belanja</span>
+                <input
+                  type="text"
+                  name="budget"
+                  inputmode="numeric"
+                  value="<%= budgetInput %>"
+                  placeholder="Contoh: 50000"
+                />
+              <small>Isi nominal budget untuk membandingkan estimasi belanja.</small>
+              </label>
+              <button type="submit" class="auth-button">Simpan budget</button>
+            </form>
+
+          <div class="user-dashboard-stats">
+            <article class="user-stat-card">
+              <i class="fa-solid fa-heart" aria-hidden="true"></i>
+              <strong><%= data.totalRecipes %> resep favorit</strong>
+              <span>Sumber bahan yang dipakai untuk rekap ini</span>
+            </article>
+            <article class="user-stat-card">
+              <i class="fa-solid fa-basket-shopping" aria-hidden="true"></i>
+              <strong><%= data.totalIngredients %> item unik</strong>
+              <span>Daftar bahan, bumbu, alat, dan item lain yang perlu dicek</span>
+            </article>
+            <article class="user-stat-card">
+              <i class="fa-solid fa-coins" aria-hidden="true"></i>
+              <strong>Rp <%= formatPrice(data.estimatedBudget) %></strong>
+              <span>Estimasi budget dari resep favorit yang disimpan</span>
+            </article>
+          </div>
+
+          <% if (data.budgetTarget !== null) { %>
+            <div class="shopping-budget-result <%= data.budgetDelta >= 0 ? 'is-safe' : 'is-over' %>">
+              <strong>
+                <% if (data.budgetDelta >= 0) { %>
+                  Sisa budget Rp <%= formatPrice(data.budgetDelta) %>
+                <% } else { %>
+                  Over budget Rp <%= formatPrice(Math.abs(data.budgetDelta)) %>
+                <% } %>
+              </strong>
+              <span>
+                Budget kamu: Rp <%= formatPrice(data.budgetTarget) %> &middot; Estimasi belanja: Rp <%= formatPrice(data.estimatedBudget) %>
+              </span>
+            </div>
+          <% } %>
+        </section>
+
+        <div class="user-feed-layout user-shopping-layout">
+          <section class="user-feed-column">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Shopping list</p>
+                  <h2>Daftar bahan gabungan</h2>
+                </div>
+              </div>
+
+              <% const shoppingSections = data.sections || { bahan: [], bumbu: [], alat: [], lainnya: [] }; %>
+
+              <% if (data.totalIngredients) { %>
+                <div class="shopping-sections">
+                  <% [
+                    { key: 'bahan', title: 'Bahan utama', icon: 'fa-seedling', empty: 'Belum ada bahan utama.' },
+                    { key: 'bumbu', title: 'Bumbu', icon: 'fa-pepper-hot', empty: 'Belum ada bumbu.' },
+                    { key: 'alat', title: 'Alat', icon: 'fa-kitchen-set', empty: 'Belum ada alat.' },
+                    { key: 'lainnya', title: 'Lainnya', icon: 'fa-circle-dot', empty: 'Belum ada item lain.' }
+                  ].forEach((group) => { %>
+                    <section class="shopping-section">
+                      <div class="user-panel-head shopping-section-head">
+                        <div>
+                          <p class="user-panel-kicker"><i class="fa-solid <%= group.icon %>"></i> <%= group.title %></p>
+                          <h3><%= (shoppingSections[group.key] || []).length %> item</h3>
+                        </div>
+                      </div>
+
+                      <% if ((shoppingSections[group.key] || []).length) { %>
+                        <div class="shopping-list-grid">
+                          <% (shoppingSections[group.key] || []).forEach((item) => { %>
+                            <label class="shopping-item shopping-item-<%= group.key %>">
+                              <input type="checkbox" />
+                              <span class="shopping-item-copy">
+                                <strong><%= item.amount ? `${item.amount}${item.unit ? ` ${item.unit}` : ''}` : '1 item' %></strong>
+                                <span><%= item.name %></span>
+                                <small><%= item.count %> resep</small>
+                              </span>
+                            </label>
+                          <% }) %>
+                        </div>
+                      <% } else { %>
+                        <div class="shopping-empty-inline"><%= group.empty %></div>
+                      <% } %>
+                    </section>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="user-empty-state">
+                  <i class="fa-regular fa-list-check"></i>
+                  <p>Belum ada resep favorit. Simpan resep dulu supaya shopping list terisi otomatis.</p>
+                </div>
+              <% } %>
+            </article>
+          </section>
+
+          <aside class="user-feed-sidebar">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Favorite recipes</p>
+                  <h2>Resep sumber belanja</h2>
+                </div>
+              </div>
+
+              <div class="user-card-grid user-shopping-card-grid">
+                <% data.favoriteRecipes.forEach((recipe) => { %>
+                  <article class="user-mini-recipe-card">
+                    <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                    <div class="user-mini-recipe-copy">
+                      <h3><%= recipe.title %></h3>
+                      <p><%= recipe.category %></p>
+                      <small>Rp <%= formatPrice(recipe.estimatedPrice) %> - <%= recipe.ingredients.length %> bahan</small>
+                    </div>
+                  </article>
+                <% }) %>
+
+                <% if (!data.favoriteRecipes.length) { %>
+                  <div class="user-empty-state">
+                    <i class="fa-regular fa-heart"></i>
+                    <p>Resep favorit akan muncul di sini setelah kamu menekan tombol love.</p>
+                  </div>
+                <% } %>
+              </div>
+            </article>
+
+            <article class="user-panel user-ai-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Catatan</p>
+                  <h2>Budget kasar, bukan harga pasti</h2>
+                </div>
+              </div>
+
+              <p class="user-ai-copy">
+                Total budget di atas masih estimasi dari resep yang disimpan. Cocok untuk bantu belanja anak kost atau meal prep mingguan.
+              </p>
+
+              <div class="user-ai-actions">
+                <a class="auth-button auth-button-secondary" href="/chat-ai">Tanya AI soal budget</a>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
