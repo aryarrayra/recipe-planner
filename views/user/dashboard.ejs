@@ -66,7 +66,7 @@
                   <span><i class="fa-solid fa-fire"></i> <%= dashboardData.dailyChallenge.calories %> kkal</span>
                   <span><i class="fa-solid fa-signal"></i> <%= dashboardData.dailyChallenge.difficulty %></span>
                 </div>
-                <a class="auth-button" href="/recipes">Lihat resep</a>
+                <a class="auth-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(dashboardData.dailyChallenge.id) %>">Lihat resep</a>
               </div>
             </article>
 
@@ -80,10 +80,10 @@
 
               <div class="user-category-row user-category-grid-modern">
                 <% dashboardData.categories.forEach((category) => { %>
-                  <div class="user-category-chip">
+                  <a class="user-category-chip" href="/recipes?feed=<%= encodeURIComponent(category.feedKey || 'random') %>">
                     <img src="<%= category.image %>" alt="<%= category.label %>" />
                     <span><%= category.label %></span>
-                  </div>
+                  </a>
                 <% }) %>
               </div>
             </article>
@@ -99,7 +99,7 @@
 
               <div class="user-recipe-list user-recipe-list-compact">
                 <% dashboardData.trendingRecipes.forEach((recipe) => { %>
-                  <article class="user-recipe-card user-recipe-card-modern">
+                  <a class="user-recipe-card user-recipe-card-modern user-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
                     <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
                     <div class="user-recipe-copy">
                       <h3><%= recipe.title %></h3>
@@ -112,7 +112,7 @@
                         <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
                       </div>
                     </div>
-                  </article>
+                  </a>
                 <% }) %>
               </div>
             </article>
@@ -127,14 +127,14 @@
 
               <div class="user-card-grid">
                 <% dashboardData.recommendedRecipes.forEach((recipe) => { %>
-                  <article class="user-mini-recipe-card">
+                  <a class="user-mini-recipe-card user-mini-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
                     <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
                     <div class="user-mini-recipe-copy">
                       <h3><%= recipe.title %></h3>
                       <p><%= recipe.category %></p>
                       <small><%= recipe.cookingTime %> menit - <%= recipe.difficulty %></small>
                     </div>
-                  </article>
+                  </a>
                 <% }) %>
               </div>
             </article>
@@ -151,14 +151,14 @@
                 <% if (dashboardData.favoriteRecipes.length) { %>
                   <div class="user-card-grid">
                     <% dashboardData.favoriteRecipes.forEach((recipe) => { %>
-                      <article class="user-mini-recipe-card">
+                      <a class="user-mini-recipe-card user-mini-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
                         <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
                         <div class="user-mini-recipe-copy">
                           <h3><%= recipe.title %></h3>
                           <p><%= recipe.category %></p>
                           <small><%= recipe.calories %> kkal - Rp<%= Number(recipe.estimatedPrice).toLocaleString('id-ID') %></small>
                         </div>
-                      </article>
+                      </a>
                     <% }) %>
                   </div>
                 <% } else { %>
@@ -180,14 +180,14 @@
                 <% if (dashboardData.recentlyViewed.length) { %>
                   <div class="user-card-grid">
                     <% dashboardData.recentlyViewed.forEach((recipe) => { %>
-                      <article class="user-mini-recipe-card">
+                      <a class="user-mini-recipe-card user-mini-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
                         <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
                         <div class="user-mini-recipe-copy">
                           <h3><%= recipe.title %></h3>
                           <p><%= recipe.category %></p>
                           <small><%= recipe.cookingTime %> menit - <%= recipe.difficulty %></small>
                         </div>
-                      </article>
+                      </a>
                     <% }) %>
                   </div>
                 <% } else { %>
@@ -293,6 +293,26 @@
                   <strong><%= user.role %></strong>
                   <span>Tipe akses saat ini</span>
                 </div>
+                <div class="user-stat-card">
+                  <i class="fa-solid fa-shield-heart" aria-hidden="true"></i>
+                  <strong><%= dashboardData.preferences && dashboardData.preferences.length ? dashboardData.preferences.map((item) => {
+                    const labels = {
+                      nuts: 'Kacang',
+                      seafood: 'Seafood',
+                      milk: 'Susu',
+                      egg: 'Telur',
+                      gluten: 'Gluten',
+                      spicy: 'Pedas',
+                      shrimp: 'Udang'
+                    };
+                    return labels[item] || item;
+                  }).join(', ') : 'Belum ada' %></strong>
+                  <span>Food preference aktif</span>
+                </div>
+              </div>
+
+              <div class="user-ai-actions">
+                <a class="auth-button auth-button-secondary" href="/profile">Atur preference</a>
               </div>
             </article>
           </aside>

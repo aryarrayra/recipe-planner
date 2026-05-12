@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
+
+  <main class="user-dashboard user-recipe-menu-page">
+    <div class="user-dashboard-shell">
+      <%- include('../partials/sidebar', { mode: 'user', activePage: 'recipes', user }) %>
+
+      <section class="user-dashboard-main">
+        <header class="user-dashboard-topbar user-recipe-topbar">
+          <form class="user-search user-recipe-search" action="/recipe-menu" method="get">
+            <i class="fa-solid fa-magnifying-glass user-search-icon" aria-hidden="true"></i>
+            <input type="text" name="q" placeholder="Cari resep, bahan, atau kategori" value="<%= search || '' %>" />
+            <button type="submit" class="user-search-submit">Search</button>
+          </form>
+
+          <div class="user-topbar-actions">
+            <div class="user-profile-pill">
+              <strong><%= user.username %></strong>
+              <span><%= user.role %></span>
+            </div>
+          </div>
+        </header>
+
+        <div class="user-recipe-menu-layout">
+          <section class="user-recipe-menu-main">
+            <article class="user-panel user-recipe-menu-hero">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Recipe collection</p>
+                  <h1>Pilih resep yang mau dimasak</h1>
+                </div>
+              </div>
+
+              <p class="user-ai-copy">
+                Halaman ini khusus katalog resep. Isinya card gambar dan ringkasan singkat, lalu tombol
+                `Cooked` untuk masuk ke detail resep dan mulai ikuti step memasaknya.
+              </p>
+
+              <div class="user-recipe-menu-categories">
+                <a class="user-feed-filter <%= !selectedCategory ? 'is-active' : '' %>" href="/recipe-menu">
+                  <strong>Semua</strong>
+                  <span>All recipes</span>
+                </a>
+                <% categories.forEach((item) => { %>
+                  <a
+                    class="user-feed-filter <%= selectedCategory === item ? 'is-active' : '' %>"
+                    href="/recipe-menu?category=<%= encodeURIComponent(item) %>"
+                  >
+                    <strong><%= item %></strong>
+                    <span>Category</span>
+                  </a>
+                <% }) %>
+              </div>
+            </article>
+
+            <div class="user-recipe-menu-grid">
+              <% recipes.forEach((recipe) => { %>
+                <article class="user-panel user-recipe-menu-card">
+                  <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                  <div class="user-recipe-menu-copy">
+                    <p class="user-panel-kicker"><%= recipe.category %></p>
+                    <h2><%= recipe.title %></h2>
+                    <p><%= recipe.description || 'Resep ini siap dibuka dan dimasak langkah demi langkah.' %></p>
+
+                    <div class="user-recipe-tags">
+                      <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime %> menit</span>
+                      <span><i class="fa-solid fa-wallet"></i> Rp <%= formatPrice(recipe.estimatedPrice) %></span>
+                      <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
+                    </div>
+
+                    <% if (recipe.warning) { %>
+                      <div class="recipe-warning-badge">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span><%= recipe.warning %></span>
+                      </div>
+                    <% } %>
+
+                    <div class="user-recipe-menu-meta">
+                      <span><i class="fa-regular fa-heart"></i> <%= recipe.likesCount %> likes</span>
+                      <span><i class="fa-regular fa-eye"></i> <%= recipe.viewsCount %> views</span>
+                    </div>
+
+                    <div class="user-ai-actions">
+                      <a class="auth-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">Cooked</a>
+                    </div>
+                  </div>
+                </article>
+              <% }) %>
+
+              <% if (!recipes.length) { %>
+                <article class="user-panel user-feed-empty">
+                  <h3>Belum ada resep yang cocok.</h3>
+                  <p>Coba cari keyword lain atau ganti kategori resep.</p>
+                </article>
+              <% } %>
+            </div>
+          </section>
+
+          <aside class="user-recipe-detail-sidebar">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">How it works</p>
+                  <h2>Alur halaman resep</h2>
+                </div>
+              </div>
+
+              <div class="user-stat-list">
+                <div class="user-stat-card">
+                  <i class="fa-solid fa-image"></i>
+                  <strong>Lihat card resep</strong>
+                  <span>Pilih dari gambar, nama, dan ringkasan singkat.</span>
+                </div>
+                <div class="user-stat-card">
+                  <i class="fa-solid fa-fire-burner"></i>
+                  <strong>Klik Cooked</strong>
+                  <span>Masuk ke detail resep dan ikuti step by step.</span>
+                </div>
+                <div class="user-stat-card">
+                  <i class="fa-solid fa-cloche"></i>
+                  <strong>Selesai masak</strong>
+                  <span>Setelah semua step selesai, pindah ke halaman siap dihidangkan.</span>
+                </div>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

@@ -23,8 +23,12 @@
           <span class="user-sidebar-icon"><i class="fa-solid fa-house"></i></span>
           <span>Dashboard</span>
         </a>
-        <a class="user-sidebar-link <%= activePage === 'recipes' ? 'is-active' : '' %>" href="/recipes">
-          <span class="user-sidebar-icon"><i class="fa-solid fa-book-open"></i></span>
+        <a class="user-sidebar-link <%= activePage === 'fyp' ? 'is-active' : '' %>" href="/recipes">
+          <span class="user-sidebar-icon"><i class="fa-solid fa-compass"></i></span>
+          <span>FYP</span>
+        </a>
+        <a class="user-sidebar-link <%= activePage === 'recipes' ? 'is-active' : '' %>" href="/recipe-menu">
+          <span class="user-sidebar-icon"><i class="fa-solid fa-bowl-food"></i></span>
           <span>Resep</span>
         </a>
         <a class="user-sidebar-link <%= activePage === 'chat' ? 'is-active' : '' %>" href="/chat-ai">

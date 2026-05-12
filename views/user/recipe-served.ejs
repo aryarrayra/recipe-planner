@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
+
+  <main class="user-dashboard user-feed-page user-recipe-served-page">
+    <div class="user-dashboard-shell">
+      <%- include('../partials/sidebar', { mode: 'user', activePage: 'recipes', user }) %>
+
+      <section class="user-dashboard-main">
+        <header class="user-dashboard-topbar user-recipe-topbar">
+          <div class="user-feed-topline">
+            <p class="user-panel-kicker">Cooking complete</p>
+            <h1>Masakan siap dihidangkan</h1>
+          </div>
+
+          <div class="user-topbar-actions">
+            <a class="user-icon-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>" aria-label="Kembali ke resep">
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            </a>
+            <div class="user-profile-pill">
+              <strong><%= user.username %></strong>
+              <span><%= user.role %></span>
+            </div>
+          </div>
+        </header>
+
+        <div class="user-recipe-served-layout">
+          <section class="user-recipe-served-main">
+            <article class="user-panel user-recipe-served-hero">
+              <div class="user-recipe-served-copy">
+                <span class="user-recipe-served-badge">
+                  <i class="fa-solid fa-cloche"></i>
+                  Ready to serve
+                </span>
+                <h2><%= recipe.title %></h2>
+                <p>
+                  Semua langkah selesai. Sekarang masakanmu siap dihidangkan. Tinggal plating,
+                  foto kalau perlu, lalu nikmati selagi hangat.
+                </p>
+
+                <div class="user-recipe-detail-tags">
+                  <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime %> menit</span>
+                  <span><i class="fa-solid fa-wallet"></i> Rp <%= formatPrice(recipe.estimatedPrice) %></span>
+                  <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
+                  <span><i class="fa-solid fa-fire"></i> <%= recipe.calories %> kkal</span>
+                </div>
+
+                <div class="user-ai-actions">
+                  <a class="auth-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">Masak lagi</a>
+                  <a class="auth-button auth-button-secondary" href="/chat-history">Simpan ke history</a>
+                </div>
+              </div>
+
+              <div class="user-recipe-served-visual">
+                <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+              </div>
+            </article>
+
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Serving checklist</p>
+                  <h2>Sebelum disajikan</h2>
+                </div>
+              </div>
+
+              <div class="user-recipe-ingredient-list">
+                <label class="user-recipe-ingredient-item">
+                  <input type="checkbox" />
+                  <span>Pastikan plating sudah rapi dan bersih.</span>
+                </label>
+                <label class="user-recipe-ingredient-item">
+                  <input type="checkbox" />
+                  <span>Cek rasa terakhir sebelum disajikan.</span>
+                </label>
+                <label class="user-recipe-ingredient-item">
+                  <input type="checkbox" />
+                  <span>Tambahkan garnish kalau perlu biar lebih menarik.</span>
+                </label>
+              </div>
+            </article>
+          </section>
+
+          <aside class="user-recipe-detail-sidebar">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Recipe summary</p>
+                  <h2>Ringkasan hasil masak</h2>
+                </div>
+              </div>
+
+              <div class="user-recipe-summary-list">
+                <span><strong>Nama resep</strong> <%= recipe.title %></span>
+                <span><strong>Porsi</strong> <%= recipe.servings %></span>
+                <span><strong>Kategori</strong> <%= recipe.category %></span>
+                <span><strong>Total step</strong> <%= recipe.steps.length %></span>
+              </div>
+            </article>
+
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Related recipes</p>
+                  <h2>Coba berikutnya</h2>
+                </div>
+              </div>
+
+              <div class="user-recipe-related-list">
+                <% relatedRecipes.forEach((item) => { %>
+                  <a class="user-mini-recipe-card user-mini-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(item.id) %>">
+                    <img src="<%= item.imageUrl %>" alt="<%= item.title %>" />
+                    <div class="user-mini-recipe-copy">
+                      <h3><%= item.title %></h3>
+                      <p><%= item.category %></p>
+                      <small><%= item.cookingTime %> menit • <%= item.difficulty %></small>
+                    </div>
+                  </a>
+                <% }) %>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
