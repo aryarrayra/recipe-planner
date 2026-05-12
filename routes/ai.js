@@ -1,5 +1,6 @@
 const express = require('express');
 const axios = require('axios');
+const multer = require('multer');
 const router = express.Router();
 const pool = require('../config/db');
 const { requireAuth, preventBack } = require('../middleware/auth');
@@ -7,6 +8,12 @@ const { requireAuth, preventBack } = require('../middleware/auth');
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024
+    }
+});
 
 router.use(requireAuth);
 router.use(preventBack);
@@ -85,6 +92,35 @@ function fallbackReply(message) {
             'Sebutkan waktu masak yang kamu punya'
         ],
         followUps: ['Buat menu mingguan', 'Cari resep dari bahan', 'Susun shopping list']
+    };
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function textToHtml(value) {
+    return escapeHtml(value).replace(/\n/g, '<br>');
+}
+
+function buildPhotoAttachment(file) {
+    if (!file) {
+        return null;
+    }
+
+    const mimeType = file.mimetype || 'image/jpeg';
+    const buffer = Buffer.isBuffer(file.buffer) ? file.buffer : Buffer.from(file.buffer || []);
+
+    return {
+        name: file.originalname || 'attachment',
+        mimeType,
+        size: file.size || buffer.length,
+        dataUrl: `data:${mimeType};base64,${buffer.toString('base64')}`
     };
 }
 
@@ -205,6 +241,8 @@ router.get('/chat-ai', async (req, res) => {
             role: item.role === 'assistant' ? 'ai' : 'user',
             label: item.role === 'assistant' ? 'AI' : 'You',
             text: item.content,
+            html: item.metadata?.html || textToHtml(item.content),
+            attachment: item.metadata?.attachment || null,
             tips: item.metadata?.tips || [],
             followUps: item.metadata?.followUps || []
         }));
@@ -214,7 +252,8 @@ router.get('/chat-ai', async (req, res) => {
 
     res.render('chat', {
         title: 'Chat AI - AI Recipe Planner',
-        messages
+        messages,
+        user: req.session.user || null
     });
 });
 
@@ -246,6 +285,8 @@ router.get('/chat-history', async (req, res) => {
             role: item.role === 'assistant' ? 'ai' : 'user',
             label: item.role === 'assistant' ? 'AI' : 'You',
             text: item.content,
+            html: item.metadata?.html || textToHtml(item.content),
+            attachment: item.metadata?.attachment || null,
             tips: item.metadata?.tips || [],
             followUps: item.metadata?.followUps || [],
             createdAt: item.created_at
@@ -254,7 +295,8 @@ router.get('/chat-history', async (req, res) => {
         res.render('chat-history', {
             title: 'Chat History - AI Recipe Planner',
             session,
-            messages
+            messages,
+            user: req.session.user || null
         });
     } catch (error) {
         console.error('Failed to load chat history page:', error.message);
@@ -282,34 +324,45 @@ router.delete('/api/chat/history', async (req, res) => {
     }
 });
 
-router.post('/api/chat', async (req, res) => {
-    const message = (req.body && req.body.message ? String(req.body.message) : '').trim();
+router.post('/api/chat', upload.single('photo'), async (req, res) => {
+    const messageText = (req.body && req.body.messageText ? String(req.body.messageText) : '').trim();
+    const messageHtml = (req.body && req.body.messageHtml ? String(req.body.messageHtml) : '').trim();
+    const photo = buildPhotoAttachment(req.file);
+    const sanitizedHtml = messageHtml || textToHtml(messageText);
 
-    if (!message) {
+    if (!messageText && !photo) {
         return res.status(400).json({
             success: false,
-            error: 'Message is required'
+            error: 'Message or photo is required'
         });
     }
 
     const sessionId = req.sessionID;
+    const messageContent = messageText || (photo ? `Foto terlampir: ${photo.name}` : '');
 
     try {
-        await upsertChatSession(sessionId, message.slice(0, 80));
-        await saveChatMessage(sessionId, 'user', message);
+        await upsertChatSession(sessionId, (messageText || photo?.name || 'Chat session').slice(0, 80));
+        await saveChatMessage(sessionId, 'user', messageContent, {
+            html: sanitizedHtml,
+            attachment: photo
+        });
 
         const history = await getChatHistory(sessionId, 20);
-        const aiResult = await callGemini(history, message);
+        const aiMessage = photo
+            ? `${messageText ? `${messageText}\n\n` : ''}[Pengguna melampirkan foto: ${photo.name}. Model ini tidak dapat melihat isi foto, jadi akui foto tersebut dan minta deskripsi bila perlu.]`
+            : messageText;
+        const aiResult = await callGemini(history, aiMessage);
 
         await saveChatMessage(sessionId, 'assistant', aiResult.reply, {
             title: aiResult.title,
             tips: aiResult.tips,
             followUps: aiResult.followUps,
+            html: textToHtml(aiResult.reply),
             model: GEMINI_MODEL,
             provider: 'gemini'
         });
 
-        await upsertChatSession(sessionId, aiResult.title?.slice(0, 80) || message.slice(0, 80));
+        await upsertChatSession(sessionId, aiResult.title?.slice(0, 80) || messageContent.slice(0, 80));
 
         res.json({
             success: true,
@@ -317,22 +370,24 @@ router.post('/api/chat', async (req, res) => {
                 aiTitle: aiResult.title,
                 reply: aiResult.reply,
                 tips: aiResult.tips,
-                followUps: aiResult.followUps
+                followUps: aiResult.followUps,
+                html: textToHtml(aiResult.reply)
             }
         });
     } catch (error) {
         console.error('Chat AI error:', error.response?.data || error.message);
 
-        const fallback = fallbackReply(message);
+        const fallback = fallbackReply(messageText || messageContent);
 
         await saveChatMessage(sessionId, 'assistant', fallback.reply, {
             title: fallback.title,
             tips: fallback.tips,
             followUps: fallback.followUps,
+            html: textToHtml(fallback.reply),
             provider: 'fallback'
         });
 
-        await upsertChatSession(sessionId, fallback.title?.slice(0, 80) || message.slice(0, 80));
+        await upsertChatSession(sessionId, fallback.title?.slice(0, 80) || messageContent.slice(0, 80));
 
         res.json({
             success: true,
@@ -341,6 +396,7 @@ router.post('/api/chat', async (req, res) => {
                 reply: fallback.reply,
                 tips: fallback.tips,
                 followUps: fallback.followUps,
+                html: textToHtml(fallback.reply),
                 fallback: true
             }
         });

@@ -1,0 +1,176 @@
+<% const defaultAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}`; %>
+<% const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="user-dashboard admin-dashboard">
+    <div class="user-dashboard-shell admin-shell">
+      <%- include('../partials/sidebar', { mode: 'admin', activePage, user }) %>
+
+      <section class="user-dashboard-main admin-main">
+        <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
+          <div class="admin-topbar-copy">
+            <p class="user-panel-kicker">User management</p>
+            <h1>CRUD user terpisah</h1>
+          </div>
+
+          <div class="user-topbar-actions">
+            <div class="user-profile-pill">
+              <strong><%= user.username %></strong>
+              <span><%= user.role %></span>
+            </div>
+          </div>
+        </header>
+
+        <% if (notice || error) { %>
+          <div class="admin-banner <%= error ? 'is-error' : 'is-success' %>">
+            <i class="fa-solid <%= error ? 'fa-triangle-exclamation' : 'fa-circle-check' %>" aria-hidden="true"></i>
+            <span><%= error || notice %></span>
+          </div>
+        <% } %>
+
+        <section class="admin-hero-panel">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">User</p>
+              <h1><%= selectedUser ? 'Edit user yang dipilih' : 'Tambah user baru' %></h1>
+            </div>
+            <div class="admin-hero-actions">
+              <a class="auth-button auth-button-secondary" href="/admin/dashboard">Kembali ke dashboard</a>
+            </div>
+          </div>
+          <p class="admin-hero-copy">
+            Halaman ini memusatkan pengelolaan user: tambah akun, ubah role dan profil, serta hapus
+            akun yang sudah tidak dipakai. Data tetap tersimpan di tabel <code>users</code>.
+          </p>
+        </section>
+
+        <div class="admin-content-grid">
+          <section class="admin-column">
+            <article class="user-panel admin-panel" id="user-form">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Form user</p>
+                  <h2><%= selectedUser ? 'Edit user' : 'Tambah user' %></h2>
+                </div>
+                <% if (selectedUser) { %>
+                  <a class="user-panel-link" href="/admin/users">Batal edit</a>
+                <% } %>
+              </div>
+
+              <form
+                class="admin-form"
+                action="<%= selectedUser ? `/admin/users/${selectedUser.id}` : '/admin/users' %>"
+                method="post"
+              >
+                <div class="admin-form-grid">
+                  <label class="admin-field">
+                    <span>Username</span>
+                    <input name="username" value="<%= selectedUserForm.username %>" placeholder="Username" required />
+                  </label>
+                  <label class="admin-field">
+                    <span>Email</span>
+                    <input type="email" name="email" value="<%= selectedUserForm.email %>" placeholder="email@domain.com" required />
+                  </label>
+                  <label class="admin-field">
+                    <span>Role</span>
+                    <select name="role">
+                      <option value="user" <%= selectedUserForm.role === 'user' ? 'selected' : '' %>>user</option>
+                      <option value="admin" <%= selectedUserForm.role === 'admin' ? 'selected' : '' %>>admin</option>
+                    </select>
+                  </label>
+                  <label class="admin-field admin-field-wide">
+                    <span>Password <%= selectedUser ? '(opsional)' : '' %></span>
+                    <input
+                      type="password"
+                      name="password"
+                      placeholder="<%= selectedUser ? 'Kosongkan jika tidak diubah' : 'Password baru' %>"
+                      <%= selectedUser ? '' : 'required' %>
+                    />
+                  </label>
+                  <label class="admin-field admin-field-wide">
+                    <span>Avatar URL</span>
+                    <input name="avatar_url" value="<%= selectedUserForm.avatar_url %>" placeholder="https://..." />
+                  </label>
+                  <label class="admin-field admin-field-wide">
+                    <span>Bio</span>
+                    <textarea name="bio" rows="4" placeholder="Bio singkat user"><%= selectedUserForm.bio %></textarea>
+                  </label>
+                </div>
+
+                <div class="admin-form-actions">
+                  <button type="submit" class="auth-button">
+                    <%= selectedUser ? 'Simpan perubahan' : 'Tambah user' %>
+                  </button>
+                </div>
+              </form>
+            </article>
+          </section>
+
+          <aside class="admin-column">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">User list</p>
+                  <h2>Data user terbaru</h2>
+                </div>
+                <span class="user-panel-meta"><%= users.length %> item</span>
+              </div>
+
+              <div class="admin-user-list">
+                <% users.forEach((item) => { %>
+                  <article class="admin-user-card">
+                    <img src="<%= item.avatar_url || defaultAvatar(item.username) %>" alt="<%= item.username %>" />
+                    <div class="admin-user-copy">
+                      <div class="admin-list-topline">
+                        <h3><%= item.username %></h3>
+                        <span class="admin-status <%= item.role === 'admin' ? 'is-approved' : 'is-neutral' %>"><%= item.role %></span>
+                      </div>
+                      <p><%= item.email %></p>
+                      <div class="admin-meta-row">
+                        <span><i class="fa-solid fa-book-bookmark"></i> <%= item.total_saved_recipes || 0 %> saved</span>
+                        <span><i class="fa-solid fa-fire-burner"></i> <%= item.total_recipes_cooked || 0 %> cooked</span>
+                      </div>
+                      <small><i class="fa-regular fa-calendar"></i> <%= formatDate(item.created_at) %></small>
+                      <div class="admin-list-actions">
+                        <a class="admin-link" href="/admin/users?userId=<%= item.id %>">Edit</a>
+                        <form action="/admin/users/<%= item.id %>/delete" method="post">
+                          <button type="submit" class="admin-link is-danger">Delete</button>
+                        </form>
+                      </div>
+                    </div>
+                  </article>
+                <% }) %>
+
+                <% if (!users.length) { %>
+                  <div class="admin-empty-state">
+                    <h3>Belum ada user.</h3>
+                    <p>Tambahkan user baru lewat form di sebelah kiri.</p>
+                  </div>
+                <% } %>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

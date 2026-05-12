@@ -56,7 +56,23 @@ CREATE TABLE IF NOT EXISTS recipes (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Tabel User Favorites
+-- 3. Tabel Recipe Media Sources
+CREATE TABLE IF NOT EXISTS recipe_media_sources (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(200) NOT NULL,
+    platform VARCHAR(20) NOT NULL DEFAULT 'youtube' CHECK (platform IN ('tiktok', 'youtube', 'internal')),
+    media_url TEXT,
+    category VARCHAR(50),
+    cuisine VARCHAR(50),
+    tags JSONB DEFAULT '[]',
+    recipe_id UUID REFERENCES recipes(id) ON DELETE SET NULL,
+    is_active BOOLEAN DEFAULT true,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. Tabel User Favorites
 CREATE TABLE IF NOT EXISTS user_favorites (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -67,7 +83,7 @@ CREATE TABLE IF NOT EXISTS user_favorites (
     UNIQUE(user_id, recipe_id, collection_name)
 );
 
--- 4. Tabel Cooking History
+-- 5. Tabel Cooking History
 CREATE TABLE IF NOT EXISTS cooking_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -79,7 +95,7 @@ CREATE TABLE IF NOT EXISTS cooking_history (
     notes TEXT
 );
 
--- 5. Tabel Shopping Lists
+-- 6. Tabel Shopping Lists
 CREATE TABLE IF NOT EXISTS shopping_lists (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -91,7 +107,7 @@ CREATE TABLE IF NOT EXISTS shopping_lists (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. Tabel Community Posts
+-- 7. Tabel Community Posts
 CREATE TABLE IF NOT EXISTS community_posts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -107,7 +123,7 @@ CREATE TABLE IF NOT EXISTS community_posts (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. Tabel Comments
+-- 8. Tabel Comments
 CREATE TABLE IF NOT EXISTS comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -118,7 +134,7 @@ CREATE TABLE IF NOT EXISTS comments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 8. Tabel AI Generated Recipes
+-- 9. Tabel AI Generated Recipes
 CREATE TABLE IF NOT EXISTS ai_generated_recipes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -129,7 +145,7 @@ CREATE TABLE IF NOT EXISTS ai_generated_recipes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 9. Tabel AI Chat Sessions
+-- 10. Tabel AI Chat Sessions
 CREATE TABLE IF NOT EXISTS ai_chat_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id VARCHAR(128) NOT NULL UNIQUE,
@@ -139,7 +155,7 @@ CREATE TABLE IF NOT EXISTS ai_chat_sessions (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 10. Tabel AI Chat Messages
+-- 11. Tabel AI Chat Messages
 CREATE TABLE IF NOT EXISTS ai_chat_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id VARCHAR(128) NOT NULL,
@@ -149,7 +165,7 @@ CREATE TABLE IF NOT EXISTS ai_chat_messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 11. Tabel User Ingredients Inventory
+-- 12. Tabel User Ingredients Inventory
 CREATE TABLE IF NOT EXISTS user_ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -160,7 +176,7 @@ CREATE TABLE IF NOT EXISTS user_ingredients (
     UNIQUE(user_id, ingredient_name)
 );
 
--- 12. Tabel Mood Recommendations
+-- 13. Tabel Mood Recommendations
 CREATE TABLE IF NOT EXISTS mood_recommendations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -178,6 +194,10 @@ CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_recipes_title ON recipes(title);
 CREATE INDEX IF NOT EXISTS idx_recipes_category ON recipes(category);
 CREATE INDEX IF NOT EXISTS idx_recipes_tags ON recipes USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_recipe_media_sources_active_sort ON recipe_media_sources(is_active, sort_order, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_recipe_media_sources_category ON recipe_media_sources(category);
+CREATE INDEX IF NOT EXISTS idx_recipe_media_sources_cuisine ON recipe_media_sources(cuisine);
+CREATE INDEX IF NOT EXISTS idx_recipe_media_sources_tags ON recipe_media_sources USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_cooking_history_user ON cooking_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id);

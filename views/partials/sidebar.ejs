@@ -1,0 +1,47 @@
+<aside class="user-sidebar <%= mode === 'admin' ? 'admin-sidebar' : 'user-sidebar-user' %>">
+  <a href="<%= mode === 'admin' ? '/admin/dashboard' : '/dashboard' %>" class="user-sidebar-brand">
+    <i class="fa-solid <%= mode === 'admin' ? 'fa-layer-group' : 'fa-utensils' %>" aria-hidden="true"></i>
+  </a>
+
+  <nav class="user-sidebar-nav">
+    <% if (mode === 'admin') { %>
+      <a class="user-sidebar-link <%= activePage === 'dashboard' ? 'is-active' : '' %>" href="/admin/dashboard">
+        <span class="user-sidebar-icon"><i class="fa-solid fa-house"></i></span>
+        <span>Dashboard</span>
+      </a>
+      <a class="user-sidebar-link <%= activePage === 'recipes' ? 'is-active' : '' %>" href="/admin/recipes">
+        <span class="user-sidebar-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+        <span>Resep</span>
+      </a>
+      <a class="user-sidebar-link <%= activePage === 'media' ? 'is-active' : '' %>" href="/admin/media">
+        <span class="user-sidebar-icon"><i class="fa-solid fa-film"></i></span>
+        <span>Media</span>
+      </a>
+      <a class="user-sidebar-link <%= activePage === 'users' ? 'is-active' : '' %>" href="/admin/users">
+        <span class="user-sidebar-icon"><i class="fa-solid fa-users"></i></span>
+        <span>User</span>
+      </a>
+    <% } else { %>
+      <a class="user-sidebar-link <%= activePage === 'dashboard' ? 'is-active' : '' %>" href="/dashboard">
+        <span class="user-sidebar-icon"><i class="fa-solid fa-house"></i></span>
+        <span>Dashboard</span>
+      </a>
+      <a class="user-sidebar-link <%= activePage === 'recipes' ? 'is-active' : '' %>" href="/recipes">
+        <span class="user-sidebar-icon"><i class="fa-solid fa-book-open"></i></span>
+        <span>Resep</span>
+      </a>
+      <a class="user-sidebar-link <%= activePage === 'chat' ? 'is-active' : '' %>" href="/chat-ai">
+        <span class="user-sidebar-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+        <span>AI Chat</span>
+      </a>
+      <a class="user-sidebar-link <%= activePage === 'history' ? 'is-active' : '' %>" href="/chat-history">
+        <span class="user-sidebar-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+        <span>History</span>
+      </a>
+    <% } %>
+  </nav>
+
+  <form action="/logout" method="post" class="user-sidebar-logout">
+    <button type="submit" class="user-icon-button user-icon-button-soft">Logout</button>
+  </form>
+</aside>

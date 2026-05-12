@@ -19,47 +19,11 @@
 <body>
   <main class="user-dashboard">
     <div class="user-dashboard-shell">
-      <aside class="user-sidebar">
-        <a href="/dashboard" class="user-sidebar-brand">
-          <i class="fa-solid fa-utensils" aria-hidden="true"></i>
-        </a>
-
-        <nav class="user-sidebar-nav">
-          <a class="user-sidebar-link is-active" href="/dashboard">
-            <span class="user-sidebar-icon"><i class="fa-solid fa-house"></i></span>
-            <span>Dashboard</span>
-          </a>
-          <a class="user-sidebar-link" href="/api/recipes">
-            <span class="user-sidebar-icon"><i class="fa-solid fa-book-open"></i></span>
-            <span>Resep</span>
-          </a>
-          <a class="user-sidebar-link" href="/chat-ai">
-            <span class="user-sidebar-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-            <span>AI Chat</span>
-          </a>
-          <a class="user-sidebar-link" href="/chat-history">
-            <span class="user-sidebar-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
-            <span>History</span>
-          </a>
-        </nav>
-
-        <form action="/logout" method="post" class="user-sidebar-logout">
-          <button type="submit" class="user-icon-button user-icon-button-soft">Logout</button>
-        </form>
-      </aside>
+      <%- include('../partials/sidebar', { mode: 'user', activePage: 'dashboard', user }) %>
 
       <section class="user-dashboard-main">
         <header class="user-dashboard-topbar">
-          <div class="user-search">
-            <i class="fa-solid fa-magnifying-glass user-search-icon" aria-hidden="true"></i>
-            <input type="text" placeholder="Search recipe, ingredient, or AI idea" />
-            <span>Search</span>
-          </div>
-
           <div class="user-topbar-actions">
-            <a class="user-icon-button" href="/chat-ai">
-              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
-            </a>
             <div class="user-profile-pill">
               <strong><%= user.username %></strong>
               <span><%= user.role %></span>

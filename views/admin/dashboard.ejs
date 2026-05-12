@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <% const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
+  <% const defaultAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}`; %>
+
+  <main class="user-dashboard admin-dashboard">
+    <div class="user-dashboard-shell admin-shell">
+      <%- include('../partials/sidebar', { mode: 'admin', activePage, user }) %>
+
+      <section class="user-dashboard-main admin-main">
+        <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
+          <div class="admin-topbar-copy">
+            <p class="user-panel-kicker">Admin panel</p>
+            <h1>Ringkasan operasional</h1>
+          </div>
+
+          <div class="user-topbar-actions">
+            <div class="user-profile-pill">
+              <strong><%= user.username %></strong>
+              <span><%= user.role %></span>
+            </div>
+          </div>
+        </header>
+
+        <section class="admin-hero-panel">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">Overview</p>
+              <h1>Kelola data aplikasi dari satu dashboard.</h1>
+            </div>
+            <div class="admin-hero-actions">
+              <a class="auth-button" href="/admin/recipes">Kelola resep</a>
+              <a class="auth-button auth-button-secondary" href="/admin/media">Media library</a>
+              <a class="auth-button auth-button-secondary" href="/admin/users">Kelola user</a>
+            </div>
+          </div>
+
+          <p class="admin-hero-copy">
+            Dashboard ini menampilkan ringkasan metrik inti dan update terbaru. Operasi CRUD resep
+            dan user dipindahkan ke halaman masing-masing lewat sidebar supaya alurnya lebih jelas.
+          </p>
+
+          <div class="admin-stat-grid">
+            <article class="admin-stat-card">
+              <span>Total user</span>
+              <strong><%= metrics.users_count || 0 %></strong>
+              <small><%= metrics.admin_count || 0 %> admin</small>
+            </article>
+            <article class="admin-stat-card">
+              <span>Total resep</span>
+              <strong><%= metrics.recipes_count || 0 %></strong>
+              <small><%= metrics.approved_recipes_count || 0 %> approved</small>
+            </article>
+            <article class="admin-stat-card">
+              <span>Pending review</span>
+              <strong><%= metrics.pending_recipes_count || 0 %></strong>
+              <small>Menunggu approval</small>
+            </article>
+            <article class="admin-stat-card">
+              <span>User aktif</span>
+              <strong><%= metrics.user_count || 0 %></strong>
+              <small>Role non-admin</small>
+            </article>
+          </div>
+        </section>
+
+        <div class="admin-content-grid">
+          <section class="admin-column">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Recent recipes</p>
+                  <h2>Resep terbaru</h2>
+                </div>
+                <a class="user-panel-link" href="/admin/recipes">Lihat semua</a>
+              </div>
+
+              <div class="admin-list">
+                <% recentRecipes.forEach((recipe) => { %>
+                  <article class="admin-list-card">
+                    <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                    <div class="admin-list-copy">
+                      <div class="admin-list-topline">
+                        <h3><%= recipe.title %></h3>
+                        <span class="admin-status <%= recipe.is_approved ? 'is-approved' : 'is-pending' %>">
+                          <%= recipe.is_approved ? 'Approved' : 'Pending' %>
+                        </span>
+                      </div>
+                      <p><%= recipe.description || 'Tidak ada deskripsi.' %></p>
+                      <div class="admin-meta-row">
+                        <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
+                        <span><i class="fa-solid fa-tag"></i> <%= recipe.category || 'Uncategorized' %></span>
+                        <span><i class="fa-solid fa-user"></i> <%= recipe.creator_name %></span>
+                      </div>
+                      <small><i class="fa-regular fa-calendar"></i> <%= formatDate(recipe.created_at) %></small>
+                    </div>
+                  </article>
+                <% }) %>
+
+                <% if (!recentRecipes.length) { %>
+                  <div class="admin-empty-state">
+                    <h3>Belum ada resep.</h3>
+                    <p>Tambahkan resep pertama dari halaman resep admin.</p>
+                  </div>
+                <% } %>
+              </div>
+            </article>
+          </section>
+
+          <aside class="admin-column">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Recent users</p>
+                  <h2>User terbaru</h2>
+                </div>
+                <a class="user-panel-link" href="/admin/users">Lihat semua</a>
+              </div>
+
+              <div class="admin-user-list">
+                <% recentUsers.forEach((item) => { %>
+                  <article class="admin-user-card">
+                    <img src="<%= item.avatar_url || defaultAvatar(item.username) %>" alt="<%= item.username %>" />
+                    <div class="admin-user-copy">
+                      <div class="admin-list-topline">
+                        <h3><%= item.username %></h3>
+                        <span class="admin-status <%= item.role === 'admin' ? 'is-approved' : 'is-neutral' %>"><%= item.role %></span>
+                      </div>
+                      <p><%= item.email %></p>
+                      <div class="admin-meta-row">
+                        <span><i class="fa-solid fa-book-bookmark"></i> <%= item.total_saved_recipes || 0 %> saved</span>
+                        <span><i class="fa-solid fa-fire-burner"></i> <%= item.total_recipes_cooked || 0 %> cooked</span>
+                      </div>
+                      <small><i class="fa-regular fa-calendar"></i> <%= formatDate(item.created_at) %></small>
+                    </div>
+                  </article>
+                <% }) %>
+
+                <% if (!recentUsers.length) { %>
+                  <div class="admin-empty-state">
+                    <h3>Belum ada user.</h3>
+                    <p>Data user akan muncul di sini setelah mulai digunakan.</p>
+                  </div>
+                <% } %>
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
