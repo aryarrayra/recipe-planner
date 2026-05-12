@@ -26,56 +26,314 @@
       <section class="user-dashboard-main history-main">
         <header class="user-dashboard-topbar history-topbar">
           <div class="history-topbar-copy">
-            <p class="user-panel-kicker">Chat history</p>
-            <h1>Riwayat percakapan session ini</h1>
-            <p class="history-topbar-note">Pesan tetap tersimpan di database walaupun kamu membersihkan tampilan chat di halaman utama.</p>
+            <p class="user-panel-kicker">Activity history</p>
+            <h1>Riwayat aktivitas dan resep kamu</h1>
+            <p class="history-topbar-note">
+              Lihat percakapan AI, resep yang pernah dibahas, aktivitas simpan, re-cook, viewed, dan history pencarian dalam satu halaman.
+            </p>
           </div>
+
           <div class="user-topbar-actions history-topbar-actions">
+            <div class="user-search history-search">
+              <i class="fa-solid fa-magnifying-glass user-search-icon" aria-hidden="true"></i>
+              <input type="text" placeholder="Cari riwayat resep..." />
+            </div>
             <a class="button button-secondary" href="/chat-ai">Kembali ke chat</a>
           </div>
         </header>
 
-        <section class="history-card">
-          <div class="history-meta">
-            <div>
-              <strong>Session</strong>
-              <span><%= session.session_id %></span>
-            </div>
-            <div>
-              <strong>Title</strong>
-              <span><%= session.title || 'Chat session' %></span>
-            </div>
-          </div>
-
-          <div class="history-panel">
-            <% if (messages && messages.length) { %>
-              <% messages.forEach(function(message) { %>
-                <article class="history-item msg <%= message.role %>">
-                  <span class="meta"><%= message.label %></span>
-                  <% if (message.attachment && message.attachment.dataUrl) { %>
-                    <figure class="message-attachment">
-                      <img src="<%= message.attachment.dataUrl %>" alt="<%= message.attachment.name || 'Foto terlampir' %>" />
-                    </figure>
-                  <% } %>
-                  <div><%= message.text %></div>
-                  <% if (message.tips && message.tips.length) { %>
-                    <ul>
-                      <% message.tips.forEach(function(tip) { %>
-                        <li><%= tip %></li>
-                      <% }) %>
-                    </ul>
-                  <% } %>
-                  <small><%= new Date(message.createdAt).toLocaleString('id-ID') %></small>
-                </article>
-              <% }) %>
-            <% } else { %>
-              <div class="empty-state">
-                <h3>Belum ada histori chat.</h3>
-                <p>Mulai percakapan di halaman chat untuk melihat hasilnya di sini.</p>
+        <div class="history-layout">
+          <section class="history-primary">
+            <section class="history-session-bar">
+              <div class="history-session-item">
+                <strong>Session ID</strong>
+                <span><%= session.session_id %></span>
               </div>
+              <div class="history-session-item">
+                <strong>Title</strong>
+                <span><%= session.title || 'Chat session' %></span>
+              </div>
+              <div class="history-session-item">
+                <strong>Info</strong>
+                <span><%= insights.createdDate %> - <%= insights.totalMessages %> pesan - <%= insights.category %></span>
+              </div>
+            </section>
+
+            <% if (insights.recipeSummary) { %>
+              <section class="history-summary-card">
+                <div class="history-summary-copy">
+                  <p class="user-panel-kicker">Resep summary card</p>
+                  <h2><%= insights.recipeSummary.name %></h2>
+                  <div class="history-summary-meta">
+                    <span><i class="fa-solid fa-wallet"></i> <%= insights.recipeSummary.budget %></span>
+                    <span><i class="fa-regular fa-clock"></i> <%= insights.recipeSummary.duration %> menit</span>
+                    <span><i class="fa-solid fa-signal"></i> <%= insights.recipeSummary.difficulty %></span>
+                  </div>
+                </div>
+
+                <div class="history-action-bar">
+                  <button type="button" class="history-action-chip"><i class="fa-regular fa-bookmark"></i> Save Recipe</button>
+                  <button type="button" class="history-action-chip"><i class="fa-regular fa-file-pdf"></i> Export PDF</button>
+                  <button type="button" class="history-action-chip"><i class="fa-regular fa-heart"></i> Favorite</button>
+                  <button type="button" class="history-action-chip"><i class="fa-solid fa-share-nodes"></i> Share</button>
+                  <button type="button" class="history-action-chip"><i class="fa-solid fa-fire-burner"></i> Cook Mode</button>
+                </div>
+              </section>
             <% } %>
-          </div>
-        </section>
+
+            <section class="history-chat-panel">
+              <% if (messages && messages.length) { %>
+                <% messages.forEach(function(message) { %>
+                  <article class="history-bubble-row <%= message.role === 'user' ? 'is-user' : 'is-ai' %>">
+                    <div class="history-avatar"><%= message.avatar %></div>
+                    <div class="history-bubble">
+                      <div class="history-bubble-head">
+                        <span class="history-bubble-author"><%= message.label %></span>
+                        <time class="history-bubble-time"><%= new Date(message.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) %></time>
+                      </div>
+
+                      <% if (message.attachment && message.attachment.dataUrl) { %>
+                        <figure class="message-attachment">
+                          <img src="<%= message.attachment.dataUrl %>" alt="<%= message.attachment.name || 'Foto terlampir' %>" />
+                        </figure>
+                      <% } %>
+
+                      <div class="history-bubble-body"><%- message.html %></div>
+
+                      <% if (message.tips && message.tips.length) { %>
+                        <ul class="history-inline-list">
+                          <% message.tips.forEach(function(tip) { %>
+                            <li><%= tip %></li>
+                          <% }) %>
+                        </ul>
+                      <% } %>
+                    </div>
+                  </article>
+                <% }) %>
+              <% } else { %>
+                <div class="empty-state history-empty-state">
+                  <i class="fa-regular fa-message"></i>
+                  <h3>Belum ada riwayat chat</h3>
+                  <p>Mulai ngobrol dengan AI untuk mendapatkan resep.</p>
+                  <a class="button button-secondary" href="/chat-ai">Mulai AI Chat</a>
+                </div>
+              <% } %>
+            </section>
+
+            <section class="history-detail-grid">
+              <article class="history-detail-card">
+                <div class="history-detail-head">
+                  <p class="user-panel-kicker">Ingredients section</p>
+                  <h3>Bahan</h3>
+                </div>
+
+                <% if (insights.ingredients.length) { %>
+                  <div class="history-check-list">
+                    <% insights.ingredients.forEach(function(ingredient) { %>
+                      <label class="history-check-item">
+                        <input type="checkbox" />
+                        <span><%= ingredient %></span>
+                      </label>
+                    <% }) %>
+                  </div>
+                <% } else { %>
+                  <p class="history-detail-empty">Belum ada daftar bahan yang terdeteksi dari jawaban AI.</p>
+                <% } %>
+              </article>
+
+              <article class="history-detail-card">
+                <div class="history-detail-head">
+                  <p class="user-panel-kicker">Step by step section</p>
+                  <h3>Langkah memasak</h3>
+                </div>
+
+                <% if (insights.steps.length) { %>
+                  <div class="history-step-list">
+                    <% insights.steps.forEach(function(step, index) { %>
+                      <article class="history-step-card">
+                        <strong>Step <%= index + 1 %></strong>
+                        <p><%= step %></p>
+                      </article>
+                    <% }) %>
+                  </div>
+                <% } else { %>
+                  <p class="history-detail-empty">Langkah masak belum terpisah. Coba minta AI menuliskan step by step.</p>
+                <% } %>
+              </article>
+            </section>
+
+            <section class="history-related-panel">
+              <div class="history-detail-head">
+                <p class="user-panel-kicker">Related recipes</p>
+                <h3>Resep terkait</h3>
+              </div>
+
+              <div class="history-related-grid">
+                <% relatedRecipes.forEach(function(recipe) { %>
+                  <article class="history-related-card">
+                    <img src="<%= recipe.image_url %>" alt="<%= recipe.title %>" />
+                    <div>
+                      <strong><%= recipe.title %></strong>
+                      <span><%= recipe.category %></span>
+                    </div>
+                  </article>
+                <% }) %>
+              </div>
+            </section>
+
+            <section class="history-activity-panel">
+              <div class="history-detail-head">
+                <p class="user-panel-kicker">All activity history</p>
+                <h3>Video, re-cook, viewed, dan liked</h3>
+              </div>
+
+              <div class="history-activity-grid">
+                <article class="history-detail-card history-detail-card-nested">
+                  <div class="history-detail-head">
+                    <p class="user-panel-kicker">Video yang ditonton</p>
+                    <h3>Video resep</h3>
+                  </div>
+                  <% if (activityData.watchedVideos.length) { %>
+                    <div class="history-side-list">
+                      <% activityData.watchedVideos.forEach(function(video) { %>
+                        <div class="history-side-item">
+                          <strong><%= video.title %></strong>
+                          <span><%= video.platform %> - <%= video.category || 'Video recipe' %></span>
+                        </div>
+                      <% }) %>
+                    </div>
+                  <% } else { %>
+                    <p class="history-detail-empty">Placeholder UI video sudah siap. Data video watched akan disambungkan nanti.</p>
+                  <% } %>
+                </article>
+
+                <article class="history-detail-card history-detail-card-nested">
+                  <div class="history-detail-head">
+                    <p class="user-panel-kicker">Resep yang di re-cook</p>
+                    <h3>Re-cook history</h3>
+                  </div>
+                  <% if (activityData.recookedRecipes.length) { %>
+                    <div class="history-side-list">
+                      <% activityData.recookedRecipes.forEach(function(recipe) { %>
+                        <div class="history-side-item">
+                          <strong><%= recipe.title %></strong>
+                          <span><%= new Date(recipe.cooking_date).toLocaleDateString('id-ID') %></span>
+                        </div>
+                      <% }) %>
+                    </div>
+                  <% } else { %>
+                    <p class="history-detail-empty">Belum ada data re-cook.</p>
+                  <% } %>
+                </article>
+
+                <article class="history-detail-card history-detail-card-nested">
+                  <div class="history-detail-head">
+                    <p class="user-panel-kicker">Resep yang dilihat</p>
+                    <h3>Viewed recipes</h3>
+                  </div>
+                  <div class="history-side-list">
+                    <% activityData.viewedRecipes.forEach(function(recipe) { %>
+                      <div class="history-side-item">
+                        <strong><%= recipe.title %></strong>
+                        <span><%= recipe.category %></span>
+                      </div>
+                    <% }) %>
+                  </div>
+                </article>
+
+                <article class="history-detail-card history-detail-card-nested">
+                  <div class="history-detail-head">
+                    <p class="user-panel-kicker">Resep yang di like</p>
+                    <h3>Liked recipes</h3>
+                  </div>
+                  <% if (activityData.likedRecipes.length) { %>
+                    <div class="history-side-list">
+                      <% activityData.likedRecipes.forEach(function(recipe) { %>
+                        <div class="history-side-item">
+                          <strong><%= recipe.title %></strong>
+                          <span><%= recipe.category %></span>
+                        </div>
+                      <% }) %>
+                    </div>
+                  <% } else { %>
+                    <p class="history-detail-empty">Belum ada resep yang di-like/disimpan.</p>
+                  <% } %>
+                </article>
+              </div>
+            </section>
+          </section>
+
+          <aside class="history-sidebar">
+            <article class="history-side-card">
+              <div class="history-detail-head">
+                <p class="user-panel-kicker">Riwayat chat lain</p>
+                <h3>Sesi terbaru</h3>
+              </div>
+              <% if (sidebarData.otherSessions.length) { %>
+                <div class="history-side-list">
+                  <% sidebarData.otherSessions.forEach(function(item) { %>
+                    <div class="history-side-item">
+                      <strong><%= item.title || 'Chat session' %></strong>
+                      <span><%= new Date(item.updated_at).toLocaleDateString('id-ID') %></span>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <p class="history-detail-empty">Belum ada sesi lain yang tersimpan.</p>
+              <% } %>
+            </article>
+
+            <article class="history-side-card">
+              <div class="history-detail-head">
+                <p class="user-panel-kicker">Trending recipes</p>
+                <h3>Paling ramai</h3>
+              </div>
+              <div class="history-side-list">
+                <% sidebarData.trendingRecipes.forEach(function(item) { %>
+                  <div class="history-side-item">
+                    <strong><%= item.title %></strong>
+                    <span><%= item.category %></span>
+                  </div>
+                <% }) %>
+              </div>
+            </article>
+
+            <article class="history-side-card">
+              <div class="history-detail-head">
+                <p class="user-panel-kicker">Favorite recipe</p>
+                <h3>Yang disimpan</h3>
+              </div>
+              <% if (sidebarData.favoriteRecipes.length) { %>
+                <div class="history-side-list">
+                  <% sidebarData.favoriteRecipes.forEach(function(item) { %>
+                    <div class="history-side-item">
+                      <strong><%= item.title %></strong>
+                      <span><%= item.category %></span>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <p class="history-detail-empty">Belum ada recipe favorit di akun ini.</p>
+              <% } %>
+            </article>
+
+            <article class="history-side-card">
+              <div class="history-detail-head">
+                <p class="user-panel-kicker">Recent searches</p>
+                <h3>Pencarian terakhir</h3>
+              </div>
+              <% if (sidebarData.recentSearches.length) { %>
+                <div class="history-chip-list">
+                  <% sidebarData.recentSearches.forEach(function(search) { %>
+                    <span><%= search %></span>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <p class="history-detail-empty">Belum ada pencarian yang tercatat.</p>
+              <% } %>
+            </article>
+          </aside>
+        </div>
       </section>
     </div>
   </main>
