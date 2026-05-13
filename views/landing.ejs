@@ -1,320 +1,860 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %></title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/css/style.css" />
-  </head>
-  <body class="page-transition">
-    <main class="food-landing">
-      <section class="food-shell">
-        <header class="food-header">
-          <a href="/" class="food-logo">ResepKu</a>
-          <nav class="food-nav">
-            <a href="#about">About us</a>
-            <a href="#service">Service</a>
-            <a href="#menu">Menu</a>
-            <a href="/login">Contact us</a>
-          </nav>
-          <a href="/login" class="food-header-btn">W</a>
-        </header>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResepKu — Masak lebih tenang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,800;1,9..144,300;1,9..144,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-        <section class="food-hero">
-          <div class="food-hero-copy">
-            <p class="food-kicker">ResepKu</p>
-            <h1>
-              <span>YUMMY</span>
-              BREAKFAST!
-            </h1>
-            <p class="food-subtitle">
-              Discover breakfast ideas, plan your food schedule, and cook with a
-              cleaner workflow every day.
-            </p>
-            <div class="food-hero-actions">
-              <a href="/login" class="food-btn food-btn-primary">Go to login</a>
-              <a href="/register" class="food-btn food-btn-secondary">Create account</a>
-            </div>
-          </div>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-          <div class="food-hero-visual">
-            <div class="visual-strip"></div>
-            <figure class="hero-plate hero-plate-main">
-              <img src="/images/6.png" alt="ResepKu hero bowl" />
-            </figure>
-          </div>
-        </section>
+    :root {
+      --bg: #FFFFFF;
+      --accent-teal: #389C9A;
+      --accent-yellow: #FEDB71;
+      --text: #1D1D1D;
+      --secondary: #F8F8F8;
+      --teal-dark: #2a7876;
+      --teal-light: #4db8b6;
+      --muted: #888;
+      --border: #e8e8e8;
+    }
 
-        <section class="food-mini-strip" id="service">
-          <div class="food-mini-head">
-            <p>Hot selections</p>
-          </div>
-          <div class="food-mini-grid">
-            <article class="food-mini-card">
-              <img src="/images/1.png" alt="Budget meal" />
-              <div>
-                <h3>Budget meal</h3>
-                <p>Smart and easy</p>
-              </div>
-            </article>
-            <article class="food-mini-card">
-              <img src="/images/2.png" alt="Quick dishes" />
-              <div>
-                <h3>Quick dishes</h3>
-                <p>Ready fast</p>
-              </div>
-            </article>
-            <article class="food-mini-card">
-              <img src="/images/3.png" alt="Mood food" />
-              <div>
-                <h3>Mood food</h3>
-                <p>Feel-good picks</p>
-              </div>
-            </article>
-          </div>
-        </section>
+    html { scroll-behavior: smooth; }
 
-        <section class="food-feature" id="about">
-          <div class="food-feature-plate">
-            <div class="food-ring"></div>
-            <img src="/images/2.png" alt="Featured recipe" />
-          </div>
-          <div class="food-feature-copy">
-            <p class="food-kicker">Best workflow</p>
-            <h2>THE BEST YUMMY FOOD IN TOWN</h2>
-            <p>
-              Organize recipes, filter by ingredients, and keep your next meal plan
-              simple. ResepKu is built for practical cooking, not clutter.
-            </p>
-            <a href="/register" class="food-btn food-btn-primary">Try our app</a>
-          </div>
-        </section>
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
 
-        <section class="food-menu" id="menu">
-          <div class="food-section-title food-section-title-center">
-            <p class="food-kicker">Explore</p>
-            <h2>EXPLORE OUR MENU</h2>
-          </div>
-          <div class="food-menu-grid">
-            <article class="food-menu-card">
-              <img src="/images/1.png" alt="Ingredient search" />
-              <div class="food-menu-copy">
-                <h3>Ingredient search</h3>
-                <p>Cook from what you have</p>
-              </div>
-            </article>
-            <article class="food-menu-card">
-              <img src="/images/3.png" alt="Meal ideas" />
-              <div class="food-menu-copy">
-                <h3>Meal ideas</h3>
-                <p>Breakfast to dinner picks</p>
-              </div>
-            </article>
-            <article class="food-menu-card">
-              <img src="/images/2.png" alt="Recipe details" />
-              <div class="food-menu-copy">
-                <h3>Recipe details</h3>
-                <p>Time, price, and tags</p>
-              </div>
-            </article>
-          </div>
-        </section>
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5vw;
+      height: 72px;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      transition: box-shadow 0.3s;
+    }
+    nav.scrolled { box-shadow: 0 4px 32px rgba(0,0,0,0.07); }
 
-        <section class="food-popular">
-          <div class="food-popular-head">
-            <div class="food-section-title">
-              <p class="food-kicker">Most popular</p>
-              <h2>OUR MOST POPULAR RECIPES</h2>
-            </div>
-            <div class="food-popular-actions">
-              <button
-                type="button"
-                class="food-slider-btn"
-                id="popularPrev"
-                aria-label="Previous recipe"
-              >
-                &lt;
-              </button>
-              <button
-                type="button"
-                class="food-slider-btn"
-                id="popularNext"
-                aria-label="Next recipe"
-              >
-                &gt;
-              </button>
-              <a href="/login" class="food-pill-link">See more</a>
-            </div>
-          </div>
+    .nav-brand {
+      display: flex; align-items: center; gap: 12px;
+      text-decoration: none; color: var(--text);
+    }
+    .nav-brand-icon {
+      width: 40px; height: 40px;
+      background: var(--accent-teal);
+      border-radius: 12px;
+      display: grid; place-items: center;
+      color: #fff; font-size: 18px;
+    }
+    .nav-brand-text strong {
+      display: block; font-family: 'Fraunces', serif;
+      font-size: 18px; font-weight: 800; line-height: 1;
+    }
+    .nav-brand-text small {
+      font-size: 10px; color: var(--muted); letter-spacing: 0.02em;
+    }
 
-          <div class="food-popular-carousel" id="popularSlider">
-            <div class="food-carousel-stage">
-              <div class="food-carousel-track" id="popularTrack">
-                <article class="food-carousel-card" data-popular-item="0">
-                  <img src="/images/1.png" alt="Vegetable soup" />
-                </article>
-                <article class="food-carousel-card is-active" data-popular-item="1">
-                  <img src="/images/3.png" alt="Noodle bowl" />
-                </article>
-                <article class="food-carousel-card" data-popular-item="2">
-                  <img src="/images/2.png" alt="Spicy dish" />
-                </article>
-                <article class="food-carousel-card" data-popular-item="3">
-                  <img src="/images/6.png" alt="Fresh breakfast" />
-                </article>
-              </div>
-            </div>
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: var(--muted);
+      font-size: 14px; font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
 
-            <div class="food-carousel-copy">
-              <p class="food-carousel-tag" id="popularTag">Most wanted</p>
-              <h3 id="popularTitle">Noodle bowl</h3>
-              <div class="food-meta">
-                <span id="popularTime">20 min</span>
-                <span id="popularPrice">$11</span>
-              </div>
-            </div>
-          </div>
-        </section>
+    .nav-actions { display: flex; gap: 10px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: 100px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+      text-decoration: none; cursor: pointer; border: none;
+      transition: all 0.2s;
+    }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--text); }
+    .btn-primary {
+      background: var(--accent-teal); color: #fff;
+    }
+    .btn-primary:hover { background: var(--teal-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(56,156,154,0.35); }
+    .btn-yellow {
+      background: var(--accent-yellow); color: var(--text);
+    }
+    .btn-yellow:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(254,219,113,0.5); }
 
-        <section class="food-quote">
-          <blockquote>
-            “The food we had inspired us to build a planner that turns meal ideas
-            into something structured and easier to use.”
-          </blockquote>
-          <div class="food-quote-plate">
-            <div class="food-ring food-ring-small"></div>
-            <img src="/images/3.png" alt="Closing recipe" />
-          </div>
-        </section>
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: 100px 5vw 60px;
+      gap: 60px;
+      position: relative;
+      overflow: hidden;
+    }
 
-        <footer class="food-footer">
-          <div>
-            <a href="/" class="food-logo">ResepKu</a>
-            <p>ResepKu for better everyday cooking.</p>
-          </div>
-          <div class="food-footer-links">
-            <div>
-              <h3>Navigate</h3>
-              <a href="/">Home</a>
-              <a href="/login">Login</a>
-              <a href="/register">Register</a>
-            </div>
-            <div>
-              <h3>Features</h3>
-              <a href="#service">Ingredient search</a>
-              <a href="#menu">Recipes</a>
-              <a href="#about">Meal planning</a>
-            </div>
-          </div>
-        </footer>
-      </section>
-    </main>
-    <script>
-      (() => {
-        window.requestAnimationFrame(() => {
-          window.setTimeout(() => {
-            document.body.classList.add("is-ready");
-          }, 40);
-        });
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 110% 50%, rgba(56,156,154,0.08) 0%, transparent 70%),
+                  radial-gradient(ellipse 40% 40% at -10% 80%, rgba(254,219,113,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
 
-        document.querySelectorAll('a[href="/login"], a[href="/register"]').forEach((link) => {
-          link.addEventListener("click", (event) => {
-            const href = link.getAttribute("href");
-            if (!href) {
-              return;
-            }
+    .hero-copy { position: relative; z-index: 2; }
 
-            event.preventDefault();
-            document.body.classList.remove("is-ready");
-            document.body.classList.add("is-leaving");
-            window.setTimeout(() => {
-              window.location.href = href;
-            }, 320);
-          });
-        });
-      })();
+    .hero-kicker {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(56,156,154,0.1); border: 1px solid rgba(56,156,154,0.2);
+      color: var(--accent-teal); border-radius: 100px;
+      padding: 6px 16px; font-size: 12px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .hero-kicker::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--accent-teal); border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
 
-    </script>
-    <script>
-      (() => {
-        const recipes = [
-          { title: "Vegetable soup", tag: "Fresh pick", time: "15 min", price: "$8", image: "/images/1.png" },
-          { title: "Noodle bowl", tag: "Most wanted", time: "20 min", price: "$11", image: "/images/3.png" },
-          { title: "Spicy dish", tag: "Chef favorite", time: "18 min", price: "$10", image: "/images/2.png" },
-          { title: "Fresh breakfast", tag: "Morning special", time: "12 min", price: "$9", image: "/images/6.png" }
-        ];
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.4); }
+    }
 
-        const track = document.getElementById("popularTrack");
-        const cards = Array.from(document.querySelectorAll("[data-popular-item]"));
-        const prevButton = document.getElementById("popularPrev");
-        const nextButton = document.getElementById("popularNext");
-        const tag = document.getElementById("popularTag");
-        const title = document.getElementById("popularTitle");
-        const time = document.getElementById("popularTime");
-        const price = document.getElementById("popularPrice");
+    .hero-heading {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2.8rem, 5vw, 4.2rem);
+      font-weight: 800; line-height: 1.1;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    .hero-heading em {
+      font-style: italic; font-weight: 300;
+      color: var(--accent-teal);
+    }
+    .hero-heading .highlight {
+      position: relative; display: inline-block;
+    }
+    .hero-heading .highlight::after {
+      content: '';
+      position: absolute; bottom: 2px; left: 0; right: 0;
+      height: 8px; background: var(--accent-yellow);
+      z-index: -1; border-radius: 2px;
+      transform: scaleX(0); transform-origin: left;
+      animation: underlineIn 0.6s 0.7s ease forwards;
+    }
+    @keyframes underlineIn { to { transform: scaleX(1); } }
 
-        if (!track || !cards.length || !prevButton || !nextButton || !tag || !title || !time || !price) {
-          return;
-        }
+    .hero-sub {
+      font-size: 16px; line-height: 1.75; color: #555;
+      max-width: 500px; margin-bottom: 36px;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
 
-        let slotPositions = [3, 0, 1, 2];
+    .hero-cta {
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+      margin-bottom: 48px;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
 
-        const render = () => {
-          const stage = track.parentElement;
-          const stageWidth = stage.clientWidth;
-          const cardWidth = cards[0].offsetWidth;
-          const centerX = (stageWidth - cardWidth) / 2;
-          const leftX = -cardWidth * 0.18;
-          const rightX = stageWidth - cardWidth * 0.82;
-          const bottomX = centerX;
-          const arcSlots = {
-            0: { x: centerX, y: 0, scale: 1, opacity: 1, z: 3 },
-            1: { x: rightX, y: 128, scale: 0.82, opacity: 0.8, z: 2 },
-            2: { x: bottomX, y: 268, scale: 0.6, opacity: 0, z: 1 },
-            3: { x: leftX, y: 128, scale: 0.82, opacity: 0.8, z: 2 }
-          };
+    .hero-stats {
+      display: flex; gap: 0;
+      animation: fadeUp 0.6s 0.4s ease both;
+    }
+    .hero-stat {
+      padding: 0 28px 0 0;
+      border-right: 1px solid var(--border);
+    }
+    .hero-stat:first-child { padding-left: 0; }
+    .hero-stat:last-child { border-right: none; padding-right: 0; padding-left: 28px; }
+    .hero-stat strong {
+      display: block; font-family: 'Fraunces', serif;
+      font-size: 28px; font-weight: 800; color: var(--text);
+    }
+    .hero-stat span { font-size: 12px; color: var(--muted); }
 
-          cards.forEach((card, index) => {
-            const image = card.querySelector("img");
-            const slotKey = slotPositions[index];
-            const slot = arcSlots[slotKey] || arcSlots[2];
-            card.classList.toggle("is-active", slotKey === 0);
-            card.style.setProperty("--tx", `${slot.x}px`);
-            card.style.setProperty("--ty", `${slot.y}px`);
-            card.style.setProperty("--scale", slot.scale);
-            card.style.opacity = slot.opacity;
-            card.style.zIndex = slot.z;
-            image.src = recipes[index].image;
-            image.alt = recipes[index].title;
-          });
+    /* ─── CAROUSEL VISUAL ─── */
+    .hero-visual {
+      position: relative; z-index: 2;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
 
-          const activeIndex = slotPositions.findIndex((slot) => slot === 0);
-          const activeRecipe = recipes[activeIndex];
-          tag.textContent = activeRecipe.tag;
-          title.textContent = activeRecipe.title;
-          time.textContent = activeRecipe.time;
-          price.textContent = activeRecipe.price;
-        };
+    .carousel-shell {
+      position: relative;
+      width: 100%; aspect-ratio: 4/5;
+      max-height: 580px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: var(--secondary);
+    }
 
-        nextButton.addEventListener("click", () => {
-          slotPositions = slotPositions.map((slot) => (slot + 3) % 4);
-          render();
-        });
+    .carousel-track {
+      display: flex;
+      height: 100%;
+      transition: transform 0.7s cubic-bezier(0.77, 0, 0.18, 1);
+    }
 
-        prevButton.addEventListener("click", () => {
-          slotPositions = slotPositions.map((slot) => (slot + 1) % 4);
-          render();
-        });
+    .carousel-slide {
+      min-width: 100%; height: 100%;
+      position: relative; overflow: hidden;
+    }
 
-        window.addEventListener("resize", render);
-        render();
-      })();
-    </script>
-  </body>
+    .carousel-slide img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transform: scale(1.05);
+      transition: transform 8s ease;
+    }
+    .carousel-slide.active img { transform: scale(1); }
+
+    .carousel-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, transparent 40%, rgba(29,29,29,0.7) 100%);
+    }
+
+    .carousel-label {
+      position: absolute; bottom: 24px; left: 24px; right: 24px;
+      color: #fff;
+    }
+    .carousel-label .meal-area {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; opacity: 0.7; margin-bottom: 4px;
+    }
+    .carousel-label .meal-name {
+      font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600;
+    }
+
+    .carousel-dots {
+      position: absolute; bottom: 24px; right: 24px;
+      display: flex; gap: 6px;
+    }
+    .carousel-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.4);
+      cursor: pointer; transition: all 0.3s;
+    }
+    .carousel-dot.active {
+      width: 20px; border-radius: 4px;
+      background: #fff;
+    }
+
+    /* Floating badges */
+    .float-badge {
+      position: absolute; z-index: 10;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-radius: 16px; padding: 12px 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      display: flex; gap: 10px; align-items: center;
+      animation: floatY 4s ease-in-out infinite;
+    }
+    .float-badge:nth-child(2) { animation-delay: -2s; }
+
+    @keyframes floatY {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .float-badge-top {
+      top: -20px; right: -20px;
+      background: var(--accent-yellow);
+    }
+    .float-badge-top .badge-icon { font-size: 20px; }
+    .float-badge-top .badge-text strong { font-size: 13px; font-weight: 700; display: block; }
+    .float-badge-top .badge-text small { font-size: 11px; color: rgba(29,29,29,0.6); }
+
+    .float-badge-bottom {
+      bottom: -16px; left: -20px;
+    }
+    .float-badge-bottom .badge-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--accent-teal); color: #fff;
+      display: grid; place-items: center; font-size: 16px;
+      flex-shrink: 0;
+    }
+    .float-badge-bottom .badge-text strong { font-size: 12px; font-weight: 700; display: block; color: var(--text); }
+    .float-badge-bottom .badge-text small { font-size: 10px; color: var(--muted); }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* ─── FEATURES ─── */
+    .section {
+      padding: 100px 5vw;
+    }
+    .section-head {
+      text-align: center; max-width: 600px; margin: 0 auto 64px;
+    }
+    .section-kicker {
+      display: inline-block;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--accent-teal);
+      margin-bottom: 16px;
+    }
+    .section-head h2 {
+      font-family: 'Fraunces', serif; font-size: clamp(2rem, 3.5vw, 2.8rem);
+      font-weight: 800; line-height: 1.15; margin-bottom: 16px;
+    }
+    .section-head p { color: #666; font-size: 16px; line-height: 1.7; }
+
+    .features-bg { background: var(--secondary); }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg); border-radius: 20px;
+      padding: 32px 28px;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; inset: 0;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,0.08); }
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-card:nth-child(1) .feature-icon { background: rgba(56,156,154,0.12); color: var(--accent-teal); }
+    .feature-card:nth-child(2) .feature-icon { background: rgba(254,219,113,0.25); color: #d4a017; }
+    .feature-card:nth-child(3) .feature-icon { background: rgba(56,156,154,0.12); color: var(--accent-teal); }
+    .feature-card:nth-child(4) .feature-icon { background: rgba(254,219,113,0.25); color: #d4a017; }
+
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: grid; place-items: center;
+      font-size: 20px; margin-bottom: 20px;
+    }
+    .feature-card h3 {
+      font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .feature-card p { font-size: 14px; line-height: 1.7; color: #666; }
+
+    /* ─── MEAL GRID (DISCOVERY) ─── */
+    .meal-grid-section { padding: 100px 5vw; }
+
+    .meal-scroll {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 0;
+    }
+
+    .meal-card {
+      border-radius: 16px; overflow: hidden;
+      position: relative; aspect-ratio: 3/4;
+      background: var(--secondary);
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .meal-card:hover { transform: scale(1.02); }
+    .meal-card:nth-child(2) { margin-top: 32px; }
+    .meal-card:nth-child(4) { margin-top: -32px; }
+
+    .meal-card img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.4s;
+    }
+    .meal-card:hover img { transform: scale(1.06); }
+
+    .meal-card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(29,29,29,0.85) 0%, transparent 55%);
+      display: flex; flex-direction: column;
+      justify-content: flex-end; padding: 20px 16px;
+    }
+    .meal-card-area {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--accent-yellow);
+      margin-bottom: 4px;
+    }
+    .meal-card-name {
+      font-family: 'Fraunces', serif; font-size: 15px;
+      font-weight: 600; color: #fff; line-height: 1.3;
+    }
+
+    .meal-card-tag {
+      position: absolute; top: 12px; left: 12px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff; font-size: 10px; font-weight: 600;
+      border-radius: 100px; padding: 4px 10px;
+    }
+
+    /* ─── HOW IT WORKS ─── */
+    .how-section { background: var(--text); padding: 100px 5vw; }
+    .how-section .section-kicker { color: var(--accent-yellow); }
+    .how-section .section-head h2 { color: #fff; }
+    .how-section .section-head p { color: rgba(255,255,255,0.5); }
+
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+
+    .step {
+      padding: 36px; border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      transition: all 0.3s;
+    }
+    .step:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(56,156,154,0.4);
+      transform: translateY(-4px);
+    }
+
+    .step-num {
+      font-family: 'Fraunces', serif;
+      font-size: 52px; font-weight: 800;
+      color: var(--accent-yellow); line-height: 1;
+      margin-bottom: 24px;
+      display: block;
+    }
+    .step h3 {
+      font-family: 'Fraunces', serif; font-size: 20px;
+      font-weight: 600; color: #fff; margin-bottom: 12px;
+    }
+    .step p { font-size: 14px; line-height: 1.75; color: rgba(255,255,255,0.5); }
+
+    .step-divider {
+      display: none; /* between steps */
+    }
+
+    /* ─── CTA BANNER ─── */
+    .cta-section {
+      padding: 80px 5vw;
+      background: var(--accent-teal);
+      text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(255,255,255,0.08) 0%, transparent 70%),
+                  radial-gradient(circle at 10% 50%, rgba(254,219,113,0.15) 0%, transparent 50%);
+    }
+    .cta-section .section-kicker { color: rgba(255,255,255,0.7); }
+    .cta-section h2 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800; color: #fff; margin-bottom: 16px;
+    }
+    .cta-section p {
+      color: rgba(255,255,255,0.75); font-size: 16px;
+      max-width: 500px; margin: 0 auto 40px; line-height: 1.7;
+    }
+    .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-white {
+      background: #fff; color: var(--accent-teal);
+    }
+    .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .btn-outline-white {
+      background: transparent; color: #fff;
+      border: 1.5px solid rgba(255,255,255,0.5);
+    }
+    .btn-outline-white:hover { border-color: #fff; background: rgba(255,255,255,0.08); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--text); color: rgba(255,255,255,0.4);
+      padding: 32px 5vw; text-align: center;
+      font-size: 13px;
+    }
+    footer a { color: rgba(255,255,255,0.6); text-decoration: none; }
+    footer a:hover { color: #fff; }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.in-view { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    /* ─── TICKER ─── */
+    .ticker-wrap {
+      overflow: hidden; border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 0;
+      background: var(--secondary);
+    }
+    .ticker {
+      display: flex; gap: 0;
+      animation: tickerMove 28s linear infinite;
+    }
+    @keyframes tickerMove { to { transform: translateX(-50%); } }
+    .ticker-item {
+      display: flex; align-items: center; gap: 10px;
+      white-space: nowrap; padding: 0 40px;
+      font-size: 13px; font-weight: 500; color: #888;
+    }
+    .ticker-item i { color: var(--accent-teal); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; padding-top: 90px; }
+      .hero-visual { display: none; }
+      nav .nav-links { display: none; }
+      .steps { grid-template-columns: 1fr; }
+      .meal-scroll { grid-template-columns: repeat(2, 1fr); }
+      .meal-card:nth-child(2), .meal-card:nth-child(4) { margin-top: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a href="/" class="nav-brand">
+    <div class="nav-brand-icon"><i class="fa-solid fa-bowl-food"></i></div>
+    <div class="nav-brand-text">
+      <strong>ResepKu</strong>
+      <small>Smart recipe planner</small>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Fitur</a></li>
+    <li><a href="#discovery">Eksplorasi</a></li>
+    <li><a href="#how">Cara pakai</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="/login" class="btn btn-ghost">Masuk</a>
+    <a href="/register" class="btn btn-primary">Daftar gratis</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-copy">
+    <div class="hero-kicker">Smart cooking, clear planning</div>
+    <h1 class="hero-heading">
+      Masak lebih <em>tenang</em>.<br>
+      Rencanakan resep dengan
+      <span class="highlight">satu aplikasi</span>.
+    </h1>
+    <p class="hero-sub">
+      ResepKu membantu kamu cari inspirasi resep, filter berdasarkan bahan dan region,
+      simpan favorit, hitung perkiraan belanja, sampai recook history yang rapi.
+    </p>
+    <div class="hero-cta">
+      <a href="/register" class="btn btn-primary">
+        <i class="fa-solid fa-arrow-right"></i> Mulai gratis
+      </a>
+      <a href="/login" class="btn btn-ghost">Masuk ke akun</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <strong>AI</strong>
+        <span>Meal assistant</span>
+      </div>
+      <div class="hero-stat">
+        <strong>∞</strong>
+        <span>Filter pintar</span>
+      </div>
+      <div class="hero-stat">
+        <strong>✦</strong>
+        <span>Recook journey</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="float-badge float-badge-top">
+      <div class="badge-icon">🍳</div>
+      <div class="badge-text">
+        <strong>AI meal assistant</strong>
+        <small>Ide masak, anytime</small>
+      </div>
+    </div>
+
+    <div class="carousel-shell">
+      <div class="carousel-track" id="carousel-track">
+        <!-- slides injected by JS -->
+        <div class="carousel-slide active" style="background:#e8e8e8;display:grid;place-items:center;">
+          <div style="width:60px;height:60px;border-radius:50%;" class="skeleton"></div>
+        </div>
+      </div>
+      <div class="carousel-dots" id="carousel-dots"></div>
+    </div>
+
+    <div class="float-badge float-badge-bottom">
+      <div class="badge-icon"><i class="fa-solid fa-fire"></i></div>
+      <div class="badge-text">
+        <strong>Trending hari ini</strong>
+        <small>Diperbarui tiap sesi</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker" id="ticker">
+    <!-- injected by JS -->
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="section features-bg" id="features">
+  <div class="section-head reveal">
+    <span class="section-kicker">Built for daily cooking</span>
+    <h2>Lebih dari sekadar katalog resep.</h2>
+    <p>Pengalaman dibuat agar kamu bisa langsung tahu apa yang harus dimasak, berapa estimasi belanjanya, dan bagaimana memulainya.</p>
+  </div>
+  <div class="feature-grid">
+    <article class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+      <h3>AI meal assistant</h3>
+      <p>Tanya bahan, budget, atau foto makanan. AI membantu menyusun rekomendasi yang relevan dan personal.</p>
+    </article>
+    <article class="feature-card reveal reveal-delay-2">
+      <div class="feature-icon"><i class="fa-solid fa-filter"></i></div>
+      <h3>Filter region & bahan</h3>
+      <p>Cari resep dari asal masakan atau bahan utama yang kamu punya. Hasilnya lebih presisi, lebih sedikit scroll.</p>
+    </article>
+    <article class="feature-card reveal reveal-delay-3">
+      <div class="feature-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+      <h3>Recook history</h3>
+      <p>Riwayat masak ulang, rating, catatan, dan progress profile jadi satu alur yang rapi dan mudah diikuti.</p>
+    </article>
+    <article class="feature-card reveal reveal-delay-1">
+      <div class="feature-icon"><i class="fa-solid fa-wallet"></i></div>
+      <h3>Perkiraan belanja</h3>
+      <p>Estimasi realistis untuk bantu kamu ngatur budget sebelum mulai masak. Bukan harga pasti, tapi cukup untuk plan.</p>
+    </article>
+  </div>
+</section>
+
+<!-- DISCOVERY / MEAL GRID -->
+<section class="meal-grid-section" id="discovery">
+  <div class="section-head reveal">
+    <span class="section-kicker">Eksplorasi resep</span>
+    <h2>Temukan masakan dari seluruh dunia.</h2>
+    <p>Dari dapur nusantara sampai masakan mediterania — semua ada di satu tempat.</p>
+  </div>
+  <div class="meal-scroll reveal" id="meal-grid">
+    <!-- injected by JS -->
+    <div class="meal-card"><div style="width:100%;height:100%;" class="skeleton"></div></div>
+    <div class="meal-card"><div style="width:100%;height:100%;" class="skeleton"></div></div>
+    <div class="meal-card"><div style="width:100%;height:100%;" class="skeleton"></div></div>
+    <div class="meal-card"><div style="width:100%;height:100%;" class="skeleton"></div></div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="section-head reveal">
+    <span class="section-kicker">How it works</span>
+    <h2>Alur yang simpel, bukan berantakan.</h2>
+    <p>Tiga langkah inti: cari resep, pilih yang cocok, lalu masak dan simpan hasil recook-mu.</p>
+  </div>
+  <div class="steps">
+    <article class="step reveal reveal-delay-1">
+      <span class="step-num">01</span>
+      <h3>Browse resep yang relevan</h3>
+      <p>Filter berdasarkan region, bahan, atau mood masak agar katalog terasa fokus dan tidak overwhelm.</p>
+    </article>
+    <article class="step reveal reveal-delay-2">
+      <span class="step-num">02</span>
+      <h3>Masuk ke detail resep</h3>
+      <p>Lihat ingredient list, video, estimasi harga, dan ringkasan langkah sebelum mulai memasak.</p>
+    </article>
+    <article class="step reveal reveal-delay-3">
+      <span class="step-num">03</span>
+      <h3>Recook, simpan & naik level</h3>
+      <p>Setiap recook jadi history, progress profile, dan bahan evaluasi untuk skill memasak kamu.</p>
+    </article>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div style="position:relative;z-index:2;">
+    <span class="section-kicker">Ready to start?</span>
+    <h2>Bangun rutinitas masak yang lebih rapi.</h2>
+    <p>Masuk kalau akun sudah ada, atau daftar untuk mulai simpan resep favorit, recook history, dan challenge harian.</p>
+    <div class="cta-actions">
+      <a href="/register" class="btn btn-yellow">
+        <i class="fa-solid fa-bowl-food"></i> Buat akun gratis
+      </a>
+      <a href="/login" class="btn btn-outline-white">Login sekarang</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2025 ResepKu · <a href="#">Privacy</a> · <a href="#">Terms</a> · Made with <i class="fa-solid fa-heart" style="color:#389C9A;"></i> for home cooks</p>
+</footer>
+
+<script>
+// ─── TheMealDB Carousel ───
+const MEALDB = 'https://www.themealdb.com/api/json/v1/1';
+let carouselMeals = [];
+let currentSlide = 0;
+let carouselTimer = null;
+
+async function fetchRandomMeals(n = 7) {
+  const promises = Array.from({length: n}, () =>
+    fetch(`${MEALDB}/random.php`).then(r => r.json()).then(d => d.meals[0])
+  );
+  return Promise.all(promises);
+}
+
+function buildCarousel(meals) {
+  carouselMeals = meals;
+  const track = document.getElementById('carousel-track');
+  const dots = document.getElementById('carousel-dots');
+
+  track.innerHTML = '';
+  dots.innerHTML = '';
+
+  meals.forEach((meal, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'carousel-slide' + (i === 0 ? ' active' : '');
+    slide.innerHTML = `
+      <img src="${meal.strMealThumb}" alt="${meal.strMeal}" loading="${i === 0 ? 'eager' : 'lazy'}" />
+      <div class="carousel-overlay"></div>
+      <div class="carousel-label">
+        <div class="meal-area">${meal.strArea || meal.strCategory}</div>
+        <div class="meal-name">${meal.strMeal}</div>
+      </div>
+    `;
+    track.appendChild(slide);
+
+    const dot = document.createElement('div');
+    dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goToSlide(i));
+    dots.appendChild(dot);
+  });
+
+  startCarousel();
+}
+
+function goToSlide(idx) {
+  const track = document.getElementById('carousel-track');
+  const slides = track.querySelectorAll('.carousel-slide');
+  const dots = document.getElementById('carousel-dots').querySelectorAll('.carousel-dot');
+
+  slides[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.remove('active');
+  currentSlide = idx;
+  slides[currentSlide].classList.add('active');
+  dots[currentSlide].classList.add('active');
+  track.style.transform = `translateX(-${currentSlide * 100}%)`;
+}
+
+function startCarousel() {
+  clearInterval(carouselTimer);
+  carouselTimer = setInterval(() => {
+    const next = (currentSlide + 1) % carouselMeals.length;
+    goToSlide(next);
+  }, 4000);
+}
+
+// ─── TheMealDB Meal Grid ───
+async function fetchCategoryMeals() {
+  const cats = ['Seafood', 'Beef', 'Chicken', 'Dessert'];
+  const pick = cats[Math.floor(Math.random() * cats.length)];
+  const r = await fetch(`${MEALDB}/filter.php?c=${pick}`);
+  const d = await r.json();
+  const sample = d.meals.sort(() => 0.5 - Math.random()).slice(0, 4);
+  const details = await Promise.all(
+    sample.map(m => fetch(`${MEALDB}/lookup.php?i=${m.idMeal}`).then(r => r.json()).then(d => d.meals[0]))
+  );
+  return details;
+}
+
+function buildMealGrid(meals) {
+  const grid = document.getElementById('meal-grid');
+  grid.innerHTML = '';
+  meals.forEach(meal => {
+    const card = document.createElement('div');
+    card.className = 'meal-card';
+    card.innerHTML = `
+      <img src="${meal.strMealThumb}" alt="${meal.strMeal}" loading="lazy" />
+      <div class="meal-card-overlay">
+        <div class="meal-card-area">${meal.strArea || meal.strCategory}</div>
+        <div class="meal-card-name">${meal.strMeal}</div>
+      </div>
+      <div class="meal-card-tag">${meal.strCategory}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ─── Ticker ───
+function buildTicker(meals) {
+  const ticker = document.getElementById('ticker');
+  const items = meals.map(m => `
+    <span class="ticker-item"><i class="fa-solid fa-circle-dot"></i>${m.strMeal} — ${m.strArea || m.strCategory}</span>
+  `).join('');
+  ticker.innerHTML = items + items; // duplicate for seamless loop
+}
+
+// ─── Init ───
+(async () => {
+  try {
+    const [carouselMealsData, gridMeals] = await Promise.all([
+      fetchRandomMeals(7),
+      fetchCategoryMeals()
+    ]);
+    buildCarousel(carouselMealsData);
+    buildMealGrid(gridMeals);
+    buildTicker(carouselMealsData);
+  } catch (e) {
+    console.warn('MealDB fetch failed:', e);
+  }
+})();
+
+// ─── Navbar scroll ───
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 20);
+});
+
+// ─── Scroll reveal ───
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('in-view');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
 </html>
