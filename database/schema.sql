@@ -134,6 +134,15 @@ CREATE TABLE IF NOT EXISTS comments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 8b. Tabel Community Post Likes
+CREATE TABLE IF NOT EXISTS community_post_likes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    post_id UUID REFERENCES community_posts(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, post_id)
+);
+
 -- 9. Tabel AI Generated Recipes
 CREATE TABLE IF NOT EXISTS ai_generated_recipes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -217,6 +226,7 @@ CREATE INDEX IF NOT EXISTS idx_recipe_media_sources_cuisine ON recipe_media_sour
 CREATE INDEX IF NOT EXISTS idx_recipe_media_sources_tags ON recipe_media_sources USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_cooking_history_user ON cooking_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_community_post_likes_user_post ON community_post_likes(user_id, post_id);
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id);
 CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_session_created ON ai_chat_messages(session_id, created_at);
 

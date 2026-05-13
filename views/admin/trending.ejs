@@ -17,26 +17,20 @@
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-  <% const currentDailyChallenge = dailyChallenge || null; %>
-  <% const currentWeeklyChallenge = weeklyChallenge || null; %>
-  <% const dailyChallengeSavedFlag = dailyChallengeIsSaved === true; %>
-  <% const weeklyChallengeSavedFlag = weeklyChallengeIsSaved === true; %>
-  <% const dailyChallengeStoredRecipeKey = String(dailyChallengeStoredKey || ''); %>
-  <% const weeklyChallengeStoredRecipeKey = String(weeklyChallengeStoredKey || ''); %>
-  <% const dailyChallengeCandidates = Array.isArray(dailyCandidates) ? dailyCandidates : []; %>
-  <% const weeklyChallengeCandidates = Array.isArray(weeklyCandidates) ? weeklyCandidates : []; %>
-  <% const challengeStatsData = challengeStats || { dailyCount: 0, weeklyCount: 0, totalScopes: 0 }; %>
+  <% const moderationStatsData = moderationStats || { pending: 0, approved: 0, total: 0 }; %>
+  <% const approvedCommunityRecipesData = approvedCommunityRecipes || []; %>
+  <% const pendingRecipesData = pendingRecipes || []; %>
   <% const formatChallengeDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; %>
 
-  <main class="user-dashboard admin-dashboard">
+  <main class="user-dashboard admin-dashboard admin-community-page">
     <div class="user-dashboard-shell admin-shell">
       <%- include('../partials/sidebar', { mode: 'admin', activePage, user }) %>
 
       <section class="user-dashboard-main admin-main">
         <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
           <div class="admin-topbar-copy">
-            <p class="user-panel-kicker">Challenge manager</p>
-            <h1>Daily challenge & weekly challenge</h1>
+            <p class="user-panel-kicker">Community moderation</p>
+            <h1>Approval resep user + challenge otomatis</h1>
           </div>
 
           <div class="user-topbar-actions">
@@ -54,215 +48,183 @@
           </div>
         <% } %>
 
-        <section class="admin-hero-panel">
+        <section class="admin-hero-panel user-panel">
           <div class="user-panel-head">
             <div>
               <p class="user-panel-kicker">Ringkasan</p>
-              <h1>Admin sekarang hanya memilih challenge harian dan mingguan dari API resep.</h1>
+              <h2>Daily dan weekly challenge berjalan otomatis dari API. Admin hanya moderasi resep community.</h2>
             </div>
           </div>
 
-          <p class="admin-hero-copy">
-            Daily challenge mengambil kandidat dari masakan Indonesia, sementara weekly challenge
-            mengambil variasi yang lebih luas dari TheMealDB. Pilihan yang disimpan akan dipakai
-            sebagai referensi challenge utama di aplikasi.
+          <p class="admin-approval-note">
+            Resep user yang pending ditampilkan di bawah. Approve akan memunculkan resep di feed community,
+            sedangkan reject menghapusnya dari antrian.
           </p>
 
-          <div class="admin-stat-grid">
+          <div class="admin-approval-summary">
             <article class="admin-stat-card">
-              <span>Kandidat daily</span>
-              <strong><%= challengeStatsData.dailyCount || 0 %></strong>
-              <small>Masakan Indonesia dari API</small>
+              <span>Pending approval</span>
+              <strong><%= moderationStatsData.pending || 0 %></strong>
+              <small>Resep community menunggu</small>
             </article>
             <article class="admin-stat-card">
-              <span>Kandidat weekly</span>
-              <strong><%= challengeStatsData.weeklyCount || 0 %></strong>
-              <small>Variasi resep API</small>
+              <span>Approved community</span>
+              <strong><%= moderationStatsData.approved || 0 %></strong>
+              <small>Sudah tampil publik</small>
             </article>
             <article class="admin-stat-card">
-              <span>Challenge tersimpan</span>
-              <strong><%= challengeStatsData.totalScopes || 0 %></strong>
-              <small>Daily dan weekly</small>
+              <span>Total community</span>
+              <strong><%= moderationStatsData.total || 0 %></strong>
+              <small>Semua posting user</small>
             </article>
             <article class="admin-stat-card">
-              <span>Fokus</span>
-              <strong>Challenge</strong>
-              <small>Bukan trending kategori</small>
+              <span>Auto challenge</span>
+              <strong>ON</strong>
+              <small>Daily dan weekly dari API</small>
             </article>
           </div>
         </section>
 
-        <div class="admin-content-grid">
-          <section class="admin-column">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Challenge saat ini</p>
-                  <h2>Daily challenge</h2>
-                </div>
-                <span class="user-panel-meta"><%= dailyChallengeSavedFlag ? 'Tersimpan' : 'Belum disimpan' %></span>
+        <div class="admin-approval-grid">
+          <article class="user-panel">
+            <div class="user-panel-head">
+              <div>
+                <p class="user-panel-kicker">Auto challenge</p>
+                <h2>Daily challenge</h2>
               </div>
+            </div>
 
-              <% if (currentDailyChallenge) { %>
-                <article class="admin-list-card admin-media-card">
-                  <img src="<%= currentDailyChallenge.image_url || '/images/1.png' %>" alt="<%= currentDailyChallenge.title %>" />
-                  <div class="admin-list-copy">
-                    <div class="admin-list-topline">
-                      <h3><%= currentDailyChallenge.title %></h3>
-                      <span class="admin-status <%= dailyChallengeSavedFlag ? 'is-approved' : 'is-neutral' %>"><%= currentDailyChallenge.source_label || 'API' %></span>
-                    </div>
-                    <p><%= currentDailyChallenge.category || 'Uncategorized' %> - <%= currentDailyChallenge.cuisine || 'International' %></p>
-                      <div class="admin-meta-row">
-                        <span><i class="fa-regular fa-clock"></i> <%= currentDailyChallenge.cooking_time || 0 %> min</span>
-                        <span><i class="fa-solid fa-heart"></i> <%= currentDailyChallenge.likes_count || 0 %> likes</span>
-                        <span><i class="fa-solid fa-eye"></i> <%= currentDailyChallenge.views_count || 0 %> views</span>
-                      </div>
-                    <small><i class="fa-regular fa-calendar"></i> Updated <%= formatChallengeDate(currentDailyChallenge.saved_at) %></small>
+            <% if (dailyChallenge) { %>
+              <article class="admin-approval-card">
+                <img src="<%= dailyChallenge.image_url || '/images/1.png' %>" alt="<%= dailyChallenge.title %>" />
+                <div class="admin-list-copy">
+                  <h3><%= dailyChallenge.title %></h3>
+                  <p><%= dailyChallenge.category || 'Uncategorized' %> &bull; <%= dailyChallenge.cuisine || 'International' %></p>
+                  <div class="admin-approval-meta">
+                    <span><i class="fa-regular fa-clock"></i> <%= dailyChallenge.cooking_time || 0 %> min</span>
+                    <span><i class="fa-solid fa-heart"></i> <%= dailyChallenge.likes_count || 0 %> likes</span>
+                    <span><i class="fa-solid fa-eye"></i> <%= dailyChallenge.views_count || 0 %> views</span>
                   </div>
-                </article>
-              <% } else { %>
-                <div class="admin-empty-state">
-                  <h3>Belum ada daily challenge.</h3>
-                  <p>Pilih satu resep dari daftar kandidat di bawah untuk mengaktifkannya.</p>
                 </div>
-              <% } %>
-            </article>
-          </section>
-
-          <aside class="admin-column">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Challenge saat ini</p>
-                  <h2>Weekly challenge</h2>
-                </div>
-                <span class="user-panel-meta"><%= weeklyChallengeSavedFlag ? 'Tersimpan' : 'Belum disimpan' %></span>
+              </article>
+            <% } else { %>
+              <div class="community-empty-state">
+                <h3>Daily challenge belum tersedia.</h3>
+                <p>API akan mengisi challenge ini otomatis setiap hari.</p>
               </div>
+            <% } %>
+          </article>
 
-              <% if (currentWeeklyChallenge) { %>
-                <article class="admin-list-card admin-media-card">
-                  <img src="<%= currentWeeklyChallenge.image_url || '/images/1.png' %>" alt="<%= currentWeeklyChallenge.title %>" />
-                  <div class="admin-list-copy">
-                    <div class="admin-list-topline">
-                      <h3><%= currentWeeklyChallenge.title %></h3>
-                      <span class="admin-status <%= weeklyChallengeSavedFlag ? 'is-approved' : 'is-neutral' %>"><%= currentWeeklyChallenge.source_label || 'API' %></span>
-                    </div>
-                    <p><%= currentWeeklyChallenge.category || 'Uncategorized' %> - <%= currentWeeklyChallenge.cuisine || 'International' %></p>
-                    <div class="admin-meta-row">
-                      <span><i class="fa-regular fa-clock"></i> <%= currentWeeklyChallenge.cooking_time || 0 %> min</span>
-                      <span><i class="fa-solid fa-heart"></i> <%= currentWeeklyChallenge.likes_count || 0 %> likes</span>
-                      <span><i class="fa-solid fa-eye"></i> <%= currentWeeklyChallenge.views_count || 0 %> views</span>
-                    </div>
-                    <small><i class="fa-regular fa-calendar"></i> Updated <%= formatChallengeDate(currentWeeklyChallenge.saved_at) %></small>
+          <article class="user-panel">
+            <div class="user-panel-head">
+              <div>
+                <p class="user-panel-kicker">Auto challenge</p>
+                <h2>Weekly challenge</h2>
+              </div>
+            </div>
+
+            <% if (weeklyChallenge) { %>
+              <article class="admin-approval-card">
+                <img src="<%= weeklyChallenge.image_url || '/images/1.png' %>" alt="<%= weeklyChallenge.title %>" />
+                <div class="admin-list-copy">
+                  <h3><%= weeklyChallenge.title %></h3>
+                  <p><%= weeklyChallenge.category || 'Uncategorized' %> &bull; <%= weeklyChallenge.cuisine || 'International' %></p>
+                  <div class="admin-approval-meta">
+                    <span><i class="fa-regular fa-clock"></i> <%= weeklyChallenge.cooking_time || 0 %> min</span>
+                    <span><i class="fa-solid fa-heart"></i> <%= weeklyChallenge.likes_count || 0 %> likes</span>
+                    <span><i class="fa-solid fa-eye"></i> <%= weeklyChallenge.views_count || 0 %> views</span>
                   </div>
-                </article>
-              <% } else { %>
-                <div class="admin-empty-state">
-                  <h3>Belum ada weekly challenge.</h3>
-                  <p>Pilih satu resep dari daftar kandidat di bawah untuk mengaktifkannya.</p>
                 </div>
-              <% } %>
-            </article>
-          </aside>
+              </article>
+            <% } else { %>
+              <div class="community-empty-state">
+                <h3>Weekly challenge belum tersedia.</h3>
+                <p>API akan memilih variasi resep mingguan secara otomatis.</p>
+              </div>
+            <% } %>
+          </article>
         </div>
 
-        <div class="admin-content-grid">
-          <section class="admin-column">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Kandidat API</p>
-                  <h2>Daily challenge candidates</h2>
-                </div>
-                <span class="user-panel-meta"><%= dailyChallengeCandidates.length %> item</span>
-              </div>
+        <section class="user-panel">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">Approval queue</p>
+              <h2>Resep community yang menunggu approval</h2>
+            </div>
+            <span class="user-panel-meta"><%= pendingRecipesData.length %> item</span>
+          </div>
 
-              <div class="admin-list">
-                <% if (dailyChallengeCandidates.length) { %>
-                  <% dailyChallengeCandidates.forEach((recipe) => { %>
-                    <article class="admin-list-card admin-media-card">
-                      <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
-                      <div class="admin-list-copy">
-                        <div class="admin-list-topline">
-                          <h3><%= recipe.title %></h3>
-                          <span class="admin-status <%= dailyChallengeStoredRecipeKey && dailyChallengeStoredRecipeKey === recipe.recipe_key ? 'is-approved' : 'is-neutral' %>">
-                            <%= recipe.source_label || 'API' %>
-                          </span>
-                        </div>
-                        <p><%= recipe.category || 'Uncategorized' %> - <%= recipe.cuisine || 'International' %></p>
-                        <div class="admin-meta-row">
-                          <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
-                          <span><i class="fa-solid fa-heart"></i> <%= recipe.likes_count || 0 %> likes</span>
-                          <span><i class="fa-solid fa-eye"></i> <%= recipe.views_count || 0 %> views</span>
-                        </div>
-                        <form action="/admin/trending/challenge" method="post" class="admin-challenge-form">
-                          <input type="hidden" name="scope" value="daily" />
-                          <input type="hidden" name="recipeId" value="<%= recipe.recipe_key %>" />
-                          <button type="submit" class="auth-button auth-button-secondary">
-                            <%= dailyChallengeStoredRecipeKey && dailyChallengeStoredRecipeKey === recipe.recipe_key ? 'Sudah dipakai' : 'Pilih daily' %>
-                          </button>
-                        </form>
-                      </div>
-                    </article>
-                  <% }) %>
-                <% } else { %>
-                  <div class="admin-empty-state">
-                    <h3>Belum ada kandidat daily.</h3>
-                    <p>API masakan Indonesia belum mengembalikan data.</p>
+          <div class="admin-approval-grid">
+            <% if (pendingRecipesData.length) { %>
+              <% pendingRecipesData.forEach((recipe) => { %>
+                <article class="admin-approval-card">
+                  <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                  <div class="admin-list-copy">
+                    <div class="admin-list-topline">
+                      <h3><%= recipe.title %></h3>
+                      <span class="admin-status is-pending">Pending</span>
+                    </div>
+                    <p><%= recipe.category || 'Community' %> &bull; <%= recipe.cuisine || 'Community' %></p>
+                    <div class="admin-approval-meta">
+                      <span><i class="fa-solid fa-user"></i> <%= recipe.creator_name || 'Community user' %></span>
+                      <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
+                      <span><i class="fa-solid fa-wallet"></i> Rp <%= new Intl.NumberFormat('id-ID').format(Number(recipe.estimated_price || 0)) %></span>
+                      <span><i class="fa-regular fa-calendar"></i> <%= formatChallengeDate(recipe.created_at) %></span>
+                    </div>
+                    <p class="admin-approval-note">
+                      <%= recipe.description || 'Belum ada deskripsi.' %>
+                    </p>
+                    <div class="admin-approval-actions">
+                      <form action="/admin/trending/<%= encodeURIComponent(recipe.id) %>/approve" method="post">
+                        <button type="submit" class="auth-button">Approve</button>
+                      </form>
+                      <form action="/admin/trending/<%= encodeURIComponent(recipe.id) %>/reject" method="post">
+                        <button type="submit" class="auth-button auth-button-secondary">Reject</button>
+                      </form>
+                    </div>
                   </div>
-                <% } %>
+                </article>
+              <% }) %>
+            <% } else { %>
+              <div class="community-empty-state">
+                <h3>Belum ada resep pending.</h3>
+                <p>Semua resep community sudah ditinjau atau belum ada posting baru.</p>
               </div>
-            </article>
-          </section>
+            <% } %>
+          </div>
+        </section>
 
-          <aside class="admin-column">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Kandidat API</p>
-                  <h2>Weekly challenge candidates</h2>
-                </div>
-                <span class="user-panel-meta"><%= weeklyChallengeCandidates.length %> item</span>
-              </div>
+        <section class="user-panel">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">Recent approved</p>
+              <h2>Resep community yang baru disetujui</h2>
+            </div>
+          </div>
 
-              <div class="admin-list">
-                <% if (weeklyChallengeCandidates.length) { %>
-                  <% weeklyChallengeCandidates.forEach((recipe) => { %>
-                    <article class="admin-list-card admin-media-card">
-                      <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
-                      <div class="admin-list-copy">
-                        <div class="admin-list-topline">
-                          <h3><%= recipe.title %></h3>
-                          <span class="admin-status <%= weeklyChallengeStoredRecipeKey && weeklyChallengeStoredRecipeKey === recipe.recipe_key ? 'is-approved' : 'is-neutral' %>">
-                            <%= recipe.source_label || 'API' %>
-                          </span>
-                        </div>
-                        <p><%= recipe.category || 'Uncategorized' %> - <%= recipe.cuisine || 'International' %></p>
-                        <div class="admin-meta-row">
-                          <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
-                          <span><i class="fa-solid fa-heart"></i> <%= recipe.likes_count || 0 %> likes</span>
-                          <span><i class="fa-solid fa-eye"></i> <%= recipe.views_count || 0 %> views</span>
-                        </div>
-                        <form action="/admin/trending/challenge" method="post" class="admin-challenge-form">
-                          <input type="hidden" name="scope" value="weekly" />
-                          <input type="hidden" name="recipeId" value="<%= recipe.recipe_key %>" />
-                          <button type="submit" class="auth-button auth-button-secondary">
-                            <%= weeklyChallengeStoredRecipeKey && weeklyChallengeStoredRecipeKey === recipe.recipe_key ? 'Sudah dipakai' : 'Pilih weekly' %>
-                          </button>
-                        </form>
-                      </div>
-                    </article>
-                  <% }) %>
-                <% } else { %>
-                  <div class="admin-empty-state">
-                    <h3>Belum ada kandidat weekly.</h3>
-                    <p>API resep belum mengembalikan data untuk challenge mingguan.</p>
+          <div class="admin-approval-grid">
+            <% if (approvedCommunityRecipesData.length) { %>
+              <% approvedCommunityRecipesData.forEach((recipe) => { %>
+                <article class="community-post-card">
+                  <div class="community-post-head">
+                    <h3><%= recipe.title %></h3>
+                    <span class="community-status is-approved">Approved</span>
                   </div>
-                <% } %>
+                  <p><%= recipe.creator_name || 'Community user' %></p>
+                  <div class="admin-approval-meta">
+                    <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
+                    <span><i class="fa-solid fa-wallet"></i> Rp <%= new Intl.NumberFormat('id-ID').format(Number(recipe.estimated_price || 0)) %></span>
+                  </div>
+                </article>
+              <% }) %>
+            <% } else { %>
+              <div class="community-empty-state">
+                <h3>Belum ada resep approved.</h3>
+                <p>Setelah approve pertama dilakukan, ringkasan ini akan terisi otomatis.</p>
               </div>
-            </article>
-          </aside>
-        </div>
+            <% } %>
+          </div>
+        </section>
       </section>
     </div>
   </main>

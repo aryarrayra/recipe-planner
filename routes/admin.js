@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
 const mealdb = require('../services/mealdb');
+const challengeService = require('../services/challengeService');
 const { preventBack, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
@@ -115,6 +116,91 @@ function buildRecookQueue(recipes = []) {
             ...recipe,
             source_label: normalizeRecipeSourceLabel(recipe)
         }));
+}
+
+function mapCommunityModerationRecipe(recipe = {}) {
+    return {
+        ...recipe,
+        id: String(recipe.id || '').trim(),
+        title: normalizeText(recipe.title) || 'Untitled',
+        description: normalizeText(recipe.description),
+        image_url: normalizeText(recipe.image_url) || '/images/1.png',
+        category: normalizeText(recipe.category) || 'Community',
+        cuisine: normalizeText(recipe.cuisine) || 'Community',
+        cooking_time: toInt(recipe.cooking_time, 0),
+        servings: toInt(recipe.servings, 1),
+        difficulty: normalizeText(recipe.difficulty) || 'easy',
+        estimated_price: Number(recipe.estimated_price || 0),
+        price_rating: normalizeText(recipe.price_rating) || 'standard',
+        likes_count: Number(recipe.likes_count || 0),
+        views_count: Number(recipe.views_count || 0),
+        creator_name: normalizeText(recipe.creator_name) || 'Community user',
+        source_label: 'Community',
+        approval_status: recipe.is_approved ? 'approved' : 'pending',
+        created_at: recipe.created_at,
+        updated_at: recipe.updated_at
+    };
+}
+
+async function fetchCommunityModerationPageData() {
+    const [autoChallenges, pendingRecipesResult, approvedRecipesResult, statsResult] = await Promise.all([
+        challengeService.getAutoChallenges().catch(() => ({ dailyChallenge: null, weeklyChallenge: null })),
+        pool.query(
+            `
+                SELECT
+                    r.*,
+                    COALESCE(u.username, 'Community user') AS creator_name
+                FROM recipes r
+                LEFT JOIN users u ON u.id = r.created_by
+                WHERE r.created_by IS NOT NULL
+                  AND r.is_approved = false
+                ORDER BY r.created_at ASC
+                LIMIT 20
+            `
+        ),
+        pool.query(
+            `
+                SELECT
+                    r.*,
+                    COALESCE(u.username, 'Community user') AS creator_name
+                FROM recipes r
+                LEFT JOIN users u ON u.id = r.created_by
+                WHERE r.created_by IS NOT NULL
+                  AND r.is_approved = true
+                ORDER BY r.created_at DESC
+                LIMIT 8
+            `
+        ),
+        pool.query(
+            `
+                SELECT
+                    COUNT(*) FILTER (WHERE created_by IS NOT NULL AND is_approved = false)::int AS pending_count,
+                    COUNT(*) FILTER (WHERE created_by IS NOT NULL AND is_approved = true)::int AS approved_count,
+                    COUNT(*) FILTER (WHERE created_by IS NOT NULL)::int AS total_count
+                FROM recipes
+            `
+        )
+    ]);
+
+    const pendingRecipes = pendingRecipesResult.rows.map(mapCommunityModerationRecipe);
+    const approvedCommunityRecipes = approvedRecipesResult.rows.map(mapCommunityModerationRecipe);
+    const stats = statsResult.rows[0] || { pending_count: 0, approved_count: 0, total_count: 0 };
+
+    return {
+        dailyChallenge: autoChallenges.dailyChallenge,
+        weeklyChallenge: autoChallenges.weeklyChallenge,
+        pendingRecipes,
+        approvedCommunityRecipes,
+        moderationStats: {
+            pending: Number(stats.pending_count || 0),
+            approved: Number(stats.approved_count || 0),
+            total: Number(stats.total_count || 0)
+        },
+        autoChallengeStats: {
+            daily: autoChallenges.dailyChallenge ? 1 : 0,
+            weekly: autoChallenges.weeklyChallenge ? 1 : 0
+        }
+    };
 }
 
 let challengeTableReadyPromise = null;
@@ -757,57 +843,7 @@ async function fetchUsersPageData(userId = '') {
 }
 
 async function fetchTrendingPageData() {
-    await ensureChallengeTable();
-
-    const [dailyMeals, weeklyMeals, challengeRows] = await Promise.all([
-        mealdb.getFeedMeals('indonesia', 12).catch(() => []),
-        mealdb.getCatalogMeals(18).catch(() => []),
-        pool.query(`
-            SELECT
-                scope,
-                recipe_id,
-                recipe_source,
-                recipe_title,
-                recipe_image_url,
-                recipe_category,
-                recipe_cuisine,
-                recipe_cooking_time,
-                recipe_likes_count,
-                recipe_views_count,
-                recipe_payload,
-                updated_at
-            FROM admin_challenges
-            WHERE scope IN ('daily', 'weekly')
-        `)
-    ]);
-
-    const challengeMap = new Map((challengeRows.rows || []).map((row) => [row.scope, row]));
-    const dailyCandidates = uniqueRecipesById(dailyMeals).slice(0, 8).map((recipe) => normalizeChallengeRecipe(recipe, 'daily'));
-    const dailyKeys = new Set(dailyCandidates.map((recipe) => recipe.recipe_key).filter(Boolean));
-    const weeklyCandidates = uniqueRecipesById(weeklyMeals)
-        .filter((recipe) => !dailyKeys.has(getRecipeKey(recipe)))
-        .slice(0, 8)
-        .map((recipe) => normalizeChallengeRecipe(recipe, 'weekly'));
-
-    return {
-        dailyCandidates,
-        weeklyCandidates,
-        dailyChallenge: hydrateChallengeRecord(challengeMap.get('daily'), dailyCandidates[0], 'daily'),
-        weeklyChallenge: hydrateChallengeRecord(challengeMap.get('weekly'), weeklyCandidates[0], 'weekly'),
-        dailyChallengeIsSaved: Boolean(challengeMap.get('daily')),
-        weeklyChallengeIsSaved: Boolean(challengeMap.get('weekly')),
-        dailyChallengeStoredKey: challengeMap.get('daily')
-            ? `${String(challengeMap.get('daily').recipe_source || 'themealdb').trim()}:${String(challengeMap.get('daily').recipe_id || '').trim()}`
-            : '',
-        weeklyChallengeStoredKey: challengeMap.get('weekly')
-            ? `${String(challengeMap.get('weekly').recipe_source || 'themealdb').trim()}:${String(challengeMap.get('weekly').recipe_id || '').trim()}`
-            : '',
-        challengeStats: {
-            dailyCount: dailyCandidates.length,
-            weeklyCount: weeklyCandidates.length,
-            totalScopes: challengeMap.size
-        }
-    };
+    return fetchCommunityModerationPageData();
 }
 
 async function fetchReportsPageData() {
@@ -854,9 +890,9 @@ function renderUsersPage(res, req, data, extras = {}) {
 
 function renderTrendingPage(res, req, data, extras = {}) {
     res.render('admin/trending', {
-        title: 'Daily & Weekly Challenge - AI Recipe Planner',
+        title: 'Community Moderation - AI Recipe Planner',
         user: req.session.user,
-        activePage: 'challenge',
+        activePage: 'community',
         ...data,
         ...extras
     });
@@ -916,79 +952,76 @@ router.get('/trending', async (req, res) => {
     }
 });
 
-router.post('/trending/challenge', async (req, res) => {
-    const scope = normalizeText(req.body.scope).toLowerCase();
-    const recipeId = normalizeText(req.body.recipeId);
+router.post('/trending/:id/approve', async (req, res) => {
+    const recipeId = normalizeText(req.params.id);
 
     try {
-        if (!['daily', 'weekly'].includes(scope)) {
-            return res.redirect('/admin/trending?error=Scope+challenge+tidak+valid');
-        }
-
         if (!recipeId) {
-            return res.redirect('/admin/trending?error=Resep+untuk+challenge+wajib+dipilih');
+            return res.redirect('/admin/trending?error=Resep+tidak+valid');
         }
 
-        await ensureChallengeTable();
+        const result = await pool.query(
+            `
+                UPDATE recipes
+                SET is_approved = true,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $1
+                  AND created_by IS NOT NULL
+                  AND is_approved = false
+                RETURNING id, created_by
+            `,
+            [recipeId]
+        );
 
-        const recipe = await mealdb.lookupMealById(recipeId);
+        const recipe = result.rows[0];
         if (!recipe) {
-            return res.redirect('/admin/trending?error=Resep+tidak+ditemukan+dari+API');
+            return res.redirect('/admin/trending?error=Resep+tidak+ditemukan+atau+sudah+disetujui');
         }
-
-        const snapshot = snapshotChallengeRecord(recipe, scope);
 
         await pool.query(
             `
-            INSERT INTO admin_challenges (
-                scope,
-                recipe_id,
-                recipe_source,
-                recipe_title,
-                recipe_image_url,
-                recipe_category,
-                recipe_cuisine,
-                recipe_cooking_time,
-                recipe_likes_count,
-                recipe_views_count,
-                recipe_payload,
-                created_at,
-                updated_at
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            ON CONFLICT (scope) DO UPDATE SET
-                recipe_id = EXCLUDED.recipe_id,
-                recipe_source = EXCLUDED.recipe_source,
-                recipe_title = EXCLUDED.recipe_title,
-                recipe_image_url = EXCLUDED.recipe_image_url,
-                recipe_category = EXCLUDED.recipe_category,
-                recipe_cuisine = EXCLUDED.recipe_cuisine,
-                recipe_cooking_time = EXCLUDED.recipe_cooking_time,
-                recipe_likes_count = EXCLUDED.recipe_likes_count,
-                recipe_views_count = EXCLUDED.recipe_views_count,
-                recipe_payload = EXCLUDED.recipe_payload,
-                updated_at = CURRENT_TIMESTAMP
+                UPDATE users
+                SET total_recipes_shared = COALESCE(total_recipes_shared, 0) + 1,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $1
             `,
-            [
-                snapshot.scope,
-                snapshot.recipe_id,
-                snapshot.recipe_source,
-                snapshot.recipe_title,
-                snapshot.recipe_image_url,
-                snapshot.recipe_category,
-                snapshot.recipe_cuisine,
-                snapshot.recipe_cooking_time,
-                snapshot.recipe_likes_count,
-                snapshot.recipe_views_count,
-                snapshot.recipe_payload
-            ]
+            [recipe.created_by]
         );
 
-        const scopeLabel = scope === 'daily' ? 'Daily challenge' : 'Weekly challenge';
-        return res.redirect(`/admin/trending?notice=${encodeURIComponent(`${scopeLabel} berhasil disimpan`)}`);
+        return res.redirect('/admin/trending?notice=Resep+berhasil+disetujui');
     } catch (error) {
-        console.error('Save challenge error:', error.message);
-        return res.redirect('/admin/trending?error=Gagal+menyimpan+challenge');
+        console.error('Approve community recipe error:', error.message);
+        return res.redirect('/admin/trending?error=Gagal+menyetujui+resep');
+    }
+});
+
+router.post('/trending/:id/reject', async (req, res) => {
+    const recipeId = normalizeText(req.params.id);
+
+    try {
+        if (!recipeId) {
+            return res.redirect('/admin/trending?error=Resep+tidak+valid');
+        }
+
+        const result = await pool.query(
+            `
+                DELETE FROM recipes
+                WHERE id = $1
+                  AND created_by IS NOT NULL
+                  AND is_approved = false
+                RETURNING id
+            `,
+            [recipeId]
+        );
+
+        if (!result.rows.length) {
+            return res.redirect('/admin/trending?error=Resep+tidak+ditemukan+atau+sudah+diproses');
+        }
+
+        return res.redirect('/admin/trending?notice=Resep+berhasil+dihapus+dari+antrian');
+    } catch (error) {
+        console.error('Reject community recipe error:', error.message);
+        return res.redirect('/admin/trending?error=Gagal+menghapus+resep');
     }
 });
 

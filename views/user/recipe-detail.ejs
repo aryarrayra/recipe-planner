@@ -19,7 +19,7 @@
 <body>
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
   <% const serializedRecipes = JSON.stringify(recipes || []).replace(/</g, '\\u003c'); %>
-  <% const activeRecipeId = activeRecipe ? String(activeRecipe.id) : ''; %>
+  <% const activeRecipeId = activeRecipe ? String(activeRecipe.favoriteKey || activeRecipe.id) : ''; %>
 
   <main class="user-dashboard user-feed-page user-recipe-detail-page">
     <div class="user-dashboard-shell">
@@ -137,7 +137,7 @@
                     class="user-recipe-action-btn"
                     id="recipeDetailFavorite"
                     data-action="favorite"
-                    data-recipe-id="<%= activeRecipe.id %>"
+                    data-recipe-id="<%= activeRecipe.favoriteKey || activeRecipe.id %>"
                   >
                     <i class="fa-<%= activeRecipe.isFavorite ? 'solid' : 'regular' %> fa-heart"></i>
                     <span><%= activeRecipe.isFavorite ? 'Hapus dari favorit' : 'Simpan ke favorit' %></span>
@@ -284,7 +284,7 @@
       const selectedRecipeSnapshot = <%- JSON.stringify(activeRecipe || null).replace(/</g, '\\u003c') %>;
       const selectedFavoriteButton = document.getElementById('recipeDetailFavorite');
       const selectedShareButton = document.getElementById('recipeDetailShare');
-      const selectedRecipeId = String(<%- JSON.stringify(activeRecipe ? activeRecipe.id : '') %>);
+      const selectedRecipeId = String(<%- JSON.stringify(activeRecipe ? (activeRecipe.favoriteKey || activeRecipe.id) : '') %>);
       const escapeSelector = (value) => {
         if (window.CSS && typeof window.CSS.escape === 'function') {
           return window.CSS.escape(String(value || ''));
@@ -328,8 +328,9 @@
       }
 
       const updateFavoriteState = (recipe) => {
-        const card = document.querySelector(`.user-fyp-menu-card[data-recipe-id="${escapeSelector(recipe.id)}"]`);
-        const button = selectedFavoriteButton && String(selectedFavoriteButton.dataset.recipeId) === String(recipe.id)
+        const recipeKey = String(recipe.favoriteKey || recipe.id);
+        const card = document.querySelector(`.user-fyp-menu-card[data-recipe-id="${escapeSelector(recipeKey)}"]`);
+        const button = selectedFavoriteButton && String(selectedFavoriteButton.dataset.recipeId) === String(recipeKey)
           ? selectedFavoriteButton
           : null;
 
@@ -452,8 +453,11 @@
         });
       }
 
-      if (selectedRecipeSnapshot && selectedRecipeSnapshot.id && !recipeMap.has(String(selectedRecipeSnapshot.id))) {
+      if (selectedRecipeSnapshot && selectedRecipeSnapshot.id) {
         recipeMap.set(String(selectedRecipeSnapshot.id), selectedRecipeSnapshot);
+        if (selectedRecipeSnapshot.favoriteKey) {
+          recipeMap.set(String(selectedRecipeSnapshot.favoriteKey), selectedRecipeSnapshot);
+        }
       }
     })();
   </script>
