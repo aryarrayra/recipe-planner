@@ -25,18 +25,7 @@
 
       <section class="user-dashboard-main">
         <header class="user-dashboard-topbar user-recipe-topbar">
-          <form class="user-search user-recipe-search" action="/recipe-menu" method="get">
-            <i class="fa-solid fa-magnifying-glass user-search-icon" aria-hidden="true"></i>
-            <input type="text" name="q" placeholder="Cari resep, bahan, atau kategori" value="<%= search || '' %>" />
-            <button type="submit" class="user-search-submit">Search</button>
-          </form>
-
-          <div class="user-topbar-actions">
-            <div class="user-profile-pill">
-              <strong><%= user.username %></strong>
-              <span><%= user.role %></span>
-            </div>
-          </div>
+          <div class="user-topbar-actions"></div>
         </header>
 
         <div class="user-recipe-menu-layout">
@@ -50,32 +39,48 @@
               </div>
 
               <p class="user-ai-copy">
-                Halaman ini khusus katalog resep. Isinya card gambar dan ringkasan singkat, lalu tombol
+                Halaman ini khusus katalog resep. Pilih filter region dan bahan untuk mempersempit hasil, lalu tombol
                 `Cooked` untuk masuk ke detail resep dan mulai ikuti step memasaknya.
               </p>
 
-              <div class="user-recipe-menu-categories">
-                <a class="user-feed-filter <%= !selectedCategory ? 'is-active' : '' %>" href="/recipe-menu">
-                  <strong>Semua</strong>
-                  <span>All recipes</span>
-                </a>
-                <a
-                  class="user-feed-filter <%= ['indonesia', 'nusantara', 'indonesia/nusantara'].includes(String(selectedCategory || '').toLowerCase()) ? 'is-active' : '' %>"
-                  href="/recipe-menu?category=Indonesia%2FNusantara"
-                >
-                  <strong>Indonesia/Nusantara</strong>
-                  <span>Resep lokal</span>
-                </a>
-                <% categories.forEach((item) => { %>
-                  <a
-                    class="user-feed-filter <%= selectedCategory === item ? 'is-active' : '' %>"
-                    href="/recipe-menu?category=<%= encodeURIComponent(item) %>"
-                  >
-                    <strong><%= item %></strong>
-                    <span>Category</span>
-                  </a>
-                <% }) %>
-              </div>
+              <form class="user-recipe-filter-form" action="/recipe-menu" method="get">
+                <label class="user-recipe-filter-field">
+                  <span>Region</span>
+                  <select name="region">
+                    <% regionOptions.forEach((option) => { %>
+                      <option value="<%= option.value %>" <%= String(selectedRegion || '') === String(option.value || '') ? 'selected' : '' %>>
+                        <%= option.label %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </label>
+
+                <label class="user-recipe-filter-field">
+                  <span>Bahan</span>
+                  <select name="ingredient">
+                    <% ingredientOptions.forEach((option) => { %>
+                      <option value="<%= option.value %>" <%= String(selectedIngredient || '') === String(option.value || '') ? 'selected' : '' %>>
+                        <%= option.label %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </label>
+
+                <label class="user-recipe-filter-field user-recipe-filter-field-text">
+                  <span>Cari resep</span>
+                  <input
+                    type="text"
+                    name="q"
+                    value="<%= search || '' %>"
+                    placeholder="Nama resep, atau kata kunci"
+                  />
+                </label>
+
+                <div class="user-recipe-filter-actions">
+                  <button type="submit" class="auth-button">Terapkan filter</button>
+                  <a class="auth-button auth-button-secondary" href="/recipe-menu">Reset</a>
+                </div>
+              </form>
             </article>
 
             <div class="user-recipe-menu-grid">
@@ -89,7 +94,7 @@
 
                     <div class="user-recipe-tags">
                       <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime %> menit</span>
-                      <span><i class="fa-solid fa-wallet"></i> Rp <%= formatPrice(recipe.estimatedPrice) %></span>
+                      <span><i class="fa-solid fa-wallet"></i> Perkiraan Rp <%= formatPrice(recipe.estimatedPrice) %></span>
                       <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
                     </div>
 

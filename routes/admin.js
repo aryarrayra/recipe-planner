@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
+const mealdb = require('../services/mealdb');
 const { preventBack, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
@@ -22,6 +23,191 @@ function optionalText(value) {
 function toInt(value, fallback = 0) {
     const parsed = Number.parseInt(value, 10);
     return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function uniqueRecipesById(items = []) {
+    const seen = new Set();
+
+    return items.filter((item) => {
+        const source = String(item?.source || item?.creator_source || 'unknown').trim();
+        const rawId = String(item?.id || item?.idMeal || item?.sourceId || '').trim();
+        if (!rawId) {
+            return false;
+        }
+
+        const key = `${source}:${rawId}`;
+        if (seen.has(key)) {
+            return false;
+        }
+
+        seen.add(key);
+        return true;
+    });
+}
+
+function normalizeRecipeSourceLabel(recipe = {}) {
+    const source = String(recipe.source || '').toLowerCase();
+
+    if (source === 'indonesia_food_api') {
+        return 'Masak Apa Hari Ini';
+    }
+
+    if (source === 'themealdb') {
+        return 'TheMealDB';
+    }
+
+    return recipe.creator_name || 'API';
+}
+
+function buildTrendingCategories(recipes = []) {
+    const categories = new Map();
+
+    recipes.forEach((recipe) => {
+        const category = normalizeText(recipe.category) || 'Uncategorized';
+        const current = categories.get(category) || {
+            category,
+            recipe_count: 0,
+            likes_count: 0,
+            views_count: 0
+        };
+
+        current.recipe_count += 1;
+        current.likes_count += Number(recipe.likes_count || 0);
+        current.views_count += Number(recipe.views_count || 0);
+
+        categories.set(category, current);
+    });
+
+    return Array.from(categories.values()).sort((a, b) => {
+        if (b.recipe_count !== a.recipe_count) {
+            return b.recipe_count - a.recipe_count;
+        }
+
+        if (b.likes_count !== a.likes_count) {
+            return b.likes_count - a.likes_count;
+        }
+
+        if (b.views_count !== a.views_count) {
+            return b.views_count - a.views_count;
+        }
+
+        return a.category.localeCompare(b.category, 'id');
+    });
+}
+
+function buildRecookQueue(recipes = []) {
+    return [...recipes]
+        .sort((a, b) => {
+            const likesDiff = Number(b.likes_count || 0) - Number(a.likes_count || 0);
+            if (likesDiff) {
+                return likesDiff;
+            }
+
+            const viewsDiff = Number(b.views_count || 0) - Number(a.views_count || 0);
+            if (viewsDiff) {
+                return viewsDiff;
+            }
+
+            return String(a.title || '').localeCompare(String(b.title || ''), 'id');
+        })
+        .slice(0, 6)
+        .map((recipe) => ({
+            ...recipe,
+            source_label: normalizeRecipeSourceLabel(recipe)
+        }));
+}
+
+let challengeTableReadyPromise = null;
+
+async function ensureChallengeTable() {
+    if (!challengeTableReadyPromise) {
+        challengeTableReadyPromise = pool
+            .query(`
+                CREATE TABLE IF NOT EXISTS admin_challenges (
+                    scope VARCHAR(20) PRIMARY KEY,
+                    recipe_id TEXT NOT NULL,
+                    recipe_source VARCHAR(50) NOT NULL,
+                    recipe_title VARCHAR(200) NOT NULL,
+                    recipe_image_url TEXT,
+                    recipe_category VARCHAR(100),
+                    recipe_cuisine VARCHAR(100),
+                    recipe_cooking_time INT,
+                    recipe_likes_count INT DEFAULT 0,
+                    recipe_views_count INT DEFAULT 0,
+                    recipe_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `)
+            .catch((error) => {
+                challengeTableReadyPromise = null;
+                throw error;
+            });
+    }
+
+    return challengeTableReadyPromise;
+}
+
+function getRecipeKey(recipe = {}) {
+    const source = String(recipe.source || recipe.creator_source || 'themealdb').trim();
+    const rawId = String(recipe.id || recipe.idMeal || recipe.sourceId || '').trim();
+    return rawId ? `${source}:${rawId}` : '';
+}
+
+function normalizeChallengeRecipe(recipe = {}, scope = '') {
+    return {
+        ...recipe,
+        scope,
+        recipe_key: getRecipeKey(recipe),
+        source_label: normalizeRecipeSourceLabel(recipe)
+    };
+}
+
+function snapshotChallengeRecord(recipe = {}, scope = '') {
+    const normalizedRecipe = normalizeChallengeRecipe(recipe, scope);
+
+    return {
+        scope,
+        recipe_id: String(recipe.id || recipe.idMeal || recipe.sourceId || '').trim(),
+        recipe_source: String(recipe.source || 'themealdb').trim(),
+        recipe_title: String(recipe.title || '').trim(),
+        recipe_image_url: String(recipe.image_url || '').trim(),
+        recipe_category: String(recipe.category || '').trim(),
+        recipe_cuisine: String(recipe.cuisine || '').trim(),
+        recipe_cooking_time: Number(recipe.cooking_time || 0),
+        recipe_likes_count: Number(recipe.likes_count || 0),
+        recipe_views_count: Number(recipe.views_count || 0),
+        recipe_payload: normalizedRecipe
+    };
+}
+
+function hydrateChallengeRecord(row, fallbackRecipe = null, scope = '') {
+    if (!row && !fallbackRecipe) {
+        return null;
+    }
+
+    const payload = row?.recipe_payload && typeof row.recipe_payload === 'object' ? row.recipe_payload : null;
+    const sourceRecipe = payload && Object.keys(payload).length ? payload : fallbackRecipe;
+
+    if (!sourceRecipe) {
+        return null;
+    }
+
+    return normalizeChallengeRecipe(
+        {
+            ...sourceRecipe,
+            id: sourceRecipe.id || row?.recipe_id || sourceRecipe.idMeal || sourceRecipe.sourceId,
+            source: sourceRecipe.source || row?.recipe_source || 'themealdb',
+            title: sourceRecipe.title || row?.recipe_title || '',
+            image_url: sourceRecipe.image_url || row?.recipe_image_url || '',
+            category: sourceRecipe.category || row?.recipe_category || 'Uncategorized',
+            cuisine: sourceRecipe.cuisine || row?.recipe_cuisine || 'International',
+            cooking_time: sourceRecipe.cooking_time ?? row?.recipe_cooking_time ?? 0,
+            likes_count: sourceRecipe.likes_count ?? row?.recipe_likes_count ?? 0,
+            views_count: sourceRecipe.views_count ?? row?.recipe_views_count ?? 0
+        },
+        row?.scope || scope
+    );
 }
 
 function parseFlexibleArray(raw, fallback = []) {
@@ -571,41 +757,56 @@ async function fetchUsersPageData(userId = '') {
 }
 
 async function fetchTrendingPageData() {
-    const [categoryRows, recookRows] = await Promise.all([
+    await ensureChallengeTable();
+
+    const [dailyMeals, weeklyMeals, challengeRows] = await Promise.all([
+        mealdb.getFeedMeals('indonesia', 12).catch(() => []),
+        mealdb.getCatalogMeals(18).catch(() => []),
         pool.query(`
             SELECT
-                COALESCE(category, 'Uncategorized') AS category,
-                COUNT(*)::int AS recipe_count,
-                COALESCE(SUM(likes_count), 0)::int AS likes_count,
-                COALESCE(SUM(views_count), 0)::int AS views_count
-            FROM recipes
-            GROUP BY COALESCE(category, 'Uncategorized')
-            ORDER BY recipe_count DESC, likes_count DESC, views_count DESC, category ASC
-            LIMIT 12
-        `),
-        pool.query(`
-            SELECT
-                id,
-                title,
-                image_url,
-                category,
-                COALESCE(cooking_time, 0)::int AS cooking_time,
-                COALESCE(likes_count, 0)::int AS likes_count,
-                COALESCE(views_count, 0)::int AS views_count
-            FROM recipes
-            ORDER BY likes_count DESC, views_count DESC, created_at DESC
-            LIMIT 6
+                scope,
+                recipe_id,
+                recipe_source,
+                recipe_title,
+                recipe_image_url,
+                recipe_category,
+                recipe_cuisine,
+                recipe_cooking_time,
+                recipe_likes_count,
+                recipe_views_count,
+                recipe_payload,
+                updated_at
+            FROM admin_challenges
+            WHERE scope IN ('daily', 'weekly')
         `)
     ]);
 
+    const challengeMap = new Map((challengeRows.rows || []).map((row) => [row.scope, row]));
+    const dailyCandidates = uniqueRecipesById(dailyMeals).slice(0, 8).map((recipe) => normalizeChallengeRecipe(recipe, 'daily'));
+    const dailyKeys = new Set(dailyCandidates.map((recipe) => recipe.recipe_key).filter(Boolean));
+    const weeklyCandidates = uniqueRecipesById(weeklyMeals)
+        .filter((recipe) => !dailyKeys.has(getRecipeKey(recipe)))
+        .slice(0, 8)
+        .map((recipe) => normalizeChallengeRecipe(recipe, 'weekly'));
+
     return {
-        categories: (categoryRows.rows || []).map((row) => ({
-            category: row.category,
-            recipe_count: Number(row.recipe_count || 0),
-            likes_count: Number(row.likes_count || 0),
-            views_count: Number(row.views_count || 0)
-        })),
-        recookRecipes: recookRows.rows || []
+        dailyCandidates,
+        weeklyCandidates,
+        dailyChallenge: hydrateChallengeRecord(challengeMap.get('daily'), dailyCandidates[0], 'daily'),
+        weeklyChallenge: hydrateChallengeRecord(challengeMap.get('weekly'), weeklyCandidates[0], 'weekly'),
+        dailyChallengeIsSaved: Boolean(challengeMap.get('daily')),
+        weeklyChallengeIsSaved: Boolean(challengeMap.get('weekly')),
+        dailyChallengeStoredKey: challengeMap.get('daily')
+            ? `${String(challengeMap.get('daily').recipe_source || 'themealdb').trim()}:${String(challengeMap.get('daily').recipe_id || '').trim()}`
+            : '',
+        weeklyChallengeStoredKey: challengeMap.get('weekly')
+            ? `${String(challengeMap.get('weekly').recipe_source || 'themealdb').trim()}:${String(challengeMap.get('weekly').recipe_id || '').trim()}`
+            : '',
+        challengeStats: {
+            dailyCount: dailyCandidates.length,
+            weeklyCount: weeklyCandidates.length,
+            totalScopes: challengeMap.size
+        }
     };
 }
 
@@ -653,9 +854,9 @@ function renderUsersPage(res, req, data, extras = {}) {
 
 function renderTrendingPage(res, req, data, extras = {}) {
     res.render('admin/trending', {
-        title: 'Trending & Daily Recook - AI Recipe Planner',
+        title: 'Daily & Weekly Challenge - AI Recipe Planner',
         user: req.session.user,
-        activePage: 'trending',
+        activePage: 'challenge',
         ...data,
         ...extras
     });
@@ -710,8 +911,84 @@ router.get('/trending', async (req, res) => {
             error: normalizeText(req.query.error)
         });
     } catch (error) {
-        console.error('Admin trending error:', error.message);
-        res.status(500).send('Gagal memuat halaman trending admin.');
+        console.error('Admin challenge error:', error.message);
+        res.status(500).send('Gagal memuat halaman challenge admin.');
+    }
+});
+
+router.post('/trending/challenge', async (req, res) => {
+    const scope = normalizeText(req.body.scope).toLowerCase();
+    const recipeId = normalizeText(req.body.recipeId);
+
+    try {
+        if (!['daily', 'weekly'].includes(scope)) {
+            return res.redirect('/admin/trending?error=Scope+challenge+tidak+valid');
+        }
+
+        if (!recipeId) {
+            return res.redirect('/admin/trending?error=Resep+untuk+challenge+wajib+dipilih');
+        }
+
+        await ensureChallengeTable();
+
+        const recipe = await mealdb.lookupMealById(recipeId);
+        if (!recipe) {
+            return res.redirect('/admin/trending?error=Resep+tidak+ditemukan+dari+API');
+        }
+
+        const snapshot = snapshotChallengeRecord(recipe, scope);
+
+        await pool.query(
+            `
+            INSERT INTO admin_challenges (
+                scope,
+                recipe_id,
+                recipe_source,
+                recipe_title,
+                recipe_image_url,
+                recipe_category,
+                recipe_cuisine,
+                recipe_cooking_time,
+                recipe_likes_count,
+                recipe_views_count,
+                recipe_payload,
+                created_at,
+                updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (scope) DO UPDATE SET
+                recipe_id = EXCLUDED.recipe_id,
+                recipe_source = EXCLUDED.recipe_source,
+                recipe_title = EXCLUDED.recipe_title,
+                recipe_image_url = EXCLUDED.recipe_image_url,
+                recipe_category = EXCLUDED.recipe_category,
+                recipe_cuisine = EXCLUDED.recipe_cuisine,
+                recipe_cooking_time = EXCLUDED.recipe_cooking_time,
+                recipe_likes_count = EXCLUDED.recipe_likes_count,
+                recipe_views_count = EXCLUDED.recipe_views_count,
+                recipe_payload = EXCLUDED.recipe_payload,
+                updated_at = CURRENT_TIMESTAMP
+            `,
+            [
+                snapshot.scope,
+                snapshot.recipe_id,
+                snapshot.recipe_source,
+                snapshot.recipe_title,
+                snapshot.recipe_image_url,
+                snapshot.recipe_category,
+                snapshot.recipe_cuisine,
+                snapshot.recipe_cooking_time,
+                snapshot.recipe_likes_count,
+                snapshot.recipe_views_count,
+                snapshot.recipe_payload
+            ]
+        );
+
+        const scopeLabel = scope === 'daily' ? 'Daily challenge' : 'Weekly challenge';
+        return res.redirect(`/admin/trending?notice=${encodeURIComponent(`${scopeLabel} berhasil disimpan`)}`);
+    } catch (error) {
+        console.error('Save challenge error:', error.message);
+        return res.redirect('/admin/trending?error=Gagal+menyimpan+challenge');
     }
 });
 

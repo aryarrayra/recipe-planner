@@ -1,11 +1,13 @@
 ﻿const express = require('express');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
 const pool = require('../config/db');
 const { preventBack } = require('../middleware/auth');
 const mealdb = require('../services/mealdb');
 const mealFavorites = require('../services/mealFavorites');
 
 const router = express.Router();
+const profileUpload = multer({ storage: multer.memoryStorage() });
 const ALLERGY_OPTIONS = [
     { key: 'nuts', label: 'Kacang' },
     { key: 'seafood', label: 'Seafood' },
@@ -81,6 +83,47 @@ async function saveUserPreferences(userId, preferences) {
     return normalized;
 }
 
+function getCookingSkillLabel(points = 0) {
+    const score = Number(points || 0);
+    if (score >= 25) {
+        return 'Advanced';
+    }
+
+    if (score >= 10) {
+        return 'Intermediate';
+    }
+
+    return 'Beginner';
+}
+
+function buildProfileProgress(user = {}, cookedCount = 0) {
+    const activityPoints =
+        Number(user.total_recipes_cooked || 0) * 2 +
+        Number(user.total_saved_recipes || 0) +
+        Number(user.total_recipes_shared || 0) * 3 +
+        Number(cookedCount || 0);
+    const level = Math.max(1, Math.floor(activityPoints / 10) + 1);
+    const pointsIntoLevel = activityPoints % 10;
+    const pointsToNextLevel = 10 - pointsIntoLevel;
+    const progress = Math.max(0, Math.min(100, Math.round((pointsIntoLevel / 10) * 100)));
+
+    return {
+        level,
+        title:
+            level >= 8
+                ? 'Recipe Maestro'
+                : level >= 5
+                    ? 'Kitchen Explorer'
+                    : level >= 3
+                        ? 'Home Cook'
+                        : 'Starter Cook',
+        progress,
+        activityPoints,
+        pointsIntoLevel,
+        pointsToNextLevel
+    };
+}
+
 function getRecipeSearchBlob(recipe) {
     return [
         recipe.title,
@@ -94,6 +137,187 @@ function getRecipeSearchBlob(recipe) {
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
+}
+
+function getRecipeRegionBlob(recipe = {}) {
+    return [
+        recipe.originPlace,
+        recipe.origin_place,
+        recipe.cuisine,
+        recipe.category,
+        recipe.title
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+}
+
+function getRecipeIngredientBlob(recipe = {}) {
+    return [
+        recipe.title,
+        recipe.description,
+        JSON.stringify(recipe.ingredients || []),
+        Array.isArray(recipe.tags) ? recipe.tags.join(' ') : recipe.tags,
+        recipe.category
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+}
+
+function getRecipeFilterGroups() {
+    return {
+        regions: [
+            { value: '', label: 'Semua region', hint: 'Campuran semua resep' },
+            { value: 'indonesia', label: 'Indonesia / Nusantara', hint: 'Resep lokal' },
+            { value: 'asia', label: 'Asia', hint: 'Jepang, Korea, Thai, dll' },
+            { value: 'western', label: 'Western', hint: 'Eropa dan Amerika' },
+            { value: 'europe', label: 'Europe', hint: 'Italia, French, Greek' },
+            { value: 'middle-east', label: 'Middle East', hint: 'Timur Tengah' },
+            { value: 'latin', label: 'Latin America', hint: 'Mexican, Peru, dll' },
+            { value: 'africa', label: 'Africa', hint: 'Masakan Afrika' },
+            { value: 'global', label: 'Global', hint: 'Resep umum' }
+        ],
+        ingredients: [
+            { value: '', label: 'Semua bahan', hint: 'Campuran semua bahan' },
+            { value: 'chicken', label: 'Ayam', hint: 'Unggas' },
+            { value: 'beef', label: 'Daging sapi', hint: 'Protein merah' },
+            { value: 'seafood', label: 'Seafood', hint: 'Ikan, udang, cumi' },
+            { value: 'egg', label: 'Telur', hint: 'Telur ayam / bebek' },
+            { value: 'tofu-tempe', label: 'Tahu / Tempe', hint: 'Protein nabati' },
+            { value: 'vegetable', label: 'Sayuran', hint: 'Menu hijau' },
+            { value: 'rice-noodle', label: 'Nasi / Mi', hint: 'Karbo utama' },
+            { value: 'dairy', label: 'Susu / Keju', hint: 'Dairy' },
+            { value: 'spicy', label: 'Pedas', hint: 'Cabai dan sambal' },
+            { value: 'dessert', label: 'Dessert', hint: 'Manis / penutup' }
+        ]
+    };
+}
+
+function normalizeRecipeRegionFilter(value = '') {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (['indonesia', 'nusantara', 'indonesia/nusantara', 'indonesia - nusantara'].includes(normalized)) {
+        return 'indonesia';
+    }
+
+    if (['middle east', 'middle-east', 'timur tengah'].includes(normalized)) {
+        return 'middle-east';
+    }
+
+    return normalized;
+}
+
+function normalizeRecipeIngredientFilter(value = '') {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (['tahu/tempe', 'tahu-tempe', 'tofu/tempe', 'tofu-tempe'].includes(normalized)) {
+        return 'tofu-tempe';
+    }
+
+    if (['rice/noodle', 'rice-noodle', 'nasi/mi', 'nasi-mi'].includes(normalized)) {
+        return 'rice-noodle';
+    }
+
+    return normalized;
+}
+
+function fileToDataUrl(file = null) {
+    if (!file || !file.buffer || !file.mimetype || !String(file.mimetype).startsWith('image/')) {
+        return '';
+    }
+
+    return `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+}
+
+function getRegionSourceOrigins(region = '') {
+    const key = String(region || '').trim().toLowerCase();
+    const regionMap = {
+        indonesia: ['Indonesia'],
+        asia: ['Chinese', 'Japanese', 'Indian', 'Thai', 'Vietnamese', 'Malaysian', 'Filipino', 'Korean'],
+        western: ['American', 'British', 'French', 'Italian', 'Spanish', 'Canadian'],
+        europe: ['British', 'French', 'Italian', 'Spanish', 'Greek', 'German', 'Dutch'],
+        'middle-east': ['Arabic', 'Turkish', 'Lebanese', 'Persian', 'Moroccan', 'Egyptian'],
+        latin: ['Mexican', 'Brazilian', 'Argentinian', 'Colombian', 'Peruvian'],
+        africa: ['African', 'Moroccan', 'Egyptian', 'Ethiopian', 'Nigerian', 'South African'],
+        global: []
+    };
+
+    return regionMap[key] || [];
+}
+
+function matchesRecipeRegion(recipe = {}, region = '') {
+    const key = String(region || '').trim().toLowerCase();
+    if (!key) {
+        return true;
+    }
+
+    const blob = getRecipeRegionBlob(recipe);
+    const aliases = {
+        indonesia: ['indonesia', 'nusantara', 'jawa', 'padang', 'sunda', 'betawi', 'bali', 'makassar', 'aceh', 'medan', 'sumatra', 'indonesian'],
+        asia: ['asia', 'japan', 'japanese', 'korea', 'korean', 'thai', 'thailand', 'china', 'chinese', 'vietnam', 'vietnamese', 'malaysia', 'malaysian', 'india', 'indian', 'philippines', 'filipino'],
+        western: ['western', 'america', 'american', 'british', 'french', 'italian', 'europe', 'european', 'euro'],
+        europe: ['europe', 'european', 'british', 'french', 'italian', 'spanish', 'greek', 'german', 'mediterranean'],
+        'middle-east': ['middle east', 'middle-east', 'arab', 'arabic', 'turkish', 'persian', 'lebanese', 'iraqi'],
+        latin: ['latin', 'mexican', 'peruvian', 'brazilian', 'argentinian', 'chilean', 'colombian'],
+        africa: ['africa', 'african', 'moroccan', 'egyptian', 'ethiopian', 'nigerian', 'south african'],
+        global: []
+    };
+
+    const terms = aliases[key] || [key];
+    return terms.length ? terms.some((term) => blob.includes(term)) : true;
+}
+
+function matchesRecipeIngredient(recipe = {}, ingredient = '') {
+    const key = String(ingredient || '').trim().toLowerCase();
+    if (!key) {
+        return true;
+    }
+
+    const blob = getRecipeIngredientBlob(recipe);
+    const aliases = {
+        chicken: ['chicken', 'ayam', 'poultry', 'dada ayam', 'paha ayam'],
+        beef: ['beef', 'sapi', 'daging sapi', 'daging'],
+        seafood: ['seafood', 'fish', 'ikan', 'udang', 'cumi', 'kerang', 'shrimp', 'prawn', 'salmon', 'tuna'],
+        egg: ['egg', 'telur'],
+        'tofu-tempe': ['tofu', 'tahu', 'tempe'],
+        vegetable: ['vegetable', 'sayur', 'wortel', 'bayam', 'broccoli', 'kale', 'lettuce', 'kubis', 'kol'],
+        'rice-noodle': ['rice', 'nasi', 'beras', 'mie', 'noodle', 'pasta', 'spaghetti', 'bihun'],
+        dairy: ['milk', 'susu', 'cheese', 'keju', 'yogurt', 'cream', 'butter'],
+        spicy: ['spicy', 'pedas', 'cabai', 'cabe', 'chili', 'sambal', 'pepper'],
+        dessert: ['dessert', 'manis', 'cake', 'pudding', 'chocolate', 'cookies', 'cookie', 'pastry']
+    };
+
+    const terms = aliases[key] || [key];
+    return terms.some((term) => blob.includes(term));
+}
+
+async function getRecipesForRegion(region, count) {
+    const key = String(region || '').trim().toLowerCase();
+    if (!key) {
+        return mealdb.getCatalogMeals(count);
+    }
+
+    if (['indonesia', 'nusantara'].includes(key)) {
+        return indonesiaFoodApi.searchIndonesiaRecipes(count).catch(() => mealdb.getCatalogMeals(count));
+    }
+
+    const origins = getRegionSourceOrigins(key);
+    if (!origins.length) {
+        return mealdb.getCatalogMeals(count);
+    }
+
+    const batches = await Promise.all(
+        origins.map((origin) =>
+            mealdb.getMealsByOrigin(origin, Math.max(4, Math.ceil(count / origins.length) + 2)).catch(() => [])
+        )
+    );
+
+    const merged = uniqueRecipesById(batches.flat());
+    if (merged.length >= count) {
+        return merged.slice(0, count);
+    }
+
+    const fallback = await mealdb.getCatalogMeals(Math.max(count - merged.length, count));
+    return uniqueRecipesById([...merged, ...fallback]).slice(0, count);
 }
 
 function hasKeyword(source, keywords) {
@@ -261,12 +485,14 @@ function normalizeIngredientItem(item) {
         const name = String(item.name || item.ingredient || item.label || '').trim();
         const amount = String(item.amount || item.qty || item.quantity || '').trim();
         const unit = String(item.unit || item.measure || '').trim();
+        const display = [amount, unit, name].filter(Boolean).join(' ').trim() || name || 'Bahan';
 
         return {
             name: name || 'Bahan',
             amount,
             unit,
-            display: [amount, unit, name].filter(Boolean).join(' ').trim() || name || 'Bahan'
+            display,
+            label: display
         };
     }
 
@@ -275,7 +501,8 @@ function normalizeIngredientItem(item) {
         name: name || 'Bahan',
         amount: '',
         unit: '',
-        display: name || 'Bahan'
+        display: name || 'Bahan',
+        label: name || 'Bahan'
     };
 }
 
@@ -841,14 +1068,100 @@ router.get('/profile', async (req, res) => {
     preventBack(req, res, () => {});
 
     try {
-        const preferences = await fetchUserPreferences(req.session.user.id);
-        req.session.user.preferences = preferences;
+        const [userResult, preferencesResult, cookingHistoryResult, favoriteCountResult] = await Promise.all([
+            pool.query(
+                `
+                    SELECT
+                        id,
+                        username,
+                        email,
+                        role,
+                        avatar_url,
+                        bio,
+                        budget_per_meal,
+                        cooking_skill_level,
+                        total_recipes_cooked,
+                        total_recipes_shared,
+                        total_saved_recipes,
+                        created_at,
+                        updated_at
+                    FROM users
+                    WHERE id = $1
+                    LIMIT 1
+                `,
+                [req.session.user.id]
+            ),
+            fetchUserPreferences(req.session.user.id),
+            pool.query(
+                `
+                    SELECT COUNT(*)::int AS cooking_count,
+                           COALESCE(MAX(cooking_date), NULL) AS latest_cooked_at
+                    FROM cooking_history
+                    WHERE user_id = $1
+                `,
+                [req.session.user.id]
+            ),
+            pool.query(
+                `
+                    SELECT COUNT(*)::int AS favorite_count
+                    FROM user_favorites
+                    WHERE user_id = $1
+                `,
+                [req.session.user.id]
+            )
+        ]);
+
+        const profileUser = userResult.rows[0] || req.session.user;
+        const preferences = preferencesResult;
+        const cookingHistory = cookingHistoryResult.rows[0] || { cooking_count: 0, latest_cooked_at: null };
+        const favoriteCount = Number(favoriteCountResult.rows[0]?.favorite_count || 0);
+        const progress = buildProfileProgress(profileUser, cookingHistory.cooking_count);
+        const joinedAt = profileUser.created_at
+            ? new Date(profileUser.created_at).toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            })
+            : '-';
+        const latestCookedAt = cookingHistory.latest_cooked_at
+            ? new Date(cookingHistory.latest_cooked_at).toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            })
+            : '-';
+
+        req.session.user = {
+            ...req.session.user,
+            username: profileUser.username,
+            email: profileUser.email,
+            role: profileUser.role,
+            avatar_url: profileUser.avatar_url,
+            bio: profileUser.bio,
+            budget_per_meal: profileUser.budget_per_meal,
+            cooking_skill_level: profileUser.cooking_skill_level,
+            total_recipes_cooked: profileUser.total_recipes_cooked,
+            total_recipes_shared: profileUser.total_recipes_shared,
+            total_saved_recipes: profileUser.total_saved_recipes,
+            preferences
+        };
 
         res.render('user/profile', {
             title: 'Profile - AI Recipe Planner',
             user: req.session.user,
             allergyOptions: ALLERGY_OPTIONS,
             preferences,
+            profile: {
+                avatarUrl: profileUser.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.username || 'User')}`,
+                bio: profileUser.bio || 'Belum ada bio profile.',
+                budgetPerMeal: profileUser.budget_per_meal,
+                skillLevel: getCookingSkillLabel(progress.activityPoints),
+                joinedAt,
+                latestCookedAt,
+                cookingCount: Number(cookingHistory.cooking_count || 0),
+                favoriteCount,
+                progress
+            },
             notice: req.query.notice ? String(req.query.notice) : '',
             error: req.query.error ? String(req.query.error) : ''
         });
@@ -873,6 +1186,99 @@ router.post('/profile/preferences', async (req, res) => {
     }
 });
 
+router.post('/profile/details', profileUpload.single('avatar_image'), async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    try {
+        const uploadedAvatar = fileToDataUrl(req.file);
+        const avatarUrl = uploadedAvatar || String(req.session.user.avatar_url || '').trim();
+        const bio = String(req.body.bio || '').trim().slice(0, 240);
+        const budgetRaw = String(req.body.budget_per_meal || '').replace(/[^\d.]/g, '');
+        const budgetPerMeal = budgetRaw ? Number(budgetRaw) : null;
+
+        const result = await pool.query(
+            `
+                UPDATE users
+                SET
+                    avatar_url = COALESCE(NULLIF($1, ''), avatar_url),
+                    bio = $2,
+                    budget_per_meal = COALESCE($3, budget_per_meal),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $4
+                RETURNING id, username, email, role, avatar_url, bio, budget_per_meal, cooking_skill_level
+            `,
+            [avatarUrl, bio, budgetPerMeal, req.session.user.id]
+        );
+
+        const updatedUser = result.rows[0];
+        req.session.user = {
+            ...req.session.user,
+            ...updatedUser
+        };
+
+        return res.redirect('/profile?notice=Profil+berhasil+disimpan');
+    } catch (error) {
+        console.error('Profile detail update error:', error.message);
+        return res.redirect('/profile?error=Gagal+menyimpan+profil');
+    }
+});
+
+router.post('/profile/password', async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    try {
+        const currentPassword = String(req.body.current_password || '').trim();
+        const newPassword = String(req.body.new_password || '').trim();
+        const confirmPassword = String(req.body.confirm_password || '').trim();
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            return res.redirect('/profile?error=Semua+field+password+wajib+diisi');
+        }
+
+        if (newPassword.length < 6) {
+            return res.redirect('/profile?error=Password+baru+minimal+6+karakter');
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.redirect('/profile?error=Konfirmasi+password+tidak+sama');
+        }
+
+        const userResult = await pool.query(
+            'SELECT id, password_hash FROM users WHERE id = $1 LIMIT 1',
+            [req.session.user.id]
+        );
+        const user = userResult.rows[0];
+
+        if (!user) {
+            return res.redirect('/profile?error=Akun+tidak+ditemukan');
+        }
+
+        const validPassword = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!validPassword) {
+            return res.redirect('/profile?error=Password+lama+salah');
+        }
+
+        const passwordHash = await bcrypt.hash(newPassword, 10);
+        await pool.query(
+            `
+                UPDATE users
+                SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+                WHERE id = $2
+            `,
+            [passwordHash, req.session.user.id]
+        );
+
+        return res.redirect('/profile?notice=Password+berhasil+diubah');
+    } catch (error) {
+        console.error('Profile password update error:', error.message);
+        return res.redirect('/profile?error=Gagal+mengubah+password');
+    }
+});
+
 router.get('/dashboard', async (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
@@ -890,13 +1296,13 @@ router.get('/dashboard', async (req, res) => {
         const userId = req.session.user.id;
         const preferences = await fetchUserPreferences(userId);
         req.session.user.preferences = preferences;
-        const [trendingMeals, recommendedMeals, favoriteMeals, recentMeals, dailyChallengeMeals] = await Promise.all([
+        const [trendingMeals, recommendedMeals, favoriteMeals, dailyChallengeMeals] = await Promise.all([
             mealdb.getFeedMeals('random', 4),
             mealdb.getFeedMeals('healthy', 4),
-            mealdb.getFeedMeals('dessert', 4),
-            mealdb.getFeedMeals('asian', 4),
+            mealFavorites.getFavoriteMeals(userId),
             mealdb.getRandomMeals(1)
         ]);
+        const recentlyViewedMeals = [];
 
         const dashboardData = {
             ...fallback,
@@ -905,12 +1311,16 @@ router.get('/dashboard', async (req, res) => {
                     .slice(0, 4)
                     .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[0].image))
                 : fallback.trendingRecipes,
-            favoriteRecipes: filterRecipesByPreferences(favoriteMeals, preferences)
-                .slice(0, 4)
-                .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[4].image)),
-            recentlyViewed: filterRecipesByPreferences(recentMeals, preferences)
-                .slice(0, 4)
-                .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[2].image)),
+            favoriteRecipes: favoriteMeals.length
+                ? filterRecipesByPreferences(favoriteMeals, preferences)
+                    .slice(0, 4)
+                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[4].image))
+                : [],
+            recentlyViewed: recentlyViewedMeals.length
+                ? filterRecipesByPreferences(recentlyViewedMeals, preferences)
+                    .slice(0, 4)
+                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[2].image))
+                : [],
             recommendedRecipes: recommendedMeals.length
                 ? filterRecipesByPreferences(recommendedMeals, preferences)
                     .slice(0, 4)
@@ -1178,34 +1588,32 @@ router.get('/recipe-menu', async (req, res) => {
         preventBack(req, res, () => {});
 
         const search = String(req.query.q || '').trim();
-        const category = String(req.query.category || '').trim();
+        const selectedRegion = normalizeRecipeRegionFilter(req.query.region || req.query.category || '');
+        const selectedIngredient = normalizeRecipeIngredientFilter(req.query.ingredient || '');
         const pageSize = 12;
         const currentPage = Math.max(1, Number.parseInt(String(req.query.page || '1'), 10) || 1);
         const requestedCount = (currentPage * pageSize) + 1;
         const preferences = await fetchUserPreferences(req.session.user.id);
         req.session.user.preferences = preferences;
-        let categoryList = [];
         let recipeList = [];
 
         try {
-            const isIndonesiaCategory = ['indonesia', 'nusantara', 'indonesia/nusantara'].includes(category.toLowerCase());
-            [categoryList, recipeList] = await Promise.all([
-                mealdb.getMealCategories(),
-                search
-                    ? mealdb.searchMeals(search)
-                    : isIndonesiaCategory
-                        ? mealdb.getMealsByOrigin('Indonesia', requestedCount)
-                        : category
-                            ? mealdb.getMealsByCategory(category, requestedCount)
-                        : mealdb.getCatalogMeals(requestedCount)
-            ]);
+            if (search) {
+                recipeList = await mealdb.searchMeals(search);
+            } else if (selectedRegion) {
+                recipeList = await getRecipesForRegion(selectedRegion, Math.max(requestedCount, 48));
+            } else {
+                recipeList = await mealdb.getCatalogMeals(Math.max(requestedCount, 48));
+            }
         } catch (apiError) {
             console.error('TheMealDB recipe menu fallback:', apiError.message);
-            categoryList = ['Beef', 'Chicken', 'Dessert', 'Pasta', 'Seafood', 'Vegetarian'];
             recipeList = getFallbackRecipeCatalog();
         }
 
-        const filteredRecipes = filterRecipesByPreferences(recipeList, preferences).map((recipe) => ({
+        const filteredRecipes = filterRecipesByPreferences(recipeList, preferences)
+            .filter((recipe) => matchesRecipeRegion(recipe, selectedRegion))
+            .filter((recipe) => matchesRecipeIngredient(recipe, selectedIngredient))
+            .map((recipe) => ({
             ...enhanceRecipeForPreference(recipe, preferences, '/images/1.png'),
             creatorName: recipe.creator_name || 'TheMealDB'
         }));
@@ -1215,24 +1623,26 @@ router.get('/recipe-menu', async (req, res) => {
             ? (() => {
                 const params = new URLSearchParams();
                 if (search) params.set('q', search);
-                if (category) params.set('category', category);
+                if (selectedRegion) params.set('region', selectedRegion);
+                if (selectedIngredient) params.set('ingredient', selectedIngredient);
                 params.set('page', String(currentPage + 1));
                 return `/recipe-menu?${params.toString()}`;
             })()
             : '';
 
+        const filterGroups = getRecipeFilterGroups();
         res.render('user/recipe-menu', {
             title: 'Resep - AI Recipe Planner',
             user: req.session.user,
             search,
-            selectedCategory: category,
+            selectedRegion,
+            selectedIngredient,
             currentPage,
             pageSize,
             hasMoreRecipes,
             nextPageUrl,
-            categories: categoryList
-                .filter((item) => !['indonesia', 'nusantara', 'indonesia/nusantara'].includes(String(item || '').trim().toLowerCase()))
-                .slice(0, 8),
+            regionOptions: filterGroups.regions,
+            ingredientOptions: filterGroups.ingredients,
             preferences,
             recipes: visibleRecipes
         });

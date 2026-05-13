@@ -77,7 +77,7 @@
             <article class="user-stat-card">
               <i class="fa-solid fa-coins" aria-hidden="true"></i>
               <strong>Rp <%= formatPrice(data.estimatedBudget) %></strong>
-              <span>Estimasi budget dari resep favorit yang disimpan</span>
+              <span>Perkiraan belanja dari resep favorit yang disimpan</span>
             </article>
           </div>
 
@@ -91,7 +91,7 @@
                 <% } %>
               </strong>
               <span>
-                Budget kamu: Rp <%= formatPrice(data.budgetTarget) %> &middot; Estimasi belanja: Rp <%= formatPrice(data.estimatedBudget) %>
+                Budget kamu: Rp <%= formatPrice(data.budgetTarget) %> &middot; Perkiraan belanja: Rp <%= formatPrice(data.estimatedBudget) %>
               </span>
             </div>
           <% } %>
@@ -169,7 +169,7 @@
                     <div class="user-mini-recipe-copy">
                       <h3><%= recipe.title %></h3>
                       <p><%= recipe.category %></p>
-                      <small>Rp <%= formatPrice(recipe.estimatedPrice) %> - <%= recipe.ingredients.length %> bahan</small>
+                      <small>Perkiraan Rp <%= formatPrice(recipe.estimatedPrice) %> - <%= recipe.ingredients.length %> bahan</small>
                     </div>
                   </article>
                 <% }) %>
@@ -187,7 +187,7 @@
               <div class="user-panel-head">
                 <div>
                   <p class="user-panel-kicker">Catatan</p>
-                  <h2>Budget kasar, bukan harga pasti</h2>
+                  <h2>Perkiraan belanja, bukan harga pasti</h2>
                 </div>
               </div>
 
