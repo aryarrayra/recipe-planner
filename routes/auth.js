@@ -5,9 +5,11 @@ const pool = require('../config/db');
 const { preventBack } = require('../middleware/auth');
 const mealdb = require('../services/mealdb');
 const mealFavorites = require('../services/mealFavorites');
+const challengeService = require('../services/challengeService');
 
 const router = express.Router();
 const profileUpload = multer({ storage: multer.memoryStorage() });
+const COMMUNITY_RECIPE_SOURCE = 'community';
 const ALLERGY_OPTIONS = [
     { key: 'nuts', label: 'Kacang' },
     { key: 'seafood', label: 'Seafood' },
@@ -18,6 +20,7 @@ const ALLERGY_OPTIONS = [
     { key: 'shrimp', label: 'Udang' }
 ];
 let preferenceSchemaReady;
+let communityPostLikesSchemaReady;
 
 function ensurePreferenceSchema() {
     if (!preferenceSchemaReady) {
@@ -41,6 +44,31 @@ function ensurePreferenceSchema() {
 
 function normalizeEmail(value) {
     return String(value || '').trim().toLowerCase();
+}
+
+function ensureCommunityPostLikesSchema() {
+    if (!communityPostLikesSchemaReady) {
+        communityPostLikesSchemaReady = (async () => {
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS community_post_likes (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    post_id UUID REFERENCES community_posts(id) ON DELETE CASCADE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (user_id, post_id)
+                )
+            `);
+        })().catch((error) => {
+            communityPostLikesSchemaReady = null;
+            throw error;
+        });
+    }
+
+    return communityPostLikesSchemaReady;
+}
+
+function normalizeText(value) {
+    return String(value || '').trim();
 }
 
 function normalizePreferenceList(rawValue) {
@@ -226,6 +254,150 @@ function fileToDataUrl(file = null) {
     }
 
     return `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+}
+
+function parseRecipeFormList(value) {
+    return parseRecipeItems(value)
+        .map((item) => {
+            if (item && typeof item === 'object') {
+                return item;
+            }
+
+            return String(item || '').trim();
+        })
+        .filter(Boolean);
+}
+
+function parseCommunityRecipePayload(body = {}, file = null) {
+    const uploadedImage = fileToDataUrl(file);
+    const imageUrl = uploadedImage || normalizeText(body.image_url);
+
+    return {
+        title: normalizeText(body.title),
+        description: normalizeText(body.description),
+        image_url: imageUrl || '/images/1.png',
+        video_url: normalizeText(body.video_url),
+        cooking_time: Number.parseInt(body.cooking_time, 10) || 0,
+        servings: Number.parseInt(body.servings, 10) || 1,
+        difficulty: normalizeText(body.difficulty) || 'easy',
+        category: normalizeText(body.category) || 'community',
+        cuisine: normalizeText(body.cuisine) || 'Community',
+        estimated_price: Number.parseInt(String(body.estimated_price || '').replace(/[^\d]/g, ''), 10) || 0,
+        price_rating: normalizeText(body.price_rating) || 'standard',
+        ingredients: parseRecipeFormList(body.ingredients).map(normalizeIngredientItem),
+        steps: parseRecipeFormList(body.steps).map((item, index) => normalizeStepItem(item, index)),
+        tags: parseRecipeFormList(body.tags),
+        is_approved: false
+    };
+}
+
+function mapCommunityRecipeCard(recipe = {}, favoriteIds = new Set()) {
+    const mapped = mapRecipeCard(recipe, recipe.image_url || '/images/1.png');
+    return {
+        ...mapped,
+        source: COMMUNITY_RECIPE_SOURCE,
+        sourceLabel: 'Community',
+        creatorName: recipe.creator_name || recipe.username || 'Community user',
+        createdAt: recipe.created_at,
+        statusLabel: recipe.is_approved ? 'Published' : 'Draft',
+        communityPostId: recipe.community_post_id || recipe.post_id || recipe.communityPostId || null,
+        likesCount: Number(recipe.post_likes_count ?? recipe.likes_count ?? mapped.likesCount ?? 0),
+        commentsCount: Number(recipe.post_comments_count ?? recipe.comments_count ?? 0),
+        likedByMe: Boolean(recipe.liked_by_me),
+        favoriteKey: `${COMMUNITY_RECIPE_SOURCE}:${recipe.id}`,
+        isFavorite: favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${recipe.id}`),
+        ingredients: parseRecipeItems(recipe.ingredients).map(normalizeIngredientItem),
+        steps: parseRecipeItems(recipe.steps).map((item, index) => normalizeStepItem(item, index))
+    };
+}
+
+function mapCommunityCommentCard(comment = {}) {
+    return {
+        id: String(comment.id || '').trim(),
+        type: 'comment',
+        title: normalizeText(comment.post_title) || 'Postingan community',
+        content: normalizeText(comment.content),
+        creatorName: normalizeText(comment.creator_name) || 'Community user',
+        createdAt: comment.created_at,
+        postId: normalizeText(comment.post_id)
+    };
+}
+
+async function getFreshSessionUser(userId) {
+    const id = normalizeText(userId);
+    if (!id) {
+        return null;
+    }
+
+    const result = await pool.query(
+        `
+            SELECT
+                id,
+                username,
+                email,
+                role,
+                avatar_url,
+                bio,
+                budget_per_meal,
+                cooking_skill_level,
+                total_recipes_cooked,
+                total_saved_recipes,
+                created_at,
+                updated_at
+            FROM users
+            WHERE id = $1
+            LIMIT 1
+        `,
+        [id]
+    );
+
+    return result.rows[0] || null;
+}
+
+async function getCommunityRecipeById(recipeId, { approvedOnly = true } = {}) {
+    const id = normalizeText(recipeId);
+    if (!id) {
+        return null;
+    }
+
+    const result = await pool.query(
+        `
+            SELECT
+                r.*,
+                COALESCE(u.username, 'Community user') AS creator_name
+            FROM recipes r
+            LEFT JOIN users u ON u.id = r.created_by
+            WHERE r.id = $1
+              ${approvedOnly ? 'AND r.is_approved = true' : ''}
+            LIMIT 1
+        `,
+        [id]
+    );
+
+    return result.rows[0] || null;
+}
+
+function buildCommunitySearchClause(alias = 'r', search = '', startIndex = 1) {
+    const text = normalizeText(search);
+    if (!text) {
+        return { clause: '', params: [] };
+    }
+
+    const paramIndex = Number.isFinite(Number(startIndex)) && Number(startIndex) > 0 ? Number(startIndex) : 1;
+
+    return {
+        clause: `
+            AND (
+                COALESCE(${alias}.title, '') ILIKE $${paramIndex}
+                OR COALESCE(${alias}.description, '') ILIKE $${paramIndex}
+                OR COALESCE(${alias}.category, '') ILIKE $${paramIndex}
+                OR COALESCE(${alias}.cuisine, '') ILIKE $${paramIndex}
+                OR COALESCE(${alias}.tags::text, '') ILIKE $${paramIndex}
+                OR COALESCE(u.username, '') ILIKE $${paramIndex}
+            )
+        `,
+        params: [`%${text}%`]
+    };
 }
 
 function getRegionSourceOrigins(region = '') {
@@ -731,6 +903,271 @@ function buildShoppingSummary(recipes = []) {
         estimatedBudget
     };
 }
+
+async function fetchCommunityPageData(userId, search = '') {
+    await ensureCommunityPostLikesSchema();
+    const searchClause = buildCommunitySearchClause('r', search, 2);
+    const myRecipesSearchClause = buildCommunitySearchClause('r', search, 2);
+    const [autoChallenges, approvedRecipesResult, myRecipesResult, statsResult, favoriteIds] = await Promise.all([
+        challengeService.getAutoChallenges().catch(() => ({ dailyChallenge: null, weeklyChallenge: null })),
+        pool.query(
+            `
+                SELECT
+                    r.*,
+                    p.id AS community_post_id,
+                    COALESCE(p.likes_count, r.likes_count, 0)::int AS post_likes_count,
+                    COALESCE(p.comments_count, r.comments_count, 0)::int AS post_comments_count,
+                    EXISTS (
+                        SELECT 1
+                        FROM community_post_likes cpl
+                        WHERE cpl.post_id = p.id
+                          AND cpl.user_id = $1
+                    ) AS liked_by_me,
+                    COALESCE(u.username, 'Community user') AS creator_name
+                FROM recipes r
+                INNER JOIN community_posts p ON p.recipe_id = r.id
+                LEFT JOIN users u ON u.id = r.created_by
+                WHERE r.is_approved = true
+                  AND r.created_by IS NOT NULL
+                  ${searchClause.clause}
+                ORDER BY r.created_at DESC
+                LIMIT 12
+            `,
+            [userId, ...searchClause.params]
+        ),
+        pool.query(
+            `
+                SELECT
+                    r.*,
+                    p.id AS community_post_id,
+                    COALESCE(p.likes_count, r.likes_count, 0)::int AS post_likes_count,
+                    COALESCE(p.comments_count, r.comments_count, 0)::int AS post_comments_count,
+                    EXISTS (
+                        SELECT 1
+                        FROM community_post_likes cpl
+                        WHERE cpl.post_id = p.id
+                          AND cpl.user_id = $1
+                    ) AS liked_by_me,
+                    COALESCE(u.username, 'Community user') AS creator_name
+                FROM recipes r
+                INNER JOIN community_posts p ON p.recipe_id = r.id
+                LEFT JOIN users u ON u.id = r.created_by
+                WHERE r.created_by = $1
+                  ${myRecipesSearchClause.clause ? myRecipesSearchClause.clause.replace(/^\s*AND\s*/, 'AND ') : ''}
+                ORDER BY r.created_at DESC
+                LIMIT 12
+            `,
+            myRecipesSearchClause.params.length ? [userId, ...myRecipesSearchClause.params] : [userId]
+        ),
+        pool.query(
+            `
+                SELECT
+                    COUNT(*) FILTER (WHERE is_approved = false AND created_by IS NOT NULL)::int AS pending_count,
+                    COUNT(*) FILTER (WHERE is_approved = true AND created_by IS NOT NULL)::int AS approved_count,
+                    COUNT(*) FILTER (WHERE created_by IS NOT NULL)::int AS total_count
+                FROM recipes
+            `
+        ),
+        mealFavorites.getFavoriteIdSet(userId)
+    ]);
+
+    const approvedRecipes = approvedRecipesResult.rows.map((row) => mapCommunityRecipeCard(row, favoriteIds));
+    const approvedPostIds = approvedRecipes
+        .map((recipe) => recipe.communityPostId)
+        .filter(Boolean);
+    const approvedCommentsByPost = approvedPostIds.length
+        ? await fetchCommunityCommentsByPostIds(approvedPostIds)
+        : {};
+    const myRecipes = myRecipesResult.rows.map((row) => ({
+        ...mapCommunityRecipeCard(row, favoriteIds),
+        approvalStatus: row.is_approved ? 'published' : 'draft'
+    }));
+    const stats = statsResult.rows[0] || { pending_count: 0, approved_count: 0, total_count: 0 };
+
+    return {
+        dailyChallenge: autoChallenges.dailyChallenge,
+        weeklyChallenge: autoChallenges.weeklyChallenge,
+        approvedRecipes: approvedRecipes.map((recipe) => ({
+            ...recipe,
+            comments: approvedCommentsByPost[recipe.communityPostId] || []
+        })),
+        myRecipes,
+        search: normalizeText(search),
+        stats: {
+            pending: Number(stats.pending_count || 0),
+            approved: Number(stats.approved_count || 0),
+            total: Number(stats.total_count || 0)
+        }
+    };
+}
+
+async function fetchCommunityCommentsByPostIds(postIds = []) {
+    const ids = Array.from(new Set(
+        Array.isArray(postIds)
+            ? postIds.map((id) => normalizeText(id)).filter(Boolean)
+            : []
+    ));
+
+    if (!ids.length) {
+        return {};
+    }
+
+    const result = await pool.query(
+        `
+            SELECT
+                c.id,
+                c.content,
+                c.created_at,
+                c.post_id,
+                COALESCE(u.username, 'Community user') AS creator_name
+            FROM comments c
+            LEFT JOIN users u ON u.id = c.user_id
+            WHERE c.post_id = ANY($1::uuid[])
+            ORDER BY c.created_at ASC
+        `,
+        [ids]
+    );
+
+    return result.rows.reduce((acc, row) => {
+        const key = String(row.post_id || '').trim();
+        if (!key) {
+            return acc;
+        }
+
+        if (!acc[key]) {
+            acc[key] = [];
+        }
+
+        acc[key].push(mapCommunityCommentCard(row));
+        return acc;
+    }, {});
+}
+
+async function getCommunityPostById(postId, userId = null) {
+    await ensureCommunityPostLikesSchema();
+    const id = normalizeText(postId);
+    if (!id) {
+        return null;
+    }
+
+    const result = await pool.query(
+        `
+            SELECT
+                p.*,
+                EXISTS (
+                    SELECT 1
+                    FROM community_post_likes cpl
+                    WHERE cpl.post_id = p.id
+                      AND cpl.user_id = $2
+                ) AS liked_by_me,
+                COALESCE(u.username, 'Community user') AS creator_name
+            FROM community_posts p
+            LEFT JOIN users u ON u.id = p.user_id
+            WHERE p.id = $1
+            LIMIT 1
+        `,
+        [id, userId || null]
+    );
+
+    return result.rows[0] || null;
+}
+
+async function fetchCommunityPostDetailData(postId, userId) {
+    const post = await getCommunityPostById(postId, userId);
+    if (!post) {
+        return null;
+    }
+
+    const commentsResult = await pool.query(
+        `
+            SELECT
+                c.id,
+                c.content,
+                c.created_at,
+                COALESCE(u.username, 'Community user') AS creator_name
+            FROM comments c
+            LEFT JOIN users u ON u.id = c.user_id
+            WHERE c.post_id = $1
+            ORDER BY c.created_at ASC
+        `,
+        [post.id]
+    );
+
+    return {
+        post: {
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            imageUrl: post.image_url,
+            likesCount: Number(post.likes_count || 0),
+            commentsCount: Number(post.comments_count || 0),
+            sharesCount: Number(post.shares_count || 0),
+            creatorName: post.creator_name,
+            createdAt: post.created_at,
+            recipeId: post.recipe_id,
+            likedByMe: Boolean(post.liked_by_me)
+        },
+        comments: commentsResult.rows.map((row) => mapCommunityCommentCard({
+            ...row,
+            post_title: post.title,
+            post_id: post.id
+        }))
+    };
+}
+
+async function fetchProfileCommunityFeed(userId, limit = 8) {
+    await ensureCommunityPostLikesSchema();
+    const [postsResult, commentsResult, favoriteIds] = await Promise.all([
+        pool.query(
+            `
+                SELECT
+                    r.*,
+                    p.id AS community_post_id,
+                    COALESCE(p.likes_count, r.likes_count, 0)::int AS post_likes_count,
+                    COALESCE(p.comments_count, r.comments_count, 0)::int AS post_comments_count,
+                    EXISTS (
+                        SELECT 1
+                        FROM community_post_likes cpl
+                        WHERE cpl.post_id = p.id
+                          AND cpl.user_id = $1
+                    ) AS liked_by_me,
+                    COALESCE(u.username, 'Community user') AS creator_name
+                FROM recipes r
+                INNER JOIN community_posts p ON p.recipe_id = r.id
+                LEFT JOIN users u ON u.id = r.created_by
+                WHERE r.created_by = $1
+                  AND r.source = $2
+                ORDER BY r.created_at DESC
+                LIMIT $3
+            `,
+            [userId, COMMUNITY_RECIPE_SOURCE, limit]
+        ),
+        pool.query(
+            `
+                SELECT
+                    c.id,
+                    c.content,
+                    c.created_at,
+                    p.title AS post_title,
+                    p.id AS post_id,
+                    COALESCE(u.username, 'Community user') AS creator_name
+                FROM comments c
+                LEFT JOIN community_posts p ON p.id = c.post_id
+                LEFT JOIN users u ON u.id = p.user_id
+                WHERE c.user_id = $1
+                ORDER BY c.created_at DESC
+                LIMIT $2
+            `,
+            [userId, limit]
+        ),
+        mealFavorites.getFavoriteIdSet(userId)
+    ]);
+
+    return {
+        posts: postsResult.rows.map((row) => mapCommunityRecipeCard(row, favoriteIds)),
+        comments: commentsResult.rows.map(mapCommunityCommentCard)
+    };
+}
 function getCookingTip() {
     const tips = [
         'Panaskan wajan dulu sebelum menumis supaya bumbu lebih harum.',
@@ -1068,7 +1505,7 @@ router.get('/profile', async (req, res) => {
     preventBack(req, res, () => {});
 
     try {
-        const [userResult, preferencesResult, cookingHistoryResult, favoriteCountResult] = await Promise.all([
+        const [userResult, preferencesResult, cookingHistoryResult, favoriteCountResult, communityFeed] = await Promise.all([
             pool.query(
                 `
                     SELECT
@@ -1108,7 +1545,8 @@ router.get('/profile', async (req, res) => {
                     WHERE user_id = $1
                 `,
                 [req.session.user.id]
-            )
+            ),
+            fetchProfileCommunityFeed(req.session.user.id, 8)
         ]);
 
         const profileUser = userResult.rows[0] || req.session.user;
@@ -1160,7 +1598,8 @@ router.get('/profile', async (req, res) => {
                 latestCookedAt,
                 cookingCount: Number(cookingHistory.cooking_count || 0),
                 favoriteCount,
-                progress
+                progress,
+                communityFeed
             },
             notice: req.query.notice ? String(req.query.notice) : '',
             error: req.query.error ? String(req.query.error) : ''
@@ -1192,11 +1631,22 @@ router.post('/profile/details', profileUpload.single('avatar_image'), async (req
     }
 
     try {
+        const currentUserResult = await pool.query(
+            `
+                SELECT avatar_url, bio, budget_per_meal
+                FROM users
+                WHERE id = $1
+                LIMIT 1
+            `,
+            [req.session.user.id]
+        );
+        const currentUser = currentUserResult.rows[0] || {};
         const uploadedAvatar = fileToDataUrl(req.file);
-        const avatarUrl = uploadedAvatar || String(req.session.user.avatar_url || '').trim();
-        const bio = String(req.body.bio || '').trim().slice(0, 240);
+        const avatarUrl = uploadedAvatar || String(req.session.user.avatar_url || currentUser.avatar_url || '').trim();
+        const rawBio = String(req.body.bio || '').trim();
         const budgetRaw = String(req.body.budget_per_meal || '').replace(/[^\d.]/g, '');
-        const budgetPerMeal = budgetRaw ? Number(budgetRaw) : null;
+        const budgetPerMeal = budgetRaw ? Number(budgetRaw) : (currentUser.budget_per_meal ?? null);
+        const bio = rawBio ? rawBio.slice(0, 240) : String(currentUser.bio || '').trim();
 
         const result = await pool.query(
             `
@@ -1279,6 +1729,346 @@ router.post('/profile/password', async (req, res) => {
     }
 });
 
+router.get('/community', async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    if (req.session.user.role === 'admin') {
+        return res.redirect('/admin/dashboard');
+    }
+
+    preventBack(req, res, () => {});
+
+    try {
+        const freshUser = await getFreshSessionUser(req.session.user.id);
+        if (freshUser) {
+            req.session.user = {
+                ...req.session.user,
+                ...freshUser
+            };
+        }
+
+        const search = String(req.query.q || '').trim();
+        const openComposer = String(req.query.openComposer || '').trim();
+        const preferences = await fetchUserPreferences(req.session.user.id);
+        req.session.user.preferences = preferences;
+        const data = await fetchCommunityPageData(req.session.user.id, search);
+
+        res.render('user/community', {
+            title: 'Community - AI Recipe Planner',
+            user: req.session.user,
+            preferences,
+            ...data,
+            openComposer,
+            notice: req.query.notice ? String(req.query.notice) : '',
+            error: req.query.error ? String(req.query.error) : ''
+        });
+    } catch (error) {
+        console.error('Community page error:', error.message);
+        res.status(500).send('Gagal memuat halaman community.');
+    }
+});
+
+router.post('/community', profileUpload.single('image_file'), async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    if (req.session.user.role === 'admin') {
+        return res.redirect('/admin/dashboard');
+    }
+
+    try {
+        const freshUser = await getFreshSessionUser(req.session.user.id);
+        if (freshUser) {
+            req.session.user = {
+                ...req.session.user,
+                ...freshUser
+            };
+        }
+
+        const payload = parseCommunityRecipePayload(req.body, req.file);
+
+        if (!payload.title || !payload.ingredients.length || !payload.steps.length) {
+            return res.redirect('/community?error=Judul,+bahan,+dan+langkah+wajib+diisi');
+        }
+
+        const insertResult = await pool.query(
+            `
+                INSERT INTO recipes (
+                    source,
+                    source_id,
+                    title,
+                    description,
+                    image_url,
+                    video_url,
+                    cooking_time,
+                    servings,
+                    difficulty,
+                    ingredients,
+                    steps,
+                    calories,
+                    category,
+                    cuisine,
+                    tags,
+                    estimated_price,
+                    price_rating,
+                    created_by,
+                is_approved,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9,
+                    $10::jsonb, $11::jsonb, $12, $13, $14, $15::jsonb,
+                    $16, $17, $18, $19, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                RETURNING id
+            `,
+            [
+                COMMUNITY_RECIPE_SOURCE,
+                `community-${req.session.user.id}-${Date.now()}`,
+                payload.title,
+                payload.description,
+                payload.image_url,
+                payload.video_url,
+                payload.cooking_time || null,
+                payload.servings || 1,
+                payload.difficulty,
+                JSON.stringify(payload.ingredients),
+                JSON.stringify(payload.steps),
+                Number.parseInt(String(req.body.calories || '').replace(/[^\d]/g, ''), 10) || 0,
+                normalizeText(req.body.category) || 'community',
+                normalizeText(req.body.cuisine) || 'Community',
+                JSON.stringify(parseRecipeFormList(req.body.tags)),
+                payload.estimated_price || 0,
+                payload.price_rating,
+                req.session.user.id,
+                true
+            ]
+        );
+
+        const recipeId = insertResult.rows[0]?.id;
+        if (recipeId) {
+            await pool.query(
+                `
+                    INSERT INTO community_posts (
+                        user_id,
+                        recipe_id,
+                        title,
+                        content,
+                        image_url,
+                        likes_count,
+                        comments_count,
+                        shares_count,
+                        is_trending,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES ($1, $2, $3, $4, $5, 0, 0, 0, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                `,
+                [
+                    req.session.user.id,
+                    recipeId,
+                    payload.title,
+                    payload.description,
+                    payload.image_url
+                ]
+            );
+        }
+
+        return res.redirect('/community?notice=Resep+berhasil+diposting+ke+community');
+    } catch (error) {
+        console.error('Community submit error:', error.message);
+        return res.redirect('/community?error=Gagal+mengirim+resep+community');
+    }
+});
+
+router.get('/community/posts/:postId', async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    try {
+        const detail = await fetchCommunityPostDetailData(req.params.postId, req.session.user.id);
+        if (!detail) {
+            return res.status(404).send('Postingan tidak ditemukan');
+        }
+
+        const acceptHeader = String(req.get('accept') || '').toLowerCase();
+        const wantsJson =
+            String(req.query.format || '').toLowerCase() === 'json' ||
+            req.xhr ||
+            (acceptHeader.includes('application/json') && !acceptHeader.includes('text/html'));
+
+        if (wantsJson) {
+            return res.json({
+                success: true,
+                data: detail
+            });
+        }
+
+        return res.render('user/community-post', {
+            title: `${detail.post.title} - Community`,
+            user: req.session.user,
+            post: detail.post,
+            comments: detail.comments,
+            formatPrice: (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)),
+            makeHandle: (value) => `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`,
+            formatRelativeTime: (value) => {
+                if (!value) return 'baru saja';
+                const created = new Date(value);
+                if (Number.isNaN(created.getTime())) return 'baru saja';
+                const diff = Date.now() - created.getTime();
+                const minutes = Math.max(0, Math.floor(diff / 60000));
+                if (minutes < 1) return 'baru saja';
+                if (minutes < 60) return `${minutes}m`;
+                const hours = Math.floor(minutes / 60);
+                if (hours < 24) return `${hours}h`;
+                const days = Math.floor(hours / 24);
+                if (days < 7) return `${days}d`;
+                return created.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+            }
+        });
+    } catch (error) {
+        console.error('Community detail fetch error:', error.message);
+        return res.status(500).send('Gagal memuat detail postingan');
+    }
+});
+
+router.post('/community/posts/:postId/like', async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    try {
+        await ensureCommunityPostLikesSchema();
+        const post = await getCommunityPostById(req.params.postId, req.session.user.id);
+        if (!post) {
+            return res.status(404).json({ success: false, error: 'Postingan tidak ditemukan' });
+        }
+
+        const client = await pool.connect();
+        let likesCount = Number(post.likes_count || 0);
+        let likedAlready = Boolean(post.liked_by_me);
+
+        try {
+            await client.query('BEGIN');
+
+            const likeInsert = await client.query(
+                `
+                    INSERT INTO community_post_likes (
+                        user_id,
+                        post_id,
+                        created_at
+                    )
+                    VALUES ($1, $2, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id, post_id) DO NOTHING
+                    RETURNING id
+                `,
+                [req.session.user.id, post.id]
+            );
+
+            if (likeInsert.rowCount > 0) {
+                const updatedPost = await client.query(
+                    `
+                        UPDATE community_posts
+                        SET likes_count = COALESCE(likes_count, 0) + 1,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $1
+                        RETURNING likes_count
+                    `,
+                    [post.id]
+                );
+
+                likesCount = Number(updatedPost.rows[0]?.likes_count || likesCount);
+                likedAlready = false;
+            } else {
+                const latestPost = await client.query(
+                    'SELECT likes_count FROM community_posts WHERE id = $1 LIMIT 1',
+                    [post.id]
+                );
+                likesCount = Number(latestPost.rows[0]?.likes_count || likesCount);
+                likedAlready = true;
+            }
+
+            await client.query('COMMIT');
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+
+        if (req.accepts('json') || String(req.query.format || '').toLowerCase() === 'json') {
+            return res.json({ success: true, likesCount, likedAlready });
+        }
+
+        return res.redirect('/community');
+    } catch (error) {
+        console.error('Community like error:', error.message);
+        return res.status(500).json({ success: false, error: 'Gagal menyukai postingan' });
+    }
+});
+
+router.post('/community/posts/:postId/comments', async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    try {
+        const content = normalizeText(req.body.content);
+        if (!content) {
+            return res.status(400).json({ success: false, error: 'Komentar tidak boleh kosong' });
+        }
+
+        const post = await getCommunityPostById(req.params.postId, req.session.user.id);
+        if (!post) {
+            return res.status(404).json({ success: false, error: 'Postingan tidak ditemukan' });
+        }
+
+        const insertResult = await pool.query(
+            `
+                INSERT INTO comments (
+                    user_id,
+                    post_id,
+                    content,
+                    likes_count,
+                    created_at
+                )
+                VALUES ($1, $2, $3, 0, CURRENT_TIMESTAMP)
+                RETURNING id, content, created_at
+            `,
+            [req.session.user.id, post.id, content]
+        );
+
+        await pool.query(
+            `
+                UPDATE community_posts
+                SET comments_count = COALESCE(comments_count, 0) + 1,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $1
+            `,
+            [post.id]
+        );
+
+        const createdComment = insertResult.rows[0];
+        return res.json({
+            success: true,
+            comment: mapCommunityCommentCard({
+                ...createdComment,
+                post_title: post.title,
+                post_id: post.id,
+                creator_name: req.session.user.username
+            })
+        });
+    } catch (error) {
+        console.error('Community comment error:', error.message);
+        return res.status(500).json({ success: false, error: 'Gagal mengirim komentar' });
+    }
+});
+
 router.get('/dashboard', async (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
@@ -1296,11 +2086,11 @@ router.get('/dashboard', async (req, res) => {
         const userId = req.session.user.id;
         const preferences = await fetchUserPreferences(userId);
         req.session.user.preferences = preferences;
-        const [trendingMeals, recommendedMeals, favoriteMeals, dailyChallengeMeals] = await Promise.all([
+        const [trendingMeals, recommendedMeals, favoriteMeals, autoChallenges] = await Promise.all([
             mealdb.getFeedMeals('random', 4),
             mealdb.getFeedMeals('healthy', 4),
             mealFavorites.getFavoriteMeals(userId),
-            mealdb.getRandomMeals(1)
+            challengeService.getAutoChallenges()
         ]);
         const recentlyViewedMeals = [];
 
@@ -1326,8 +2116,8 @@ router.get('/dashboard', async (req, res) => {
                     .slice(0, 4)
                     .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[1].image))
                 : fallback.recommendedRecipes,
-            dailyChallenge: dailyChallengeMeals[0]
-                ? enhanceRecipeForPreference(dailyChallengeMeals[0], preferences, fallback.categories[0].image)
+            dailyChallenge: autoChallenges.dailyChallenge
+                ? enhanceRecipeForPreference(autoChallenges.dailyChallenge, preferences, fallback.categories[0].image)
                 : fallback.dailyChallenge,
             tip: getCookingTip(),
             preferences
@@ -1671,42 +2461,104 @@ router.get('/recipe-detail', async (req, res) => {
         req.session.user.preferences = preferences;
         const feedPreset = buildFeedPreset(feed);
         const favoriteIds = await mealFavorites.getFavoriteIdSet(req.session.user.id);
-        const activeRecipe = recipeId
+        const activeExternalRecipe = recipeId
             ? await mealdb.lookupMealById(recipeId)
             : null;
+        const activeCommunityRecipe = !activeExternalRecipe && recipeId
+            ? await getCommunityRecipeById(recipeId, { approvedOnly: false })
+            : null;
+        const activeCommunityRecipeVisible = Boolean(
+            activeCommunityRecipe &&
+            (activeCommunityRecipe.is_approved || String(activeCommunityRecipe.created_by || '') === String(req.session.user.id))
+        );
+        if (recipeId && activeCommunityRecipe && !activeCommunityRecipeVisible && !activeExternalRecipe) {
+            return res.status(404).send('Resep community belum disetujui.');
+        }
+        if (recipeId && !activeExternalRecipe && !activeCommunityRecipe) {
+            return res.status(404).send('Resep tidak ditemukan.');
+        }
+        const activeRecipe = activeExternalRecipe || (activeCommunityRecipeVisible ? activeCommunityRecipe : null);
+
         const recipePool = search
             ? await mealdb.searchMeals(search)
-            : activeRecipe && (activeRecipe.originPlace || activeRecipe.cuisine)
-                ? await mealdb.getMealsByOrigin(activeRecipe.originPlace || activeRecipe.cuisine, 12)
-                : activeRecipe && activeRecipe.category
-                    ? await mealdb.getMealsByCategory(activeRecipe.category, 12)
-                : await mealdb.getFeedMeals(feed, 12);
-        const recipes = uniqueRecipesById([activeRecipe, ...recipePool].filter(Boolean)).map((recipe) => ({
-            ...enhanceRecipeForPreference(recipe, preferences, '/images/1.png'),
-            creatorName: recipe.creator_name || 'TheMealDB',
-            isFavorite: favoriteIds.has(String(recipe.id))
-        }));
-        const activeRecipeData = activeRecipe
+            : activeExternalRecipe && (activeExternalRecipe.originPlace || activeExternalRecipe.cuisine)
+                ? await mealdb.getMealsByOrigin(activeExternalRecipe.originPlace || activeExternalRecipe.cuisine, 12)
+                : activeExternalRecipe && activeExternalRecipe.category
+                    ? await mealdb.getMealsByCategory(activeExternalRecipe.category, 12)
+                    : activeCommunityRecipe && activeCommunityRecipe.category
+                        ? (await pool.query(
+                            `
+                                SELECT
+                                    r.*,
+                                    COALESCE(u.username, 'Community user') AS creator_name
+                                FROM recipes r
+                                LEFT JOIN users u ON u.id = r.created_by
+                                WHERE r.is_approved = true
+                                  AND r.id <> $1
+                                  AND COALESCE(r.category, '') ILIKE $2
+                                ORDER BY r.created_at DESC
+                                LIMIT 12
+                            `,
+                            [activeCommunityRecipe.id, `%${activeCommunityRecipe.category}%`]
+                        )).rows
+                        : await mealdb.getFeedMeals(feed, 12);
+
+        const recipes = activeExternalRecipe
+            ? uniqueRecipesById([activeExternalRecipe, ...recipePool].filter(Boolean)).map((recipe) => ({
+                ...enhanceRecipeForPreference(recipe, preferences, '/images/1.png'),
+                creatorName: recipe.creator_name || 'TheMealDB',
+                favoriteKey: String(recipe.id),
+                isFavorite: favoriteIds.has(String(recipe.id))
+            }))
+            : [];
+
+        const activeRecipeData = activeExternalRecipe
             ? {
-                ...mapRecipeDetail(activeRecipe, '/images/1.png', normalizeVideoUrl(activeRecipe.video_url), preferences),
-                isFavorite: favoriteIds.has(String(activeRecipe.id))
+                ...mapRecipeDetail(activeExternalRecipe, '/images/1.png', normalizeVideoUrl(activeExternalRecipe.video_url), preferences),
+                favoriteKey: String(activeExternalRecipe.id),
+                isFavorite: favoriteIds.has(String(activeExternalRecipe.id))
             }
-            : recipePool[0]
+            : activeCommunityRecipeVisible
                 ? {
-                    ...mapRecipeDetail(recipePool[0], '/images/1.png', normalizeVideoUrl(recipePool[0].video_url), preferences),
-                    isFavorite: favoriteIds.has(String(recipePool[0].id))
+                    ...mapRecipeDetail(activeCommunityRecipe, activeCommunityRecipe.image_url || '/images/1.png', normalizeVideoUrl(activeCommunityRecipe.video_url), preferences),
+                    creatorName: activeCommunityRecipe.creator_name || 'Community user',
+                    source: COMMUNITY_RECIPE_SOURCE,
+                    sourceLabel: 'Community',
+                    favoriteKey: `${COMMUNITY_RECIPE_SOURCE}:${activeCommunityRecipe.id}`,
+                    isFavorite: favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${activeCommunityRecipe.id}`)
                 }
-                : null;
+                : recipePool[0]
+                    ? {
+                        ...mapRecipeDetail(recipePool[0], recipePool[0].image_url || '/images/1.png', normalizeVideoUrl(recipePool[0].video_url), preferences),
+                        creatorName: recipePool[0].creator_name || 'Community user',
+                        source: COMMUNITY_RECIPE_SOURCE,
+                        sourceLabel: 'Community',
+                        favoriteKey: `${COMMUNITY_RECIPE_SOURCE}:${recipePool[0].id}`,
+                        isFavorite: favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${recipePool[0].id}`)
+                    }
+                    : null;
         const relatedRecipes = activeRecipeData
-            ? filterRecipesByPreferences(
-                (await mealdb.getMealsByOrigin(activeRecipeData.originPlace || activeRecipeData.cuisine, 6)).filter((item) => String(item.id) !== String(activeRecipeData.id)),
-                preferences
-            )
-                .slice(0, 3)
-                .map((recipe) => ({
-                    ...enhanceRecipeForPreference(recipe, preferences, '/images/1.png'),
-                    isFavorite: favoriteIds.has(String(recipe.id))
-                }))
+            ? activeRecipeData.source === COMMUNITY_RECIPE_SOURCE
+                ? filterRecipesByPreferences(
+                    Array.isArray(recipePool) ? recipePool : [],
+                    preferences
+                )
+                    .filter((item) => String(item.id) !== String(activeRecipeData.id))
+                    .slice(0, 3)
+                    .map((recipe) => ({
+                        ...mapCommunityRecipeCard(recipe, favoriteIds),
+                        isFavorite: favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${recipe.id}`)
+                    }))
+                : filterRecipesByPreferences(
+                    (await mealdb.getMealsByOrigin(activeRecipeData.originPlace || activeRecipeData.cuisine, 6)).filter((item) => String(item.id) !== String(activeRecipeData.id)),
+                    preferences
+                )
+                    .slice(0, 3)
+                    .map((recipe) => ({
+                        ...enhanceRecipeForPreference(recipe, preferences, '/images/1.png'),
+                        favoriteKey: String(recipe.id),
+                        isFavorite: favoriteIds.has(String(recipe.id))
+                    }))
             : [];
 
         const recipeCards = filterRecipesByPreferences(recipes, preferences);

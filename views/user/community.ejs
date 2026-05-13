@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
+  <% const communitySearch = String(search || '').trim(); %>
+  <% const statsData = stats || { pending: 0, approved: 0, total: 0 }; %>
+  <% const shouldOpenComposer = String(openComposer || '').trim() === '1' || String(openComposer || '').trim().toLowerCase() === 'true'; %>
+  <% const communityComments = []; %>
+  <% const communityPostsData = (Array.isArray(approvedRecipes) ? approvedRecipes : []).map((recipe) => ({
+    id: recipe.id,
+    communityPostId: recipe.communityPostId || recipe.postId || '',
+    title: recipe.title,
+    description: recipe.description || recipe.title || '',
+    imageUrl: recipe.imageUrl || '/images/1.png',
+    cookingTime: recipe.cookingTime || 0,
+    likesCount: Number(recipe.likesCount || 0),
+    commentsCount: Number(recipe.commentsCount || 0),
+    sharesCount: Number(recipe.sharesCount || 0),
+    likedByMe: Boolean(recipe.likedByMe),
+    category: recipe.category || 'recipe',
+    cuisine: recipe.originPlace || recipe.cuisine || 'Community',
+    creatorName: recipe.creatorName || 'Community user',
+    createdAt: recipe.createdAt || null,
+    commentCount: Array.isArray(recipe.comments) ? recipe.comments.length : 0,
+    comments: Array.isArray(recipe.comments)
+      ? recipe.comments.map((comment) => ({
+          id: comment.id,
+          content: comment.content,
+          creatorName: comment.creatorName,
+          createdAt: comment.createdAt,
+          title: comment.title
+        }))
+      : []
+  })); %>
+  <% const formatChallengeLabel = (recipe) => recipe ? `${recipe.category || 'Recipe'} - ${recipe.cuisine || 'Community'}` : 'Belum tersedia'; %>
+  <% const makeHandle = (value) => `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`; %>
+  <% const formatRelativeTime = (value) => {
+    if (!value) return 'baru saja';
+    const created = new Date(value);
+    if (Number.isNaN(created.getTime())) return 'baru saja';
+    const diff = Date.now() - created.getTime();
+    const minutes = Math.max(0, Math.floor(diff / 60000));
+    if (minutes < 1) return 'baru saja';
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d`;
+    return created.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+  }; %>
+  <script type="application/json" id="communityPostsData"><%- JSON.stringify(communityPostsData).replace(/</g, '\\u003c') %></script>
+
+  <main class="user-dashboard community-page">
+    <div class="user-dashboard-shell community-shell">
+      <%- include('../partials/sidebar', { mode: 'user', activePage: 'community', user }) %>
+
+      <section class="user-dashboard-main community-main">
+        <header class="user-dashboard-topbar">
+          <div class="user-topbar-copy">
+            <p class="user-panel-kicker">Community kitchen</p>
+            <h1>Bagikan resep dan tampilkan ke community</h1>
+            <p class="user-dashboard-subcopy">
+              Postingan resep langsung tersimpan dan tampil ke community. Daily dan weekly challenge tetap berjalan otomatis dari API.
+            </p>
+          </div>
+
+        </header>
+
+        <% if (notice || error) { %>
+          <div class="admin-banner <%= error ? 'is-error' : 'is-success' %>">
+            <i class="fa-solid <%= error ? 'fa-triangle-exclamation' : 'fa-circle-check' %>" aria-hidden="true"></i>
+            <span><%= error || notice %></span>
+          </div>
+        <% } %>
+
+        <section class="community-compose-shell">
+          <div class="community-compose-avatar">
+            <img
+              src="<%= user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || 'User')}&background=0f1419&color=ffffff&bold=true` %>"
+              alt="<%= user.username %>"
+            />
+          </div>
+          <div class="community-compose-body">
+            <button type="button" class="community-compose-field" id="openCommunityComposerInline">
+              Ada apa di dapur?
+            </button>
+            <div class="community-compose-toolbar" aria-hidden="true">
+              <span><i class="fa-regular fa-image"></i></span>
+              <span><i class="fa-solid fa-table-cells-large"></i></span>
+              <span><i class="fa-regular fa-face-smile"></i></span>
+              <span><i class="fa-regular fa-calendar"></i></span>
+              <span><i class="fa-solid fa-location-dot"></i></span>
+              <span><i class="fa-regular fa-flag"></i></span>
+              <button type="button" class="community-compose-submit" id="openCommunityComposerInlinePost">Post</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="community-layout">
+          <section class="community-main-column">
+            <article class="user-panel">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Auto challenge</p>
+                  <h2>Daily & weekly challenge</h2>
+                </div>
+              </div>
+
+              <div class="community-challenge-grid">
+                <article class="community-challenge-card">
+                  <div class="community-challenge-label">Daily challenge</div>
+                  <% if (dailyChallenge) { %>
+                    <h3><%= dailyChallenge.title %></h3>
+                    <p><%= formatChallengeLabel(dailyChallenge) %></p>
+                    <div class="community-mini-meta">
+                      <span><i class="fa-regular fa-clock"></i> <%= dailyChallenge.cooking_time || 0 %> min</span>
+                      <span><i class="fa-solid fa-fire"></i> <%= dailyChallenge.difficulty || 'easy' %></span>
+                    </div>
+                    <a class="auth-button auth-button-secondary" href="/recipe-detail?recipeId=<%= encodeURIComponent(dailyChallenge.id) %>">
+                      Lihat challenge
+                    </a>
+                  <% } else { %>
+                    <p>Challenge harian akan muncul otomatis dari API.</p>
+                  <% } %>
+                </article>
+
+                <article class="community-challenge-card">
+                  <div class="community-challenge-label">Weekly challenge</div>
+                  <% if (weeklyChallenge) { %>
+                    <h3><%= weeklyChallenge.title %></h3>
+                    <p><%= formatChallengeLabel(weeklyChallenge) %></p>
+                    <div class="community-mini-meta">
+                      <span><i class="fa-regular fa-clock"></i> <%= weeklyChallenge.cooking_time || 0 %> min</span>
+                      <span><i class="fa-solid fa-fire"></i> <%= weeklyChallenge.difficulty || 'medium' %></span>
+                    </div>
+                    <a class="auth-button auth-button-secondary" href="/recipe-detail?recipeId=<%= encodeURIComponent(weeklyChallenge.id) %>">
+                      Lihat challenge
+                    </a>
+                  <% } else { %>
+                    <p>Challenge mingguan juga dipilih otomatis dari koleksi API.</p>
+                  <% } %>
+                </article>
+              </div>
+            </article>
+
+            <article class="user-panel" id="community-feed">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Public feed</p>
+                  <h2>Resep community terbaru</h2>
+                </div>
+                <span class="user-panel-meta"><%= approvedRecipes.length %> resep</span>
+              </div>
+
+              <div class="community-feed-grid">
+                <% if (approvedRecipes.length) { %>
+                  <% approvedRecipes.forEach((recipe) => { %>
+                    <article
+                      class="community-tweet-card"
+                      data-post-id="<%= recipe.communityPostId || recipe.id %>"
+                      data-post-url="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>"
+                    >
+                      <div class="community-tweet-avatar">
+                        <img
+                          src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(recipe.creatorName || 'Community user') %>&background=0f1419&color=ffffff&bold=true"
+                          alt="<%= recipe.creatorName %>"
+                        />
+                      </div>
+                      <div class="community-tweet-body">
+                        <div class="community-tweet-head">
+                          <div class="community-tweet-user">
+                            <strong><%= recipe.creatorName %></strong>
+                            <span><%= makeHandle(recipe.creatorName) %></span>
+                            <span>&bull; <%= formatRelativeTime(recipe.createdAt) %></span>
+                          </div>
+                          <button type="button" class="community-tweet-more" aria-label="More">
+                            <i class="fa-solid fa-ellipsis"></i>
+                          </button>
+                        </div>
+
+                        <p class="community-tweet-text"><%= recipe.description || recipe.title %></p>
+
+                        <div class="community-tweet-card-visual">
+                          <img src="<%= recipe.imageUrl || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                        </div>
+
+                        <div class="community-tweet-meta">
+                          <span><i class="fa-solid fa-layer-group"></i> <%= recipe.category %> / <%= recipe.cuisine %></span>
+                          <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime || 0 %> min</span>
+                          <span><i class="fa-solid fa-wallet"></i> Rp <%= formatPrice(recipe.estimatedPrice) %></span>
+                        </div>
+
+                        <div class="community-tweet-actions">
+                          <a class="community-tweet-action-button" href="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>#comments" aria-label="Komentar">
+                            <i class="fa-regular fa-comment"></i>
+                            <span class="community-tweet-action-count"><%= recipe.commentsCount || 0 %></span>
+                          </a>
+                          <a class="community-tweet-action-button" href="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>" aria-label="Bagikan">
+                            <i class="fa-solid fa-retweet"></i>
+                            <span class="community-tweet-action-count"><%= recipe.viewsCount || 0 %></span>
+                          </a>
+                          <button
+                            type="button"
+                            class="community-tweet-action-button <%= recipe.likedByMe ? 'is-liked' : '' %>"
+                            data-action="like"
+                            aria-label="Suka"
+                            <%= recipe.likedByMe ? 'disabled' : '' %>
+                          >
+                            <i class="fa-regular fa-heart"></i>
+                            <span class="community-tweet-action-count"><%= recipe.likesCount || 0 %></span>
+                          </button>
+                          <a href="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>" aria-label="Buka detail resep">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                          </a>
+                        </div>
+                      </div>
+                    </article>
+                  <% }) %>
+                <% } %>
+              </div>
+            </article>
+          </section>
+
+        </div>
+
+        <div class="community-composer-overlay" id="communityComposerOverlay" hidden>
+          <div class="community-composer-modal" role="dialog" aria-modal="true" aria-labelledby="communityComposerTitle">
+            <div class="community-composer-head">
+              <div>
+                <p class="user-panel-kicker">Post resep</p>
+                <h2 id="communityComposerTitle">Buat posting resep baru</h2>
+              </div>
+              <button type="button" class="community-composer-close" id="closeCommunityComposer" aria-label="Tutup">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <form class="community-form" action="/community" method="post" enctype="multipart/form-data">
+              <div class="community-form-grid">
+                <label class="community-form-field">
+                  <span>Judul resep</span>
+                  <input type="text" name="title" required placeholder="Contoh: Ayam Goreng Bumbu Kuning" />
+                </label>
+                <label class="community-form-field">
+                  <span>Foto resep</span>
+                  <input type="file" name="image_file" accept="image/*" />
+                </label>
+                <label class="community-form-field">
+                  <span>Cuisine</span>
+                  <input type="text" name="cuisine" placeholder="Indonesia / Japanese / dll" />
+                </label>
+                <label class="community-form-field">
+                  <span>Kategori</span>
+                  <input type="text" name="category" placeholder="Main course / Dessert / Snack" />
+                </label>
+                <label class="community-form-field">
+                  <span>Waktu masak (menit)</span>
+                  <input type="number" name="cooking_time" min="0" placeholder="30" />
+                </label>
+                <label class="community-form-field">
+                  <span>Porsi</span>
+                  <input type="number" name="servings" min="1" placeholder="2" />
+                </label>
+                <label class="community-form-field">
+                  <span>Difficulty</span>
+                  <select name="difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </label>
+                <label class="community-form-field">
+                  <span>Perkiraan harga</span>
+                  <input type="text" name="estimated_price" placeholder="25000" />
+                </label>
+                <label class="community-form-field community-form-field-wide">
+                  <span>Video URL</span>
+                  <input type="url" name="video_url" placeholder="https://..." />
+                </label>
+                <label class="community-form-field community-form-field-wide">
+                  <span>Deskripsi</span>
+                  <textarea name="description" rows="3" placeholder="Cerita singkat resep ini"></textarea>
+                </label>
+                <label class="community-form-field community-form-field-wide">
+                  <span>Bahan</span>
+                  <textarea name="ingredients" rows="5" required placeholder="Tulis per baris, misalnya:&#10;2 dada ayam&#10;1 sdt garam"></textarea>
+                </label>
+                <label class="community-form-field community-form-field-wide">
+                  <span>Langkah</span>
+                  <textarea name="steps" rows="5" required placeholder="Tulis per baris, misalnya:&#10;Panaskan wajan&#10;Tumis bumbu"></textarea>
+                </label>
+                <label class="community-form-field community-form-field-wide">
+                  <span>Tags</span>
+                  <textarea name="tags" rows="2" placeholder="pedas&#10;ayam&#10;rumahan"></textarea>
+                </label>
+              </div>
+
+              <div class="community-form-actions">
+                <button type="submit" class="auth-button">Post ke community</button>
+                <p>Resep akan langsung tersimpan dan tampil di community.</p>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const postsDataNode = document.getElementById('communityPostsData');
+      const communityPosts = postsDataNode ? JSON.parse(postsDataNode.textContent || '[]') : [];
+      const postMap = new Map(communityPosts.map((post) => [String(post.communityPostId || post.id || ''), post]));
+      const overlay = document.getElementById('communityComposerOverlay');
+      const openButtons = [
+        document.getElementById('openCommunityComposer'),
+        document.getElementById('openCommunityComposerInline'),
+        document.getElementById('openCommunityComposerInlinePost'),
+        document.getElementById('openCommunityComposerSecondary'),
+        document.getElementById('openCommunityComposerTertiary')
+      ].filter(Boolean);
+      const closeButton = document.getElementById('closeCommunityComposer');
+      const modal = overlay ? overlay.querySelector('.community-composer-modal') : null;
+      const feed = document.querySelector('.community-feed-grid');
+      const detailOverlay = document.getElementById('communityDetailOverlay');
+      const detailClose = document.getElementById('closeCommunityDetail');
+      const detailAvatar = document.getElementById('communityDetailAvatar');
+      const detailAuthor = document.getElementById('communityDetailAuthor');
+      const detailHandle = document.getElementById('communityDetailHandle');
+      const detailTime = document.getElementById('communityDetailTime');
+      const detailTitle = document.getElementById('communityDetailTitle');
+      const detailText = document.getElementById('communityDetailText');
+      const detailImage = document.getElementById('communityDetailImage');
+      const detailMeta = document.getElementById('communityDetailMeta');
+      const detailCommentsList = document.getElementById('communityDetailCommentsList');
+      const detailCommentState = document.getElementById('communityDetailCommentState');
+      const detailLikeButton = document.getElementById('communityDetailLikeButton');
+      const detailCommentButton = document.getElementById('communityDetailCommentButton');
+      const detailReplyForm = document.getElementById('communityDetailReplyForm');
+      const detailReplyInput = document.getElementById('communityDetailReplyInput');
+      const detailLikeCount = document.getElementById('communityDetailLikeCount');
+      const detailCommentCount = document.getElementById('communityDetailCommentCount');
+
+      let activePostId = '';
+      let activePost = null;
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function formatRelativeTime(value) {
+        if (!value) return 'baru saja';
+        const created = new Date(value);
+        if (Number.isNaN(created.getTime())) return 'baru saja';
+        const diff = Date.now() - created.getTime();
+        const minutes = Math.max(0, Math.floor(diff / 60000));
+        if (minutes < 1) return 'baru saja';
+        if (minutes < 60) return `${minutes}m`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h`;
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `${days}d`;
+        return created.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+      }
+
+      function makeHandle(value) {
+        return `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`;
+      }
+
+      function renderCommentItem(comment) {
+        return `
+          <article class="community-detail-comment">
+            <div class="community-detail-comment-avatar">
+              <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true" alt="${escapeHtml(comment.creatorName || 'Community user')}" />
+            </div>
+            <div class="community-detail-comment-body">
+              <div class="community-detail-comment-head">
+                <strong>${escapeHtml(comment.creatorName || 'Community user')}</strong>
+                <span>${escapeHtml(makeHandle(comment.creatorName))}</span>
+                <span>&bull; ${escapeHtml(formatRelativeTime(comment.createdAt))}</span>
+              </div>
+              <p>${escapeHtml(comment.content || '')}</p>
+            </div>
+          </article>
+        `;
+      }
+
+      function setDetailVisible(visible) {
+        if (!detailOverlay) return;
+        detailOverlay.hidden = !visible;
+        document.body.classList.toggle('community-detail-open', visible);
+      }
+
+      function renderDetail(post) {
+        if (!post) return;
+
+        activePost = post;
+        activePostId = String(post.communityPostId || post.id || '');
+        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true`;
+        const postComments = Array.isArray(post.comments) ? post.comments : [];
+        const mediaUrl = post.imageUrl || '/images/1.png';
+        const cuisineText = post.cuisine || 'Community';
+        const categoryText = post.category || 'recipe';
+
+        if (detailAvatar) detailAvatar.src = avatarUrl;
+        if (detailAuthor) detailAuthor.textContent = post.creatorName || 'Community user';
+        if (detailHandle) detailHandle.textContent = makeHandle(post.creatorName);
+        if (detailTime) detailTime.textContent = `• ${formatRelativeTime(post.createdAt)}`;
+        if (detailTitle) detailTitle.textContent = post.title || 'Postingan community';
+        if (detailText) detailText.textContent = post.description || post.title || '';
+        if (detailImage) {
+          detailImage.src = mediaUrl;
+          detailImage.alt = post.title || 'Gambar resep';
+        }
+        if (detailMeta) {
+          detailMeta.innerHTML = `
+            <span><i class="fa-solid fa-layer-group"></i> ${escapeHtml(categoryText)} / ${escapeHtml(cuisineText)}</span>
+            <span><i class="fa-regular fa-clock"></i> ${escapeHtml(String(post.cookingTime || 0))} min</span>
+            <span><i class="fa-solid fa-wallet"></i> Rp ${escapeHtml(String(post.estimatedPrice || 0).replace(/\B(?=(\d{3})+(?!\d))/g, '.'))}</span>
+          `;
+        }
+        if (detailLikeCount) detailLikeCount.textContent = String(post.likesCount || 0);
+        if (detailCommentCount) detailCommentCount.textContent = String(post.commentsCount || postComments.length || 0);
+        if (detailCommentState) detailCommentState.textContent = postComments.length ? `${postComments.length} balasan` : 'Belum ada komentar';
+        if (detailLikeButton) {
+          detailLikeButton.classList.toggle('is-liked', Boolean(post.likedByMe));
+          detailLikeButton.disabled = Boolean(post.likedByMe);
+        }
+        if (detailCommentsList) {
+          detailCommentsList.innerHTML = postComments.length
+            ? postComments.map(renderCommentItem).join('')
+            : `
+              <div class="community-detail-empty">
+                <p>Belum ada komentar untuk postingan ini.</p>
+              </div>
+            `;
+        }
+
+        setDetailVisible(true);
+      }
+
+      async function fetchPostDetail(postId) {
+        const response = await fetch(`/community/posts/${encodeURIComponent(postId)}`, {
+          headers: { Accept: 'application/json' }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Gagal memuat detail postingan');
+        }
+        return data.data;
+      }
+
+      async function sendLike(postId) {
+        const response = await fetch(`/community/posts/${encodeURIComponent(postId)}/like`, {
+          method: 'POST',
+          headers: { Accept: 'application/json' }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Gagal menyukai postingan');
+        }
+        return data;
+      }
+
+      async function sendComment(postId, content) {
+        const response = await fetch(`/community/posts/${encodeURIComponent(postId)}/comments`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+          },
+          body: new URLSearchParams({ content })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Gagal mengirim komentar');
+        }
+        return data.comment;
+      }
+
+      const openComposer = () => {
+        if (!overlay) return;
+        overlay.hidden = false;
+        document.body.classList.add('community-composer-open');
+        const firstInput = overlay.querySelector('input, textarea, select, button');
+        firstInput?.focus?.();
+      };
+
+      const closeComposer = () => {
+        if (!overlay) return;
+        overlay.hidden = true;
+        document.body.classList.remove('community-composer-open');
+      };
+
+      openButtons.forEach((button) => button.addEventListener('click', openComposer));
+      closeButton?.addEventListener('click', closeComposer);
+
+      overlay?.addEventListener('click', (event) => {
+        if (event.target === overlay) {
+          closeComposer();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') {
+          return;
+        }
+
+        if (!detailOverlay?.hidden) {
+          setDetailVisible(false);
+          return;
+        }
+
+        if (!overlay?.hidden) {
+          closeComposer();
+        }
+      });
+
+      modal?.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+
+      feed?.addEventListener('click', async (event) => {
+        const likeButton = event.target.closest('[data-action="like"]');
+        const card = event.target.closest('.community-tweet-card');
+
+        if (!card) {
+          return;
+        }
+
+        const postId = card.getAttribute('data-post-id') || '';
+        if (!postId) {
+          return;
+        }
+
+        if (likeButton) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          try {
+            const likesCount = await sendLike(postId);
+            const likeCountNode = likeButton.querySelector('span') || likeButton;
+            if (likeCountNode) {
+              likeCountNode.textContent = String(likesCount.likesCount || 0);
+            }
+            likeButton.classList.add('is-liked');
+            likeButton.disabled = true;
+            const cached = postMap.get(postId);
+            if (cached) {
+              cached.likesCount = likesCount.likesCount || cached.likesCount || 0;
+              cached.likedByMe = true;
+              postMap.set(postId, cached);
+            }
+            if (activePostId === postId && detailLikeCount) {
+              detailLikeCount.textContent = String(likesCount.likesCount || 0);
+              if (detailLikeButton) {
+                detailLikeButton.classList.add('is-liked');
+                detailLikeButton.disabled = true;
+              }
+            }
+            if (likesCount.likedAlready) {
+              window.alert('Kamu sudah menyukai postingan ini.');
+            }
+          } catch (error) {
+            window.alert(error.message || 'Gagal menyukai postingan');
+          }
+          return;
+        }
+
+        if (event.target.closest('a, button')) {
+          return;
+        }
+
+        const url = card.getAttribute('data-post-url');
+        if (url) {
+          window.location.href = url;
+        }
+      });
+
+      if (shouldOpenComposer) {
+        openComposer();
+      }
+    })();
+  </script>
+</body>
+</html>

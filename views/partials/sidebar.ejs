@@ -14,9 +14,9 @@
           <span class="user-sidebar-icon"><i class="fa-solid fa-users"></i></span>
           <span>User</span>
         </a>
-        <a class="user-sidebar-link <%= activePage === 'challenge' ? 'is-active' : '' %>" href="/admin/trending">
-          <span class="user-sidebar-icon"><i class="fa-solid fa-bullseye"></i></span>
-          <span>Challenge</span>
+        <a class="user-sidebar-link <%= activePage === 'community' ? 'is-active' : '' %>" href="/admin/trending">
+          <span class="user-sidebar-icon"><i class="fa-solid fa-people-group"></i></span>
+          <span>Community</span>
         </a>
         <a class="user-sidebar-link <%= activePage === 'reports' ? 'is-active' : '' %>" href="/admin/reports">
           <span class="user-sidebar-icon"><i class="fa-solid fa-flag"></i></span>
@@ -42,6 +42,10 @@
         <a class="user-sidebar-link <%= activePage === 'chat' ? 'is-active' : '' %>" href="/chat-ai">
           <span class="user-sidebar-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
           <span>AI Chat</span>
+        </a>
+        <a class="user-sidebar-link <%= activePage === 'community' ? 'is-active' : '' %>" href="/community">
+          <span class="user-sidebar-icon"><i class="fa-solid fa-users"></i></span>
+          <span>Community</span>
         </a>
         <a class="user-sidebar-link <%= activePage === 'profile' ? 'is-active' : '' %>" href="/profile">
           <span class="user-sidebar-icon"><i class="fa-solid fa-user"></i></span>

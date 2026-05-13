@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/css/style.css" />
   <% const profileData = profile || {}; %>
   <% const avatarUrl = profileData.avatarUrl || user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || 'User')}`; %>
+  <% const hasCustomAvatar = Boolean(user.avatar_url && !String(user.avatar_url).includes('ui-avatars.com')); %>
   <% const progress = profileData.progress || { level: 1, title: 'Starter Cook', progress: 0, activityPoints: 0, pointsIntoLevel: 0, pointsToNextLevel: 10 }; %>
   <% const budgetValue = Number(profileData.budgetPerMeal || user.budget_per_meal || 0); %>
   <% const budgetText = budgetValue ? budgetValue.toLocaleString('id-ID') : '0'; %>
@@ -25,24 +26,37 @@
   <% const totalSaved = Number(user.total_saved_recipes || 0); %>
   <% const totalShared = Number(user.total_recipes_shared || 0); %>
   <% const favoriteCount = Number(profileData.favoriteCount || 0); %>
+  <% const communityFeed = profileData.communityFeed || { posts: [], comments: [] }; %>
+  <% const communityPosts = Array.isArray(communityFeed.posts) ? communityFeed.posts : []; %>
+  <% const communityComments = Array.isArray(communityFeed.comments) ? communityFeed.comments : []; %>
+  <% const makeHandle = (value) => `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`; %>
+  <% const formatRelativeTime = (value) => {
+    if (!value) return 'baru saja';
+    const created = new Date(value);
+    if (Number.isNaN(created.getTime())) return 'baru saja';
+    const diff = Date.now() - created.getTime();
+    const minutes = Math.max(0, Math.floor(diff / 60000));
+    if (minutes < 1) return 'baru saja';
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d`;
+    return created.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+  }; %>
   <style>
     body.profile-page {
-      background:
-        radial-gradient(circle at top left, rgba(56, 156, 154, 0.16), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(254, 219, 113, 0.2), transparent 24%),
-        linear-gradient(180deg, #f5f7f4 0%, #eef3ee 100%);
+      background: #ffffff;
     }
 
     .profile-dashboard .user-dashboard-main {
       display: grid;
       gap: 18px;
       padding: 20px;
-      border-radius: 34px;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 248, 0.92)),
-        linear-gradient(135deg, rgba(56, 156, 154, 0.04), transparent 48%);
-      border: 1px solid rgba(29, 29, 29, 0.06);
-      box-shadow: 0 24px 70px rgba(29, 29, 29, 0.08);
+      border-radius: 0;
+      background: #ffffff;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      box-shadow: none;
       min-width: 0;
     }
 
@@ -52,11 +66,11 @@
       justify-content: space-between;
       gap: 18px;
       padding: 24px 26px;
-      border-radius: 28px;
-      background: rgba(255, 255, 255, 0.82);
-      border: 1px solid rgba(29, 29, 29, 0.06);
-      box-shadow: 0 18px 36px rgba(29, 29, 29, 0.08);
-      backdrop-filter: blur(18px);
+      border-radius: 20px;
+      background: #ffffff;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      box-shadow: none;
+      backdrop-filter: none;
     }
 
     .profile-topbar-copy {
@@ -94,20 +108,20 @@
       min-height: 38px;
       padding: 0 14px;
       border-radius: 999px;
-      border: 1px solid rgba(56, 156, 154, 0.18);
-      background: rgba(56, 156, 154, 0.08);
-      color: var(--accent-dark);
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      background: #f7f9fa;
+      color: #0f1419;
       text-decoration: none;
       font: inherit;
       font-size: 0.88rem;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 8px 18px rgba(56, 156, 154, 0.08);
+      box-shadow: none;
     }
 
     .profile-chip:hover {
-      background: rgba(56, 156, 154, 0.14);
-      border-color: rgba(56, 156, 154, 0.28);
+      background: #eef3f4;
+      border-color: rgba(15, 20, 25, 0.12);
     }
 
     .profile-topbar-actions {
@@ -116,6 +130,34 @@
       gap: 12px;
       justify-content: flex-end;
       align-items: center;
+    }
+
+    .profile-settings-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 0;
+      appearance: none;
+      -webkit-appearance: none;
+      background: #0f1419;
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .profile-settings-button:hover {
+      background: #1d1d1d;
+    }
+
+    .profile-settings-button:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(15, 20, 25, 0.14);
     }
 
     .profile-dashboard .button {
@@ -136,10 +178,10 @@
     }
 
     .profile-dashboard .button-secondary {
-      background: rgba(255, 255, 255, 0.92);
-      color: var(--text);
-      border: 1px solid rgba(29, 29, 29, 0.08);
-      box-shadow: 0 10px 26px rgba(29, 29, 29, 0.05);
+      background: #f7f9fa;
+      color: #0f1419;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      box-shadow: none;
     }
 
     .profile-layout {
@@ -157,16 +199,141 @@
 
     .profile-card {
       padding: 22px;
-      border-radius: 24px;
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(29, 29, 29, 0.06);
-      box-shadow: 0 14px 34px rgba(29, 29, 29, 0.06);
+      border-radius: 18px;
+      background: #ffffff;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      box-shadow: none;
     }
 
     .profile-card.is-accent {
-      background:
-        radial-gradient(circle at top left, rgba(56, 156, 154, 0.12), transparent 30%),
-        linear-gradient(135deg, rgba(254, 219, 113, 0.16), rgba(255, 255, 255, 0.96));
+      background: #ffffff;
+    }
+
+    .profile-settings-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(15, 20, 25, 0.64);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .profile-settings-overlay[hidden] {
+      display: none !important;
+    }
+
+    body.profile-settings-open {
+      overflow: hidden;
+    }
+
+    .profile-settings-modal {
+      width: min(100%, 1120px);
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      border-radius: 24px;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      background: #ffffff;
+      box-shadow: 0 28px 60px rgba(15, 20, 25, 0.18);
+      padding: 24px;
+      animation: profileSettingsIn 0.22s ease;
+    }
+
+    .profile-settings-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .profile-settings-head h2 {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      letter-spacing: -0.04em;
+    }
+
+    .profile-settings-close {
+      appearance: none;
+      border: 0;
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      background: #f7f9fa;
+      color: #0f1419;
+      cursor: pointer;
+      transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+    }
+
+    .profile-settings-close:hover {
+      transform: rotate(8deg);
+      background: #eef3f4;
+    }
+
+    .profile-settings-close:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(53, 164, 176, 0.16);
+    }
+
+    .profile-settings-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .profile-settings-column {
+      display: grid;
+      gap: 18px;
+    }
+
+    .profile-settings-section {
+      padding: 22px;
+      border-radius: 18px;
+      background: #ffffff;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      box-shadow: none;
+    }
+
+    .profile-settings-section .profile-section-head {
+      margin-bottom: 14px;
+    }
+
+    .profile-settings-section .profile-section-actions {
+      margin-top: 16px;
+    }
+
+    .profile-settings-section .profile-form-grid {
+      margin-top: 0;
+    }
+
+    .profile-settings-section .profile-preference-grid {
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .profile-settings-section .profile-field input[type="file"] {
+      padding: 12px 14px;
+      background: #fff;
+    }
+
+    @keyframes profileSettingsIn {
+      from {
+        transform: translateY(18px) scale(0.98);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
     }
 
     .profile-hero {
@@ -176,13 +343,64 @@
       align-items: center;
     }
 
+    .profile-avatar-wrap {
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+    }
+
+    .profile-avatar-form {
+      margin: 0;
+    }
+
+    .profile-avatar-button {
+      position: relative;
+      appearance: none;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: none;
+    }
+
+    .profile-avatar-button img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .profile-avatar-overlay {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: #0f1419;
+      color: #fff;
+      font-size: 0.82rem;
+      box-shadow: 0 10px 18px rgba(29, 29, 29, 0.18);
+    }
+
+    .profile-avatar-caption {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
     .profile-avatar {
       width: 120px;
       height: 120px;
-      border-radius: 28px;
+      border-radius: 24px;
       overflow: hidden;
       background: #eef2ee;
-      box-shadow: 0 18px 30px rgba(29, 29, 29, 0.08);
+      box-shadow: none;
     }
 
     .profile-avatar img {
@@ -227,8 +445,8 @@
       gap: 8px;
       padding: 8px 12px;
       border-radius: 999px;
-      background: rgba(56, 156, 154, 0.08);
-      color: var(--accent-dark);
+      background: #f7f9fa;
+      color: #0f1419;
       font-weight: 700;
     }
 
@@ -238,9 +456,9 @@
       align-content: center;
       padding: 10px 14px;
       border-radius: 18px;
-      background: rgba(56, 156, 154, 0.08);
-      border: 1px solid rgba(56, 156, 154, 0.14);
-      color: var(--accent-dark);
+      background: #f7f9fa;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      color: #0f1419;
       font-weight: 800;
       min-width: 120px;
     }
@@ -248,7 +466,7 @@
     .profile-level-pill span {
       font-size: 0.82rem;
       font-weight: 700;
-      color: rgba(15, 92, 91, 0.86);
+      color: #536471;
     }
 
     .profile-stats-grid {
@@ -260,8 +478,8 @@
     .profile-stat {
       padding: 14px 16px;
       border-radius: 18px;
-      background: #faf9f6;
-      border: 1px solid rgba(29, 29, 29, 0.05);
+      background: #ffffff;
+      border: 1px solid rgba(15, 20, 25, 0.08);
       display: grid;
       gap: 5px;
     }
@@ -349,12 +567,12 @@
       padding: 0 18px;
       border-radius: 999px;
       border: 0;
-      background: linear-gradient(180deg, #42b9a2 0%, #2f927f 100%);
+      background: #0f1419;
       color: #fff;
       font: inherit;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 16px 28px rgba(56, 156, 154, 0.24);
+      box-shadow: none;
     }
 
     .profile-secondary-button {
@@ -364,9 +582,9 @@
       min-height: 48px;
       padding: 0 18px;
       border-radius: 999px;
-      border: 1px solid rgba(29, 29, 29, 0.08);
-      background: rgba(255, 255, 255, 0.9);
-      color: var(--text);
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      background: #f7f9fa;
+      color: #0f1419;
       font: inherit;
       font-weight: 800;
       cursor: pointer;
@@ -380,7 +598,7 @@
     .profile-progress-meter {
       height: 14px;
       border-radius: 999px;
-      background: rgba(29, 29, 29, 0.08);
+      background: rgba(15, 20, 25, 0.08);
       overflow: hidden;
     }
 
@@ -388,7 +606,7 @@
       display: block;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, #38b19d, #66c47a);
+      background: #1d9bf0;
       width: <%= Math.max(0, Math.min(100, progress.progress || 0)) %>%;
     }
 
@@ -411,8 +629,8 @@
       gap: 5px;
       padding: 14px 16px;
       border-radius: 18px;
-      background: #faf9f6;
-      border: 1px solid rgba(29, 29, 29, 0.05);
+      background: #ffffff;
+      border: 1px solid rgba(15, 20, 25, 0.08);
     }
 
     .profile-side-item strong {
@@ -434,8 +652,8 @@
       min-height: 48px;
       padding: 0 14px;
       border-radius: 16px;
-      background: #fffdf9;
-      border: 1px solid rgba(29, 29, 29, 0.08);
+      background: #ffffff;
+      border: 1px solid rgba(15, 20, 25, 0.08);
       cursor: pointer;
       overflow: hidden;
     }
@@ -454,14 +672,14 @@
     }
 
     .profile-preference-chip:has(input:checked) {
-      border-color: rgba(56, 156, 154, 0.4);
-      background: rgba(56, 156, 154, 0.1);
+      border-color: rgba(29, 155, 240, 0.36);
+      background: rgba(29, 155, 240, 0.08);
     }
 
     .profile-empty-state {
       padding: 16px;
       border-radius: 18px;
-      background: rgba(56, 156, 154, 0.06);
+      background: #f7f9fa;
       color: var(--muted);
       line-height: 1.6;
     }
@@ -475,8 +693,192 @@
     .profile-note-box {
       padding: 16px;
       border-radius: 18px;
-      background: rgba(56, 156, 154, 0.08);
-      color: #266f66;
+      background: #f7f9fa;
+      color: #0f1419;
+      line-height: 1.6;
+    }
+
+    .profile-community-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .profile-community-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .profile-community-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .profile-community-stream {
+      display: grid;
+      gap: 0;
+    }
+
+    .profile-community-tweet,
+    .profile-community-reply {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 12px;
+      padding: 18px 0;
+      border: 0;
+      border-bottom: 1px solid rgba(15, 20, 25, 0.08);
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .profile-community-reply {
+      padding: 14px 0;
+    }
+
+    .profile-community-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #f7f9fa;
+    }
+
+    .profile-community-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-community-body {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .profile-community-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .profile-community-user {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      color: #536471;
+      font-size: 0.92rem;
+    }
+
+    .profile-community-user strong {
+      color: #0f1419;
+      font-size: 0.98rem;
+    }
+
+    .profile-community-user span {
+      white-space: nowrap;
+    }
+
+    .profile-community-text {
+      margin: 0;
+      color: #0f1419;
+      font-size: 1.02rem;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    .profile-community-subtext {
+      margin: 0;
+      color: #536471;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .profile-community-media {
+      width: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #f7f9fa;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+    }
+
+    .profile-community-media img {
+      width: 100%;
+      display: block;
+      max-height: 420px;
+      object-fit: cover;
+    }
+
+    .profile-community-card {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+      border-radius: 18px;
+      background: #ffffff;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+    }
+
+    .profile-community-card h4,
+    .profile-community-card p {
+      margin: 0;
+    }
+
+    .profile-community-card h4 {
+      font-family: "Space Grotesk", sans-serif;
+      letter-spacing: -0.03em;
+    }
+
+    .profile-community-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .profile-community-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .profile-community-comments {
+      display: grid;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .profile-community-comment {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #ffffff;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      display: grid;
+      gap: 6px;
+    }
+
+    .profile-community-reply .profile-community-meta,
+    .profile-community-tweet .profile-community-meta {
+      color: #536471;
+      font-size: 0.88rem;
+    }
+
+    .profile-community-comment strong {
+      font-family: "Space Grotesk", sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    .profile-community-empty {
+      padding: 16px;
+      border-radius: 18px;
+      background: #f7f9fa;
+      color: var(--muted);
       line-height: 1.6;
     }
 
@@ -490,6 +892,10 @@
       }
 
       .profile-password-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-community-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -508,7 +914,7 @@
         grid-template-columns: 1fr;
       }
 
-      .profile-avatar {
+      .profile-avatar-button img {
         width: 92px;
         height: 92px;
       }
@@ -518,6 +924,105 @@
       .profile-preference-grid {
         grid-template-columns: 1fr;
       }
+    }
+  </style>
+  <style>
+    body.profile-page {
+      background: #ffffff;
+    }
+
+    .profile-dashboard .user-dashboard-main {
+      border-radius: 0;
+      background: #ffffff;
+      border-color: rgba(15, 20, 25, 0.08);
+      box-shadow: none;
+    }
+
+    .profile-topbar,
+    .profile-card,
+    .profile-settings-section,
+    .profile-community-card,
+    .profile-community-comment,
+    .profile-side-item,
+    .profile-empty-state,
+    .profile-note-box {
+      border-radius: 18px;
+      background: #ffffff;
+      border-color: rgba(15, 20, 25, 0.08);
+      box-shadow: none;
+    }
+
+    .profile-topbar {
+      backdrop-filter: none;
+      padding: 18px 20px;
+    }
+
+    .profile-topbar-copy h1,
+    .profile-section-head h3,
+    .profile-name-row h2,
+    .profile-community-card h4 {
+      letter-spacing: -0.04em;
+    }
+
+    .profile-settings-button {
+      background: #0f1419;
+      box-shadow: none;
+    }
+
+    .profile-settings-button:hover {
+      background: #1d1d1d;
+    }
+
+    .profile-chip,
+    .profile-secondary-button {
+      background: #f7f9fa;
+      border-color: rgba(15, 20, 25, 0.08);
+      color: #0f1419;
+      box-shadow: none;
+    }
+
+    .profile-primary-button {
+      background: #0f1419;
+      box-shadow: none;
+    }
+
+    .profile-progress-meter {
+      background: rgba(15, 20, 25, 0.08);
+    }
+
+    .profile-progress-meter span {
+      background: #1d9bf0;
+    }
+
+    .profile-avatar-button {
+      border-radius: 18px;
+      box-shadow: none;
+    }
+
+    .profile-avatar-overlay {
+      background: #0f1419;
+    }
+
+    .profile-settings-overlay {
+      background: rgba(15, 20, 25, 0.64);
+    }
+
+    .profile-settings-modal {
+      border-radius: 24px;
+      box-shadow: 0 28px 60px rgba(15, 20, 25, 0.18);
+    }
+
+    .profile-settings-close {
+      background: #f7f9fa;
+    }
+
+    .profile-community-grid {
+      gap: 12px;
+    }
+
+    .profile-community-actions .profile-primary-button,
+    .profile-community-actions .profile-secondary-button {
+      min-height: 42px;
     }
   </style>
 </head>
@@ -532,15 +1037,17 @@
         <header class="profile-topbar">
           <div class="profile-topbar-copy">
             <p class="user-panel-kicker">Profile</p>
-            <h1>Kelola akun, foto profile, dan progres memasak</h1>
+            <h1>Akun dan progres memasak</h1>
             <p class="profile-topbar-note">
-              Atur identitas akun, lihat level memasak, unggah foto profile langsung, dan ganti password dari satu tempat.
+              Klik foto profile untuk ganti avatar. Pengaturan bio dan preferensi dibuka lewat tombol Settings.
             </p>
-            <div class="profile-quick-actions">
-              <a class="profile-chip" href="/dashboard">Dashboard</a>
-              <a class="profile-chip" href="/chat-ai">Chat AI</a>
-              <a class="profile-chip" href="/recipe-menu">Resep</a>
-            </div>
+          </div>
+
+          <div class="profile-topbar-actions">
+            <button type="button" class="profile-settings-button" id="openProfileSettings">
+              <i class="fa-solid fa-gear"></i>
+              <span>Settings</span>
+            </button>
           </div>
         </header>
 
@@ -560,9 +1067,22 @@
           <section class="profile-main">
             <article class="profile-card is-accent">
               <div class="profile-hero">
-                <div class="profile-avatar">
-                  <img src="<%= avatarUrl %>" alt="<%= user.username %>" />
-                </div>
+                <form class="profile-avatar-form" action="/profile/details" method="post" enctype="multipart/form-data">
+                  <input
+                    class="sr-only"
+                    type="file"
+                    id="profileAvatarInput"
+                    name="avatar_image"
+                    accept="image/*"
+                    aria-label="Upload foto profile"
+                  />
+                  <button type="button" class="profile-avatar-button" id="profileAvatarButton" aria-label="Klik untuk ganti foto profile">
+                    <img src="<%= avatarUrl %>" alt="<%= user.username %>" />
+                    <span class="profile-avatar-overlay" aria-hidden="true">
+                      <i class="fa-solid <%= hasCustomAvatar ? 'fa-pen' : 'fa-plus' %>"></i>
+                    </span>
+                  </button>
+                </form>
 
                 <div>
                   <div class="profile-name-row">
@@ -623,149 +1143,107 @@
               </div>
             </article>
 
-            <article class="profile-card" id="profileDetails">
-              <div class="profile-section-head">
-                <p class="user-panel-kicker">Foto profile dan info akun</p>
-                <h3>Edit profile</h3>
-                <p class="profile-muted">Upload gambar langsung untuk mengganti foto profile. Bio, budget, dan level memasak bisa diatur dari sini.</p>
-              </div>
-
-              <form action="/profile/details" method="post" enctype="multipart/form-data">
-                <div class="profile-form-grid">
-                  <label class="profile-field full">
-                    <span>Foto profile</span>
-                    <input
-                      type="file"
-                      name="avatar_image"
-                      accept="image/*"
-                    />
-                    <small>Upload file gambar JPG, PNG, atau WEBP.</small>
-                  </label>
-
-                  <label class="profile-field full">
-                    <span>Bio singkat</span>
-                    <textarea
-                      name="bio"
-                      placeholder="Ceritakan gaya masak kamu dalam satu atau dua kalimat."
-                    ><%= user.bio || '' %></textarea>
-                  </label>
-
-                  <label class="profile-field">
-                    <span>Budget per meal</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="500"
-                      name="budget_per_meal"
-                      value="<%= Number(user.budget_per_meal || 0) || '' %>"
-                      placeholder="15000"
-                    />
-                  </label>
-
-                </div>
-
-                <div class="profile-section-actions">
-                  <button type="submit" class="profile-primary-button">Simpan profile</button>
-                  <a class="profile-secondary-button" href="/chat-ai">Buka Chat AI</a>
-                </div>
-              </form>
-            </article>
-
             <article class="profile-card">
-              <div class="profile-section-head">
-                <p class="user-panel-kicker">Preference makanan</p>
-                <h3>Alergi dan makanan yang dihindari</h3>
-                <p class="profile-muted">Preferensi ini akan dipakai untuk menyaring resep dan rekomendasi.</p>
+              <div class="profile-section-head profile-community-header">
+                <div>
+                  <p class="user-panel-kicker">Community feed</p>
+                  <h3>Postingan dan komentar kamu</h3>
+                  <p class="profile-muted">Semua post community kamu tampil di sini. Komentar yang kamu kirim ke postingan orang lain juga muncul di bawahnya.</p>
+                </div>
+                <div class="profile-community-actions">
+                  <a class="profile-primary-button" href="/community?openComposer=1">Post ke community</a>
+                  <a class="profile-secondary-button" href="/community">Buka community</a>
+                </div>
               </div>
 
-              <form action="/profile/preferences" method="post">
-                <div class="profile-preference-grid">
-                  <% allergyOptions.forEach((option) => { %>
-                    <label class="profile-preference-chip">
-                      <input
-                        type="checkbox"
-                        name="preferences"
-                        value="<%= option.key %>"
-                        <%= preferences.includes(option.key) ? 'checked' : '' %>
-                      />
-                      <span><%= option.label %></span>
-                    </label>
-                  <% }) %>
+              <div class="profile-community-grid" style="margin-top: 16px;">
+                <div class="profile-settings-section" style="padding: 18px;">
+                  <div class="profile-section-head">
+                    <p class="user-panel-kicker">Posting kamu</p>
+                    <h3>Feed upload terbaru</h3>
+                  </div>
+
+                  <% if (communityPosts.length) { %>
+                    <div class="profile-community-stream">
+                      <% communityPosts.forEach((recipe) => { %>
+                        <article class="profile-community-tweet">
+                          <div class="profile-community-avatar">
+                            <img
+                              src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(recipe.creatorName || user.username || 'Community user') %>&background=0f1419&color=ffffff&bold=true"
+                              alt="<%= recipe.creatorName || user.username %>"
+                            />
+                          </div>
+                          <div class="profile-community-body">
+                            <div class="profile-community-head">
+                              <div class="profile-community-user">
+                                <strong><%= recipe.creatorName || user.username %></strong>
+                                <span><%= makeHandle(recipe.creatorName || user.username) %></span>
+                                <span>&bull; <%= formatRelativeTime(recipe.createdAt) %></span>
+                              </div>
+                              <span class="community-status is-approved">Published</span>
+                            </div>
+                            <p class="profile-community-text"><%= recipe.title %></p>
+                            <p class="profile-community-subtext"><%= recipe.category %> &bull; <%= recipe.cuisine %></p>
+                            <div class="profile-community-media">
+                              <img src="<%= recipe.imageUrl || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                            </div>
+                            <div class="profile-community-meta">
+                              <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime || 0 %> min</span>
+                              <span><i class="fa-solid fa-wallet"></i> Rp <%= Number(recipe.estimatedPrice || 0).toLocaleString('id-ID') %></span>
+                            </div>
+                          </div>
+                        </article>
+                      <% }) %>
+                    </div>
+                  <% } else { %>
+                    <div class="profile-community-empty">
+                      Belum ada posting community. Klik <strong>Post ke community</strong> untuk mulai membagikan resep kamu.
+                    </div>
+                  <% } %>
                 </div>
 
-                <div class="profile-section-actions">
-                  <button type="submit" class="profile-primary-button">Simpan preference</button>
-                </div>
-              </form>
-            </article>
+                <div class="profile-settings-section" style="padding: 18px;">
+                  <div class="profile-section-head">
+                    <p class="user-panel-kicker">Komentar kamu</p>
+                    <h3>Aktivitas balasan</h3>
+                  </div>
 
-            <article class="profile-card">
-              <div class="profile-section-head">
-                <p class="user-panel-kicker">Keamanan</p>
-                <h3>Ganti password</h3>
-                <p class="profile-muted">Masukkan password lama lalu tentukan password baru yang kuat.</p>
+                  <% if (communityComments.length) { %>
+                    <div class="profile-community-stream">
+                      <% communityComments.forEach((comment) => { %>
+                        <article class="profile-community-reply">
+                          <div class="profile-community-avatar">
+                            <img
+                              src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(comment.creatorName || user.username || 'Community user') %>&background=0f1419&color=ffffff&bold=true"
+                              alt="<%= comment.creatorName || user.username %>"
+                            />
+                          </div>
+                          <div class="profile-community-body">
+                            <div class="profile-community-head">
+                              <div class="profile-community-user">
+                                <strong><%= comment.creatorName || user.username %></strong>
+                                <span><%= makeHandle(comment.creatorName || user.username) %></span>
+                                <span>&bull; <%= formatRelativeTime(comment.createdAt) %></span>
+                              </div>
+                            </div>
+                            <p class="profile-community-text"><%= comment.content %></p>
+                            <p class="profile-community-subtext">Balasan ke <%= comment.title %></p>
+                          </div>
+                        </article>
+                      <% }) %>
+                    </div>
+                  <% } else { %>
+                    <div class="profile-community-empty">
+                      Belum ada komentar yang kamu kirim ke postingan orang lain.
+                    </div>
+                  <% } %>
+                </div>
               </div>
-
-              <form action="/profile/password" method="post">
-                <div class="profile-password-grid">
-                  <label class="profile-field">
-                    <span>Password lama</span>
-                    <input type="password" name="current_password" placeholder="Password saat ini" required />
-                  </label>
-
-                  <label class="profile-field">
-                    <span>Password baru</span>
-                    <input type="password" name="new_password" placeholder="Password baru" required />
-                  </label>
-
-                  <label class="profile-field">
-                    <span>Konfirmasi password</span>
-                    <input type="password" name="confirm_password" placeholder="Ulangi password baru" required />
-                  </label>
-                </div>
-
-                <div class="profile-section-actions">
-                  <button type="submit" class="profile-primary-button">Ubah password</button>
-                </div>
-              </form>
             </article>
+
           </section>
 
           <aside class="profile-sidebar">
-            <article class="profile-card">
-              <div class="profile-section-head">
-                <p class="user-panel-kicker">Akun</p>
-                <h3>Informasi singkat</h3>
-              </div>
-
-              <div class="profile-side-list">
-                <div class="profile-side-item">
-                  <strong>Username</strong>
-                  <span><%= user.username %></span>
-                </div>
-                <div class="profile-side-item">
-                  <strong>Email</strong>
-                  <span><%= user.email %></span>
-                </div>
-                <div class="profile-side-item">
-                  <strong>Role</strong>
-                  <span><%= user.role %></span>
-                </div>
-                <div class="profile-side-item">
-                  <strong>Bergabung sejak</strong>
-                  <span><%= profileData.joinedAt || '-' %></span>
-                </div>
-                <div class="profile-side-item">
-                  <strong>Recook terakhir</strong>
-                  <span><%= profileData.latestCookedAt || '-' %></span>
-                </div>
-                <div class="profile-side-item">
-                  <strong>Skill memasak</strong>
-                  <span><%= skillLabel %></span>
-                </div>
-              </div>
-            </article>
-
             <article class="profile-card">
               <div class="profile-section-head">
                 <p class="user-panel-kicker">Level progress</p>
@@ -802,8 +1280,192 @@
             </article>
           </aside>
         </div>
+
+        <div class="profile-settings-overlay" id="profileSettingsOverlay" hidden>
+          <div class="profile-settings-modal" role="dialog" aria-modal="true" aria-labelledby="profileSettingsTitle">
+            <div class="profile-settings-head">
+              <div>
+                <p class="user-panel-kicker">Settings</p>
+                <h2 id="profileSettingsTitle">Edit profile dan preference</h2>
+              </div>
+              <button type="button" class="profile-settings-close" id="closeProfileSettings" aria-label="Tutup settings">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div class="profile-settings-grid">
+              <div class="profile-settings-column">
+                <article class="profile-settings-section">
+                  <div class="profile-section-head">
+                    <p class="user-panel-kicker">Foto profile dan info akun</p>
+                    <h3>Edit profile</h3>
+                    <p class="profile-muted">Avatar diganti langsung dari foto profile di atas. Bio dan budget bisa diubah di sini.</p>
+                  </div>
+
+                  <form action="/profile/details" method="post">
+                    <div class="profile-form-grid">
+                      <label class="profile-field full">
+                        <span>Bio singkat</span>
+                        <textarea
+                          name="bio"
+                          placeholder="Ceritakan gaya masak kamu dalam satu atau dua kalimat."
+                        ><%= user.bio || '' %></textarea>
+                      </label>
+
+                      <label class="profile-field">
+                        <span>Budget per meal</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="500"
+                          name="budget_per_meal"
+                          value="<%= Number(user.budget_per_meal || 0) || '' %>"
+                          placeholder="15000"
+                        />
+                      </label>
+                    </div>
+
+                    <div class="profile-section-actions">
+                      <button type="submit" class="profile-primary-button">Simpan profile</button>
+                    </div>
+                  </form>
+                </article>
+
+                <article class="profile-settings-section">
+                  <div class="profile-section-head">
+                    <p class="user-panel-kicker">Preference makanan</p>
+                    <h3>Alergi dan makanan yang dihindari</h3>
+                    <p class="profile-muted">Preferensi ini akan dipakai untuk menyaring resep dan rekomendasi.</p>
+                  </div>
+
+                  <form action="/profile/preferences" method="post">
+                    <div class="profile-preference-grid">
+                      <% allergyOptions.forEach((option) => { %>
+                        <label class="profile-preference-chip">
+                          <input
+                            type="checkbox"
+                            name="preferences"
+                            value="<%= option.key %>"
+                            <%= preferences.includes(option.key) ? 'checked' : '' %>
+                          />
+                          <span><%= option.label %></span>
+                        </label>
+                      <% }) %>
+                    </div>
+
+                    <div class="profile-section-actions">
+                      <button type="submit" class="profile-primary-button">Simpan preference</button>
+                    </div>
+                  </form>
+                </article>
+
+                <article class="profile-settings-section">
+                  <div class="profile-section-head">
+                    <p class="user-panel-kicker">Keamanan</p>
+                    <h3>Ganti password</h3>
+                    <p class="profile-muted">Masukkan password lama lalu tentukan password baru yang kuat.</p>
+                  </div>
+
+                  <form action="/profile/password" method="post">
+                    <div class="profile-password-grid">
+                      <label class="profile-field">
+                        <span>Password lama</span>
+                        <input type="password" name="current_password" placeholder="Password saat ini" required />
+                      </label>
+
+                      <label class="profile-field">
+                        <span>Password baru</span>
+                        <input type="password" name="new_password" placeholder="Password baru" required />
+                      </label>
+
+                      <label class="profile-field">
+                        <span>Konfirmasi password</span>
+                        <input type="password" name="confirm_password" placeholder="Ulangi password baru" required />
+                      </label>
+                    </div>
+
+                    <div class="profile-section-actions">
+                      <button type="submit" class="profile-primary-button">Ubah password</button>
+                    </div>
+                  </form>
+                </article>
+              </div>
+
+              <div class="profile-settings-column">
+                <article class="profile-settings-section">
+                  <div class="profile-section-head">
+                    <p class="user-panel-kicker">Panduan</p>
+                    <h3>Cara update foto profile</h3>
+                  </div>
+
+                  <div class="profile-note-box">
+                    <strong>Klik foto profile</strong><br />
+                    Upload gambar baru langsung dari kartu akun di atas.<br />
+                    <span>Ikon <i class="fa-solid <%= hasCustomAvatar ? 'fa-pen' : 'fa-plus' %>"></i> akan berubah otomatis sesuai foto yang dipakai.</span>
+                  </div>
+                </article>
+
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   </main>
+
+  <script>
+    (() => {
+      const settingsOverlay = document.getElementById('profileSettingsOverlay');
+      const openSettingsButton = document.getElementById('openProfileSettings');
+      const closeSettingsButton = document.getElementById('closeProfileSettings');
+      const settingsModal = settingsOverlay ? settingsOverlay.querySelector('.profile-settings-modal') : null;
+      const avatarButton = document.getElementById('profileAvatarButton');
+      const avatarInput = document.getElementById('profileAvatarInput');
+      const avatarForm = avatarInput?.closest('form');
+
+      const openSettings = () => {
+        if (!settingsOverlay) return;
+        settingsOverlay.hidden = false;
+        document.body.classList.add('profile-settings-open');
+        const firstField = settingsOverlay.querySelector('textarea, input, select, button');
+        firstField?.focus?.();
+      };
+
+      const closeSettings = () => {
+        if (!settingsOverlay) return;
+        settingsOverlay.hidden = true;
+        document.body.classList.remove('profile-settings-open');
+      };
+
+      openSettingsButton?.addEventListener('click', openSettings);
+      closeSettingsButton?.addEventListener('click', closeSettings);
+
+      settingsOverlay?.addEventListener('click', (event) => {
+        if (event.target === settingsOverlay) {
+          closeSettings();
+        }
+      });
+
+      settingsModal?.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !settingsOverlay?.hidden) {
+          closeSettings();
+        }
+      });
+
+      avatarButton?.addEventListener('click', () => {
+        avatarInput?.click();
+      });
+
+      avatarInput?.addEventListener('change', () => {
+        if (avatarInput.files && avatarInput.files.length > 0) {
+          avatarForm?.submit();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

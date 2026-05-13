@@ -1,0 +1,259 @@
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
+  <% const makeHandle = (value) => `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`; %>
+  <% const formatRelativeTime = (value) => {
+    if (!value) return 'baru saja';
+    const created = new Date(value);
+    if (Number.isNaN(created.getTime())) return 'baru saja';
+    const diff = Date.now() - created.getTime();
+    const minutes = Math.max(0, Math.floor(diff / 60000));
+    if (minutes < 1) return 'baru saja';
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d`;
+    return created.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+  }; %>
+
+  <main class="user-dashboard community-page community-post-page">
+    <div class="user-dashboard-shell community-shell">
+      <%- include('../partials/sidebar', { mode: 'user', activePage: 'community', user }) %>
+
+      <section class="user-dashboard-main community-main">
+        <header class="community-post-topbar">
+          <a class="community-back-link" href="/community">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Kembali ke community</span>
+          </a>
+          <div class="community-post-topbar-copy">
+            <p class="user-panel-kicker">Community post</p>
+            <h1><%= post.title %></h1>
+          </div>
+        </header>
+
+        <article class="community-post-layout">
+          <section class="community-post-main">
+            <article class="community-detail-post">
+              <div class="community-detail-post-body">
+                <div class="community-detail-avatar">
+                  <img
+                    src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(post.creatorName || 'Community user') %>&background=0f1419&color=ffffff&bold=true"
+                    alt="<%= post.creatorName %>"
+                  />
+                </div>
+                <div class="community-detail-copy">
+                  <div class="community-detail-head">
+                    <div class="community-tweet-user">
+                      <strong><%= post.creatorName %></strong>
+                      <span><%= makeHandle(post.creatorName) %></span>
+                      <span>&bull; <%= formatRelativeTime(post.createdAt) %></span>
+                    </div>
+                  </div>
+
+                  <p class="community-detail-text"><%= post.content || post.title %></p>
+
+                  <div class="community-detail-media">
+                    <img src="<%= post.imageUrl || '/images/1.png' %>" alt="<%= post.title %>" />
+                  </div>
+
+                  <div class="community-tweet-meta community-detail-meta">
+                    <span><i class="fa-solid fa-layer-group"></i> <%= post.title %></span>
+                    <span><i class="fa-regular fa-clock"></i> <%= post.cookingTime || 0 %> min</span>
+                    <span><i class="fa-solid fa-wallet"></i> Rp <%= formatPrice(post.estimatedPrice) %></span>
+                  </div>
+
+                  <div class="community-detail-actions">
+                    <button type="button" class="community-tweet-action-button <%= post.likedByMe ? 'is-liked' : '' %>" id="detailLikeButton" <%= post.likedByMe ? 'disabled' : '' %>>
+                      <span class="community-action-icon"><i class="fa-regular fa-heart"></i></span>
+                      <span id="detailLikeCount"><%= post.likesCount || 0 %></span>
+                    </button>
+                    <a class="community-tweet-action-button" href="#comments">
+                      <span class="community-action-icon"><i class="fa-regular fa-comment"></i></span>
+                      <span><%= post.commentsCount || comments.length || 0 %></span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <section class="community-detail-comments" id="comments">
+                <div class="community-detail-comments-head">
+                  <div>
+                    <p class="community-detail-thread-kicker">Replies</p>
+                    <h3>Komentar</h3>
+                  </div>
+                  <span id="communityDetailCommentState"><%= comments.length ? `${comments.length} balasan` : 'Belum ada komentar' %></span>
+                </div>
+
+                <div class="community-detail-comments-list" id="commentsList">
+                  <% if (comments.length) { %>
+                    <% comments.forEach((comment) => { %>
+                      <article class="community-thread-item">
+                        <div class="community-thread-avatar">
+                          <img
+                            src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(comment.creatorName || 'Community user') %>&background=0f1419&color=ffffff&bold=true"
+                            alt="<%= comment.creatorName %>"
+                          />
+                        </div>
+                        <div class="community-thread-body">
+                          <div class="community-thread-head">
+                            <strong><%= comment.creatorName %></strong>
+                            <span><%= makeHandle(comment.creatorName) %></span>
+                            <span>&bull; <%= formatRelativeTime(comment.createdAt) %></span>
+                          </div>
+                          <p><%= comment.content %></p>
+                        </div>
+                      </article>
+                    <% }) %>
+                  <% } else { %>
+                    <div class="community-detail-empty">
+                      <p>Belum ada komentar untuk postingan ini.</p>
+                    </div>
+                  <% } %>
+                </div>
+
+                <form class="community-detail-reply-form" id="replyForm">
+                  <textarea id="replyInput" rows="3" placeholder="Tulis komentar..." required></textarea>
+                  <div class="community-detail-reply-actions">
+                    <span class="community-detail-reply-hint">Enter untuk kirim, Shift+Enter untuk baris baru.</span>
+                    <button type="submit" class="auth-button" id="replySubmit">Reply</button>
+                  </div>
+                </form>
+              </section>
+            </article>
+          </section>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const postId = <%- JSON.stringify(post.id) %>;
+      const likeButton = document.getElementById('detailLikeButton');
+      const likeCount = document.getElementById('detailLikeCount');
+      const replyForm = document.getElementById('replyForm');
+      const replyInput = document.getElementById('replyInput');
+      const commentsList = document.getElementById('commentsList');
+      const commentState = document.getElementById('communityDetailCommentState');
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function makeHandle(value) {
+        return `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`;
+      }
+
+      function formatRelativeTime(value) {
+        if (!value) return 'baru saja';
+        const created = new Date(value);
+        if (Number.isNaN(created.getTime())) return 'baru saja';
+        const diff = Date.now() - created.getTime();
+        const minutes = Math.max(0, Math.floor(diff / 60000));
+        if (minutes < 1) return 'baru saja';
+        if (minutes < 60) return `${minutes}m`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h`;
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `${days}d`;
+        return created.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+      }
+
+      function renderComment(comment) {
+        return `
+          <article class="community-thread-item">
+            <div class="community-thread-avatar">
+              <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true" alt="${escapeHtml(comment.creatorName || 'Community user')}" />
+            </div>
+            <div class="community-thread-body">
+              <div class="community-thread-head">
+                <strong>${escapeHtml(comment.creatorName || 'Community user')}</strong>
+                <span>${escapeHtml(makeHandle(comment.creatorName))}</span>
+                <span>&bull; ${escapeHtml(formatRelativeTime(comment.createdAt))}</span>
+              </div>
+              <p>${escapeHtml(comment.content || '')}</p>
+            </div>
+          </article>
+        `;
+      }
+
+      likeButton?.addEventListener('click', async () => {
+        if (!postId) return;
+        try {
+          likeButton.classList.remove('is-pop');
+          void likeButton.offsetWidth;
+          likeButton.classList.add('is-pop');
+          const response = await fetch(`/community/posts/${encodeURIComponent(postId)}/like`, {
+            method: 'POST',
+            headers: { Accept: 'application/json' }
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Gagal menyukai postingan');
+          }
+
+          likeCount.textContent = String(data.likesCount || 0);
+          likeButton.classList.add('is-liked');
+          likeButton.disabled = true;
+          window.setTimeout(() => likeButton.classList.remove('is-pop'), 260);
+          if (data.likedAlready) {
+            window.alert('Kamu sudah menyukai postingan ini.');
+          }
+        } catch (error) {
+          likeButton.classList.remove('is-pop');
+          window.alert(error.message || 'Gagal menyukai postingan');
+        }
+      });
+
+      replyForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const content = String(replyInput.value || '').trim();
+        if (!content) return;
+
+        try {
+          const response = await fetch(`/community/posts/${encodeURIComponent(postId)}/comments`, {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
+            body: new URLSearchParams({ content })
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Gagal mengirim komentar');
+          }
+
+          const emptyState = commentsList.querySelector('.community-detail-empty');
+          if (emptyState) {
+            emptyState.remove();
+          }
+          commentsList.insertAdjacentHTML('beforeend', renderComment(data.comment));
+          replyInput.value = '';
+          const currentCount = Number(commentState.textContent.match(/\d+/)?.[0] || '0') + 1;
+          commentState.textContent = `${currentCount} balasan`;
+        } catch (error) {
+          window.alert(error.message || 'Gagal mengirim komentar');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

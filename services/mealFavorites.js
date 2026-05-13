@@ -54,6 +54,50 @@ function normalizeFavoriteSnapshot(snapshot) {
     return snapshot;
 }
 
+async function lookupCommunityRecipeById(recipeId) {
+    const result = await pool.query(
+        `
+            SELECT
+                r.*,
+                COALESCE(u.username, 'Community user') AS creator_name
+            FROM recipes r
+            LEFT JOIN users u ON u.id = r.created_by
+            WHERE r.id = $1
+              AND r.is_approved = true
+            LIMIT 1
+        `,
+        [recipeId]
+    );
+
+    const row = result.rows[0];
+    if (!row) {
+        return null;
+    }
+
+    return normalizeFavoriteSnapshot({
+        ...row,
+        id: row.id,
+        source: 'community',
+        sourceId: row.id,
+        title: row.title,
+        image_url: row.image_url,
+        cooking_time: row.cooking_time,
+        servings: row.servings,
+        difficulty: row.difficulty,
+        category: row.category,
+        cuisine: row.cuisine,
+        ingredients: row.ingredients,
+        steps: row.steps,
+        calories: row.calories,
+        estimated_price: row.estimated_price,
+        price_rating: row.price_rating,
+        likes_count: row.likes_count,
+        saves_count: row.saves_count || 0,
+        views_count: row.views_count || 0,
+        creator_name: row.creator_name
+    });
+}
+
 async function ensureSchema() {
     if (!schemaReady) {
         schemaReady = (async () => {
@@ -161,7 +205,9 @@ async function toggleFavorite(userId, sourceId) {
             [userId, parsed.source, parsed.sourceId]
         );
     } else {
-        const recipe = await mealdb.lookupMealById(composeFavoriteKey(parsed.source, parsed.sourceId));
+        const recipe = parsed.source === 'community'
+            ? await lookupCommunityRecipeById(parsed.sourceId)
+            : await mealdb.lookupMealById(composeFavoriteKey(parsed.source, parsed.sourceId));
         if (!recipe) {
             throw new Error('Resep tidak ditemukan dari API.');
         }
