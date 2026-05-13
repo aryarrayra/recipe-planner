@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-  <% const reports = Array.isArray(reports) ? reports : []; %>
-  <% const totals = totals || { open: 0, resolved: 0 }; %>
+  <% const reportItems = Array.isArray(reports) ? reports : []; %>
+  <% const reportTotals = totals || { open: 0, resolved: 0 }; %>
 
   <main class="user-dashboard admin-dashboard">
     <div class="user-dashboard-shell admin-shell">
@@ -56,12 +56,12 @@
           <div class="admin-stat-grid">
             <article class="admin-stat-card">
               <span>Laporan terbuka</span>
-              <strong><%= totals.open || 0 %></strong>
+              <strong><%= reportTotals.open || 0 %></strong>
               <small>Menunggu tindak lanjut</small>
             </article>
             <article class="admin-stat-card">
               <span>Laporan selesai</span>
-              <strong><%= totals.resolved || 0 %></strong>
+              <strong><%= reportTotals.resolved || 0 %></strong>
               <small>Sudah ditangani</small>
             </article>
             <article class="admin-stat-card">
@@ -87,9 +87,9 @@
                 </div>
               </div>
 
-              <% if (reports.length) { %>
+              <% if (reportItems.length) { %>
                 <div class="admin-list">
-                  <% reports.forEach((report) => { %>
+                  <% reportItems.forEach((report) => { %>
                     <article class="admin-user-card">
                       <div class="admin-media-preview">
                         <i class="fa-solid fa-flag"></i>

@@ -8,7 +8,6 @@ const attachmentPreviewName = document.getElementById('attachmentPreviewName');
 const removeAttachment = document.getElementById('removeAttachment');
 const clearChat = document.getElementById('clearChat');
 const sendButton = document.getElementById('sendButton');
-const composerTools = document.querySelectorAll('[data-command]');
 
 if (chatWindow && chatForm && chatInput) {
   const serverMessages = Array.isArray(window.__INITIAL_CHAT_MESSAGES__)
@@ -60,15 +59,6 @@ if (chatWindow && chatForm && chatInput) {
 
       const clone = document.createElement(tagName.toLowerCase());
 
-      if (tagName === 'A') {
-        const href = node.getAttribute('href') || '';
-        if (/^(https?:|mailto:)/i.test(href)) {
-          clone.setAttribute('href', href);
-          clone.setAttribute('rel', 'noreferrer noopener');
-          clone.setAttribute('target', '_blank');
-        }
-      }
-
       node.childNodes.forEach((child) => {
         clone.appendChild(sanitizeNode(child));
       });
@@ -89,16 +79,15 @@ if (chatWindow && chatForm && chatInput) {
   }
 
   function getComposerHtml() {
-    const html = sanitizeHtml(chatInput.innerHTML.trim());
-    return html.replace(/^(<div><br><\/div>)+$/, '').trim();
+    return textToHtml(getComposerText());
   }
 
   function getComposerText() {
-    return chatInput.innerText.replace(/\u00a0/g, ' ').trim();
+    return String(chatInput.value || '').replace(/\u00a0/g, ' ').trim();
   }
 
   function setComposerText(value) {
-    chatInput.innerHTML = value ? textToHtml(value).replace(/\n/g, '<br>') : '';
+    chatInput.value = value || '';
   }
 
   function updateSendState() {
@@ -216,33 +205,57 @@ if (chatWindow && chatForm && chatInput) {
     return data.data;
   }
 
-  function insertCommand(command) {
-    if (command === 'createLink') {
-      const url = window.prompt('Masukkan URL link');
-      if (!url) return;
-      document.execCommand('createLink', false, url);
+  chatInput.addEventListener('input', updateSendState);
+  chatInput.addEventListener('paste', (event) => {
+    const clipboardItems = Array.from(event.clipboardData?.items || []);
+    const imageItem = clipboardItems.find((item) => item.kind === 'file' && item.type.startsWith('image/'));
+
+    if (!imageItem) {
+      window.requestAnimationFrame(updateSendState);
       return;
     }
 
-    document.execCommand(command, false, null);
-    chatInput.focus();
-  }
+    const file = imageItem.getAsFile();
+    if (!file) {
+      return;
+    }
 
-  composerTools.forEach((button) => {
-    button.addEventListener('click', () => {
-      insertCommand(button.dataset.command);
-    });
-  });
+    event.preventDefault();
+    attachmentFile = file;
 
-  chatInput.addEventListener('input', updateSendState);
-  chatInput.addEventListener('paste', () => {
-    window.requestAnimationFrame(updateSendState);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (attachmentPreviewImg) {
+        attachmentPreviewImg.src = String(reader.result || '');
+      }
+      if (attachmentPreviewName) {
+        attachmentPreviewName.textContent = file.name || 'clipboard-image.png';
+      }
+      if (attachmentPreview) {
+        attachmentPreview.hidden = false;
+      }
+      updateSendState();
+    };
+    reader.readAsDataURL(file);
   });
   chatInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       chatForm.requestSubmit();
     }
+  });
+
+  document.querySelectorAll('.chat-quick-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const preset = chip.getAttribute('data-preset') || '';
+      if (!preset) {
+        return;
+      }
+
+      setComposerText(preset);
+      chatInput.focus();
+      updateSendState();
+    });
   });
 
   chatPhoto?.addEventListener('change', () => {

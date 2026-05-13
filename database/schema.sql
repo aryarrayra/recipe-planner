@@ -165,6 +165,23 @@ CREATE TABLE IF NOT EXISTS ai_chat_messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 12b. Tabel Admin Challenges
+CREATE TABLE IF NOT EXISTS admin_challenges (
+    scope VARCHAR(20) PRIMARY KEY,
+    recipe_id TEXT NOT NULL,
+    recipe_source VARCHAR(50) NOT NULL,
+    recipe_title VARCHAR(200) NOT NULL,
+    recipe_image_url TEXT,
+    recipe_category VARCHAR(100),
+    recipe_cuisine VARCHAR(100),
+    recipe_cooking_time INT,
+    recipe_likes_count INT DEFAULT 0,
+    recipe_views_count INT DEFAULT 0,
+    recipe_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 12. Tabel User Ingredients Inventory
 CREATE TABLE IF NOT EXISTS user_ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -27,21 +27,10 @@
 
       <section class="user-dashboard-main">
         <header class="user-dashboard-topbar user-recipe-topbar">
-          <form class="user-search user-recipe-search" action="/recipe-detail" method="get">
-            <input type="hidden" name="feed" value="<%= feed %>" />
-            <i class="fa-solid fa-magnifying-glass user-search-icon" aria-hidden="true"></i>
-            <input type="text" name="q" placeholder="Cari resep, bahan, atau kategori" value="<%= search || '' %>" />
-            <button type="submit" class="user-search-submit">Search</button>
-          </form>
-
           <div class="user-topbar-actions">
             <a class="user-icon-button" href="/dashboard" aria-label="Kembali ke dashboard">
               <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
             </a>
-            <div class="user-profile-pill">
-              <strong><%= user.username %></strong>
-              <span><%= user.role %></span>
-            </div>
           </div>
         </header>
 
@@ -94,7 +83,7 @@
                   <span><i class="fa-solid fa-star"></i> <%= activeRecipe.likesCount %> likes</span>
                   <span><i class="fa-regular fa-eye"></i> <%= activeRecipe.viewsCount %> views</span>
                   <span><i class="fa-regular fa-clock"></i> <%= activeRecipe.cookingTime %> menit</span>
-                  <span><i class="fa-solid fa-wallet"></i> Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
+                  <span><i class="fa-solid fa-wallet"></i> Perkiraan Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
                   <span><i class="fa-solid fa-signal"></i> <%= activeRecipe.difficulty %></span>
                   <span><i class="fa-solid fa-fire"></i> <%= activeRecipe.calories %> kkal</span>
                 </div>
@@ -113,8 +102,7 @@
                       <div class="user-recipe-ingredient-list">
                         <% activeRecipe.ingredients.forEach((ingredient) => { %>
                           <label class="user-recipe-ingredient-item">
-                            <input type="checkbox" />
-                            <span><%= ingredient.label %></span>
+                            <span><%= ingredient.display || ingredient.label || ingredient.name %></span>
                           </label>
                         <% }) %>
                       </div>
@@ -123,7 +111,7 @@
                     <article class="user-recipe-mini-panel">
                       <h3>Recipe summary</h3>
                       <div class="user-recipe-summary-list">
-                        <span><strong>Biaya</strong> Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
+                        <span><strong>Perkiraan harga</strong> Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
                         <span><strong>Waktu</strong> <%= activeRecipe.cookingTime %> menit</span>
                         <span><strong>Difficulty</strong> <%= activeRecipe.difficulty %></span>
                         <span><strong>Servings</strong> <%= activeRecipe.servings %> porsi</span>

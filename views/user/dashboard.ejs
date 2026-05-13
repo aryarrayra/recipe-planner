@@ -33,10 +33,6 @@
             <a class="user-icon-button" href="/chat-ai" aria-label="Buka AI Chat">
               <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
             </a>
-            <div class="user-profile-pill">
-              <strong><%= user.username %></strong>
-              <span><%= user.role %></span>
-            </div>
           </div>
         </header>
 
@@ -156,7 +152,7 @@
                         <div class="user-mini-recipe-copy">
                           <h3><%= recipe.title %></h3>
                           <p><%= recipe.category %></p>
-                          <small><%= recipe.calories %> kkal - Rp<%= Number(recipe.estimatedPrice).toLocaleString('id-ID') %></small>
+                          <small><%= recipe.calories %> kkal - Perkiraan Rp<%= Number(recipe.estimatedPrice).toLocaleString('id-ID') %></small>
                         </div>
                       </a>
                     <% }) %>

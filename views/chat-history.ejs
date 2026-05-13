@@ -15,9 +15,389 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
   <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    body.history-page {
+      background:
+        radial-gradient(circle at top left, rgba(56, 156, 154, 0.16), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(254, 219, 113, 0.2), transparent 24%),
+        linear-gradient(180deg, #f5f7f4 0%, #eef3ee 100%);
+    }
+
+    .history-dashboard .user-dashboard-main {
+      display: grid;
+      gap: 18px;
+      padding: 20px;
+      border-radius: 34px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 248, 0.92)),
+        linear-gradient(135deg, rgba(56, 156, 154, 0.04), transparent 48%);
+      border: 1px solid rgba(29, 29, 29, 0.06);
+      box-shadow: 0 24px 70px rgba(29, 29, 29, 0.08);
+      min-width: 0;
+    }
+
+    .history-topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 24px 26px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(29, 29, 29, 0.06);
+      box-shadow: 0 18px 36px rgba(29, 29, 29, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .history-topbar-copy {
+      display: grid;
+      gap: 10px;
+      max-width: 760px;
+    }
+
+    .history-topbar-copy h1 {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: clamp(1.7rem, 2.4vw, 2.6rem);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .history-topbar-note {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 72ch;
+    }
+
+    .history-quick-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .history-quick-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 156, 154, 0.18);
+      background: rgba(56, 156, 154, 0.08);
+      color: var(--accent-dark);
+      text-decoration: none;
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(56, 156, 154, 0.08);
+    }
+
+    .history-quick-chip:hover {
+      background: rgba(56, 156, 154, 0.14);
+      border-color: rgba(56, 156, 154, 0.28);
+    }
+
+    .history-search {
+      min-width: min(320px, 100%);
+      padding: 14px 18px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(29, 29, 29, 0.06);
+      box-shadow: 0 10px 26px rgba(29, 29, 29, 0.05);
+    }
+
+    .history-search input {
+      width: 100%;
+      border: 0;
+      outline: none;
+      background: transparent;
+      font: inherit;
+      color: var(--text);
+    }
+
+    .history-dashboard .user-topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .history-dashboard .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      border: 0;
+    }
+
+    .history-dashboard .button-secondary {
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--text);
+      border: 1px solid rgba(29, 29, 29, 0.08);
+      box-shadow: 0 10px 26px rgba(29, 29, 29, 0.05);
+    }
+
+    .history-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .history-summary-card,
+    .history-activity-panel,
+    .history-side-card,
+    .history-empty-state {
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(29, 29, 29, 0.06);
+      box-shadow: 0 14px 34px rgba(29, 29, 29, 0.06);
+    }
+
+    .history-summary-card {
+      display: grid;
+      gap: 14px;
+      background:
+        radial-gradient(circle at top left, rgba(56, 156, 154, 0.12), transparent 30%),
+        linear-gradient(135deg, rgba(254, 219, 113, 0.16), rgba(255, 255, 255, 0.96));
+    }
+
+    .history-summary-card h2 {
+      margin: 6px 0 0;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: clamp(1.5rem, 2vw, 2.2rem);
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .history-summary-note {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .history-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.28fr) 360px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .history-primary,
+    .history-sidebar {
+      display: grid;
+      gap: 18px;
+    }
+
+    .history-detail-head h3 {
+      margin: 6px 0 0;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.35rem;
+      letter-spacing: -0.03em;
+    }
+
+    .history-recook-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .history-recook-card {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 18px;
+      padding: 16px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
+      border: 1px solid rgba(29, 29, 29, 0.06);
+      box-shadow: 0 12px 28px rgba(29, 29, 29, 0.06);
+    }
+
+    .history-recook-card img {
+      width: 100%;
+      height: 100%;
+      min-height: 180px;
+      object-fit: cover;
+      border-radius: 18px;
+      background: #f4f4f4;
+    }
+
+    .history-recook-copy {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .history-recook-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .history-recook-head h3 {
+      margin: 4px 0 0;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.25rem;
+      letter-spacing: -0.03em;
+    }
+
+    .history-summary-meta,
+    .history-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .history-summary-meta span,
+    .history-chip-list span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(56, 156, 154, 0.08);
+      font-weight: 700;
+    }
+
+    .history-recook-review,
+    .history-recook-note,
+    .history-detail-empty,
+    .history-side-item span,
+    .history-summary-note {
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .history-side-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .history-side-item {
+      display: grid;
+      gap: 5px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #faf9f6;
+      border: 1px solid rgba(29, 29, 29, 0.05);
+    }
+
+    .history-side-item strong,
+    .history-detail-head h3 {
+      font-family: "Space Grotesk", sans-serif;
+    }
+
+    .history-empty-state {
+      display: grid;
+      gap: 12px;
+      justify-items: start;
+      text-align: left;
+    }
+
+    .history-empty-state i {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      background: rgba(56, 156, 154, 0.12);
+      color: var(--accent-dark);
+      font-size: 1.1rem;
+    }
+
+    .history-empty-state h3 {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      letter-spacing: -0.03em;
+    }
+
+    @media (max-width: 1100px) {
+      .history-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .history-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .history-dashboard .user-dashboard-main {
+        padding: 16px;
+      }
+
+      .history-topbar {
+        padding: 18px;
+        flex-direction: column;
+      }
+
+      .history-summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .history-recook-card {
+        grid-template-columns: 1fr;
+      }
+
+      .history-recook-card img {
+        min-height: 220px;
+      }
+
+      .history-search {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body class="history-page">
   <div class="page-bg"></div>
+
+  <% const recookItems = Array.isArray(activityData?.recookedRecipes) ? activityData.recookedRecipes : []; %>
+  <% const recookTimeline = Array.isArray(sidebarData?.recookTimeline) ? sidebarData.recookTimeline : []; %>
+  <% const summaryData = historySummary || {}; %>
+  <% const latestRecook = summaryData.latestRecook || null; %>
+  <% const averageRatingText = recookItems.length ? Number(summaryData.averageRating || 0).toFixed(1) : '-'; %>
+  <% const formatDateTime = (value) => value ? new Date(value).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; %>
+  <% const formatDateOnly = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
+  <% const formatModifiedIngredients = (value) => {
+       if (Array.isArray(value)) {
+         return value.map((item) => {
+           if (!item) return '';
+           if (typeof item === 'string') return item.trim();
+           if (typeof item === 'object') {
+             return String(item.name || item.label || item.ingredient || item.title || '').trim();
+           }
+           return String(item).trim();
+         }).filter(Boolean);
+       }
+
+       if (value && typeof value === 'object') {
+         return Object.entries(value)
+           .map(([key, item]) => {
+             if (Array.isArray(item)) {
+               return `${key}: ${item.join(', ')}`;
+             }
+             if (item && typeof item === 'object') {
+               return `${key}: ${String(item.name || item.label || item.title || '').trim()}`;
+             }
+             return `${key}: ${String(item || '').trim()}`;
+           })
+           .filter((item) => item && !item.endsWith(':'));
+       }
+
+       return [];
+     }; %>
 
   <main class="user-dashboard history-dashboard">
     <div class="user-dashboard-shell history-dashboard-shell">
@@ -26,311 +406,176 @@
       <section class="user-dashboard-main history-main">
         <header class="user-dashboard-topbar history-topbar">
           <div class="history-topbar-copy">
-            <p class="user-panel-kicker">Activity history</p>
-            <h1>Riwayat aktivitas dan resep kamu</h1>
+            <p class="user-panel-kicker">Recook history</p>
+            <h1>Riwayat masakan yang sudah di-recook</h1>
             <p class="history-topbar-note">
-              Lihat percakapan AI, resep yang pernah dibahas, aktivitas simpan, re-cook, viewed, dan history pencarian dalam satu halaman.
+              Semua resep yang pernah kamu masak ulang tersimpan di sini, lengkap dengan tanggal,
+              rating, review, dan catatan perubahan bahan.
             </p>
+            <div class="history-quick-actions" aria-label="Aksi cepat history">
+              <a class="history-quick-chip" href="/chat-ai">Buka chat sumber</a>
+              <a class="history-quick-chip" href="#historyTimeline">Lihat timeline</a>
+              <a class="history-quick-chip" href="#historySidebar">Lihat ringkasan</a>
+            </div>
           </div>
 
           <div class="user-topbar-actions history-topbar-actions">
             <div class="user-search history-search">
               <i class="fa-solid fa-magnifying-glass user-search-icon" aria-hidden="true"></i>
-              <input type="text" placeholder="Cari riwayat resep..." />
+              <input type="text" placeholder="Cari resep recook..." />
             </div>
-            <a class="button button-secondary" href="/chat-ai">Kembali ke chat</a>
+            <a class="button button-secondary" href="/chat-ai">Buka chat sumber</a>
           </div>
         </header>
 
+        <section class="history-summary-grid" aria-label="Ringkasan recook">
+          <article class="history-summary-card">
+            <div class="history-summary-copy">
+              <p class="user-panel-kicker">Total recook</p>
+              <h2><%= summaryData.recookCount || 0 %></h2>
+              <p class="history-summary-note">Resep yang sudah pernah dimasak ulang.</p>
+            </div>
+          </article>
+
+          <article class="history-summary-card">
+            <div class="history-summary-copy">
+              <p class="user-panel-kicker">Resep berbeda</p>
+              <h2><%= summaryData.uniqueRecookedCount || 0 %></h2>
+              <p class="history-summary-note">Jumlah menu unik di history.</p>
+            </div>
+          </article>
+
+          <article class="history-summary-card">
+            <div class="history-summary-copy">
+              <p class="user-panel-kicker">Rating rata-rata</p>
+              <h2><%= averageRatingText %></h2>
+              <p class="history-summary-note">Rata-rata rating dari semua recook.</p>
+            </div>
+          </article>
+
+          <article class="history-summary-card">
+            <div class="history-summary-copy">
+              <p class="user-panel-kicker">Recook terbaru</p>
+              <h2><%= latestRecook ? latestRecook.title : '-' %></h2>
+              <p class="history-summary-note"><%= latestRecook ? formatDateOnly(latestRecook.cooking_date) : 'Belum ada recook tersimpan' %></p>
+            </div>
+          </article>
+        </section>
+
         <div class="history-layout">
           <section class="history-primary">
-            <section class="history-session-bar">
-              <div class="history-session-item">
-                <strong>Session ID</strong>
-                <span><%= session.session_id %></span>
+            <section class="history-activity-panel" id="historyTimeline">
+              <div class="history-detail-head">
+                <p class="user-panel-kicker">Recook timeline</p>
+                <h3>Daftar masakan yang sudah dimasak ulang</h3>
               </div>
-              <div class="history-session-item">
-                <strong>Title</strong>
-                <span><%= session.title || 'Chat session' %></span>
-              </div>
-              <div class="history-session-item">
-                <strong>Info</strong>
-                <span><%= insights.createdDate %> - <%= insights.totalMessages %> pesan - <%= insights.category %></span>
-              </div>
-            </section>
 
-            <% if (insights.recipeSummary) { %>
-              <section class="history-summary-card">
-                <div class="history-summary-copy">
-                  <p class="user-panel-kicker">Resep summary card</p>
-                  <h2><%= insights.recipeSummary.name %></h2>
-                  <div class="history-summary-meta">
-                    <span><i class="fa-solid fa-wallet"></i> <%= insights.recipeSummary.budget %></span>
-                    <span><i class="fa-regular fa-clock"></i> <%= insights.recipeSummary.duration %> menit</span>
-                    <span><i class="fa-solid fa-signal"></i> <%= insights.recipeSummary.difficulty %></span>
-                  </div>
-                </div>
+              <% if (recookItems.length) { %>
+                <div class="history-recook-list">
+                  <% recookItems.forEach(function(recipe, index) { %>
+                    <% const modifiedIngredients = formatModifiedIngredients(recipe.modified_ingredients); %>
+                    <article class="history-recook-card">
+                      <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                      <div class="history-recook-copy">
+                        <div class="history-recook-head">
+                          <div>
+                            <p class="user-panel-kicker">Recook #<%= index + 1 %></p>
+                            <h3><%= recipe.title %></h3>
+                          </div>
+                          <span class="admin-status is-approved"><%= recipe.category || 'Uncategorized' %></span>
+                        </div>
 
-                <div class="history-action-bar">
-                  <button type="button" class="history-action-chip"><i class="fa-regular fa-bookmark"></i> Save Recipe</button>
-                  <button type="button" class="history-action-chip"><i class="fa-regular fa-file-pdf"></i> Export PDF</button>
-                  <button type="button" class="history-action-chip"><i class="fa-regular fa-heart"></i> Favorite</button>
-                  <button type="button" class="history-action-chip"><i class="fa-solid fa-share-nodes"></i> Share</button>
-                  <button type="button" class="history-action-chip"><i class="fa-solid fa-fire-burner"></i> Cook Mode</button>
-                </div>
-              </section>
-            <% } %>
+                        <div class="history-summary-meta">
+                          <span><i class="fa-regular fa-calendar"></i> <%= formatDateTime(recipe.cooking_date) %></span>
+                          <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
+                          <span><i class="fa-solid fa-star"></i> <%= recipe.rating ? `${recipe.rating}/5` : 'Belum dinilai' %></span>
+                        </div>
 
-            <section class="history-chat-panel">
-              <% if (messages && messages.length) { %>
-                <% messages.forEach(function(message) { %>
-                  <article class="history-bubble-row <%= message.role === 'user' ? 'is-user' : 'is-ai' %>">
-                    <div class="history-avatar"><%= message.avatar %></div>
-                    <div class="history-bubble">
-                      <div class="history-bubble-head">
-                        <span class="history-bubble-author"><%= message.label %></span>
-                        <time class="history-bubble-time"><%= new Date(message.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) %></time>
+                        <% if (recipe.review) { %>
+                          <p class="history-recook-review"><i class="fa-solid fa-quote-left"></i> <%= recipe.review %></p>
+                        <% } %>
+
+                        <% if (recipe.notes) { %>
+                          <p class="history-recook-note"><strong>Catatan:</strong> <%= recipe.notes %></p>
+                        <% } %>
+
+                        <% if (modifiedIngredients.length) { %>
+                          <div class="history-chip-list">
+                            <% modifiedIngredients.slice(0, 6).forEach(function(item) { %>
+                              <span><%= item %></span>
+                            <% }) %>
+                          </div>
+                        <% } %>
                       </div>
-
-                      <% if (message.attachment && message.attachment.dataUrl) { %>
-                        <figure class="message-attachment">
-                          <img src="<%= message.attachment.dataUrl %>" alt="<%= message.attachment.name || 'Foto terlampir' %>" />
-                        </figure>
-                      <% } %>
-
-                      <div class="history-bubble-body"><%- message.html %></div>
-
-                      <% if (message.tips && message.tips.length) { %>
-                        <ul class="history-inline-list">
-                          <% message.tips.forEach(function(tip) { %>
-                            <li><%= tip %></li>
-                          <% }) %>
-                        </ul>
-                      <% } %>
-                    </div>
-                  </article>
-                <% }) %>
+                    </article>
+                  <% }) %>
+                </div>
               <% } else { %>
                 <div class="empty-state history-empty-state">
-                  <i class="fa-regular fa-message"></i>
-                  <h3>Belum ada riwayat chat</h3>
-                  <p>Mulai ngobrol dengan AI untuk mendapatkan resep.</p>
-                  <a class="button button-secondary" href="/chat-ai">Mulai AI Chat</a>
+                  <i class="fa-solid fa-fire-burner"></i>
+                  <h3>Belum ada history recook</h3>
+                  <p>Setiap resep yang kamu masak ulang akan tersimpan di sini sebagai riwayat masakan.</p>
+                  <a class="button button-secondary" href="/chat-ai">Mulai dari AI Chat</a>
                 </div>
               <% } %>
-            </section>
-
-            <section class="history-detail-grid">
-              <article class="history-detail-card">
-                <div class="history-detail-head">
-                  <p class="user-panel-kicker">Ingredients section</p>
-                  <h3>Bahan</h3>
-                </div>
-
-                <% if (insights.ingredients.length) { %>
-                  <div class="history-check-list">
-                    <% insights.ingredients.forEach(function(ingredient) { %>
-                      <label class="history-check-item">
-                        <input type="checkbox" />
-                        <span><%= ingredient %></span>
-                      </label>
-                    <% }) %>
-                  </div>
-                <% } else { %>
-                  <p class="history-detail-empty">Belum ada daftar bahan yang terdeteksi dari jawaban AI.</p>
-                <% } %>
-              </article>
-
-              <article class="history-detail-card">
-                <div class="history-detail-head">
-                  <p class="user-panel-kicker">Step by step section</p>
-                  <h3>Langkah memasak</h3>
-                </div>
-
-                <% if (insights.steps.length) { %>
-                  <div class="history-step-list">
-                    <% insights.steps.forEach(function(step, index) { %>
-                      <article class="history-step-card">
-                        <strong>Step <%= index + 1 %></strong>
-                        <p><%= step %></p>
-                      </article>
-                    <% }) %>
-                  </div>
-                <% } else { %>
-                  <p class="history-detail-empty">Langkah masak belum terpisah. Coba minta AI menuliskan step by step.</p>
-                <% } %>
-              </article>
-            </section>
-
-            <section class="history-related-panel">
-              <div class="history-detail-head">
-                <p class="user-panel-kicker">Related recipes</p>
-                <h3>Resep terkait</h3>
-              </div>
-
-              <div class="history-related-grid">
-                <% relatedRecipes.forEach(function(recipe) { %>
-                  <article class="history-related-card">
-                    <img src="<%= recipe.image_url %>" alt="<%= recipe.title %>" />
-                    <div>
-                      <strong><%= recipe.title %></strong>
-                      <span><%= recipe.category %></span>
-                    </div>
-                  </article>
-                <% }) %>
-              </div>
-            </section>
-
-            <section class="history-activity-panel">
-              <div class="history-detail-head">
-                <p class="user-panel-kicker">All activity history</p>
-                <h3>Video, re-cook, viewed, dan liked</h3>
-              </div>
-
-              <div class="history-activity-grid">
-                <article class="history-detail-card history-detail-card-nested">
-                  <div class="history-detail-head">
-                    <p class="user-panel-kicker">Video yang ditonton</p>
-                    <h3>Video resep</h3>
-                  </div>
-                  <% if (activityData.watchedVideos.length) { %>
-                    <div class="history-side-list">
-                      <% activityData.watchedVideos.forEach(function(video) { %>
-                        <div class="history-side-item">
-                          <strong><%= video.title %></strong>
-                          <span><%= video.platform %> - <%= video.category || 'Video recipe' %></span>
-                        </div>
-                      <% }) %>
-                    </div>
-                  <% } else { %>
-                    <p class="history-detail-empty">Placeholder UI video sudah siap. Data video watched akan disambungkan nanti.</p>
-                  <% } %>
-                </article>
-
-                <article class="history-detail-card history-detail-card-nested">
-                  <div class="history-detail-head">
-                    <p class="user-panel-kicker">Resep yang di re-cook</p>
-                    <h3>Re-cook history</h3>
-                  </div>
-                  <% if (activityData.recookedRecipes.length) { %>
-                    <div class="history-side-list">
-                      <% activityData.recookedRecipes.forEach(function(recipe) { %>
-                        <div class="history-side-item">
-                          <strong><%= recipe.title %></strong>
-                          <span><%= new Date(recipe.cooking_date).toLocaleDateString('id-ID') %></span>
-                        </div>
-                      <% }) %>
-                    </div>
-                  <% } else { %>
-                    <p class="history-detail-empty">Belum ada data re-cook.</p>
-                  <% } %>
-                </article>
-
-                <article class="history-detail-card history-detail-card-nested">
-                  <div class="history-detail-head">
-                    <p class="user-panel-kicker">Resep yang dilihat</p>
-                    <h3>Viewed recipes</h3>
-                  </div>
-                  <div class="history-side-list">
-                    <% activityData.viewedRecipes.forEach(function(recipe) { %>
-                      <div class="history-side-item">
-                        <strong><%= recipe.title %></strong>
-                        <span><%= recipe.category %></span>
-                      </div>
-                    <% }) %>
-                  </div>
-                </article>
-
-                <article class="history-detail-card history-detail-card-nested">
-                  <div class="history-detail-head">
-                    <p class="user-panel-kicker">Resep yang di like</p>
-                    <h3>Liked recipes</h3>
-                  </div>
-                  <% if (activityData.likedRecipes.length) { %>
-                    <div class="history-side-list">
-                      <% activityData.likedRecipes.forEach(function(recipe) { %>
-                        <div class="history-side-item">
-                          <strong><%= recipe.title %></strong>
-                          <span><%= recipe.category %></span>
-                        </div>
-                      <% }) %>
-                    </div>
-                  <% } else { %>
-                    <p class="history-detail-empty">Belum ada resep yang di-like/disimpan.</p>
-                  <% } %>
-                </article>
-              </div>
             </section>
           </section>
 
-          <aside class="history-sidebar">
+          <aside class="history-sidebar" id="historySidebar">
             <article class="history-side-card">
               <div class="history-detail-head">
-                <p class="user-panel-kicker">Riwayat chat lain</p>
-                <h3>Sesi terbaru</h3>
+                <p class="user-panel-kicker">Sesi sumber</p>
+                <h3>Chat yang memicu recook</h3>
               </div>
-              <% if (sidebarData.otherSessions.length) { %>
-                <div class="history-side-list">
-                  <% sidebarData.otherSessions.forEach(function(item) { %>
-                    <div class="history-side-item">
-                      <strong><%= item.title || 'Chat session' %></strong>
-                      <span><%= new Date(item.updated_at).toLocaleDateString('id-ID') %></span>
-                    </div>
-                  <% }) %>
-                </div>
-              <% } else { %>
-                <p class="history-detail-empty">Belum ada sesi lain yang tersimpan.</p>
-              <% } %>
-            </article>
 
-            <article class="history-side-card">
-              <div class="history-detail-head">
-                <p class="user-panel-kicker">Trending recipes</p>
-                <h3>Paling ramai</h3>
-              </div>
               <div class="history-side-list">
-                <% sidebarData.trendingRecipes.forEach(function(item) { %>
-                  <div class="history-side-item">
-                    <strong><%= item.title %></strong>
-                    <span><%= item.category %></span>
-                  </div>
-                <% }) %>
+                <div class="history-side-item">
+                  <strong><%= session.title || 'Chat session' %></strong>
+                  <span><%= session.session_id %></span>
+                </div>
+                <div class="history-side-item">
+                  <strong><%= insights.category %></strong>
+                  <span><%= insights.totalMessages %> pesan - <%= insights.createdDate %></span>
+                </div>
               </div>
             </article>
 
             <article class="history-side-card">
               <div class="history-detail-head">
-                <p class="user-panel-kicker">Favorite recipe</p>
-                <h3>Yang disimpan</h3>
+                <p class="user-panel-kicker">Recook terbaru</p>
+                <h3>3 resep terakhir</h3>
               </div>
-              <% if (sidebarData.favoriteRecipes.length) { %>
+
+              <% if (recookTimeline.length) { %>
                 <div class="history-side-list">
-                  <% sidebarData.favoriteRecipes.forEach(function(item) { %>
+                  <% recookTimeline.forEach(function(recipe) { %>
                     <div class="history-side-item">
-                      <strong><%= item.title %></strong>
-                      <span><%= item.category %></span>
+                      <strong><%= recipe.title %></strong>
+                      <span><%= formatDateOnly(recipe.cooking_date) %> - <%= recipe.category || 'Uncategorized' %></span>
                     </div>
                   <% }) %>
                 </div>
               <% } else { %>
-                <p class="history-detail-empty">Belum ada recipe favorit di akun ini.</p>
+                <p class="history-detail-empty">Belum ada recook terbaru.</p>
               <% } %>
             </article>
 
             <article class="history-side-card">
               <div class="history-detail-head">
-                <p class="user-panel-kicker">Recent searches</p>
-                <h3>Pencarian terakhir</h3>
+                <p class="user-panel-kicker">Ringkasan sesi</p>
+                <h3>Data percakapan terkait</h3>
               </div>
-              <% if (sidebarData.recentSearches.length) { %>
-                <div class="history-chip-list">
-                  <% sidebarData.recentSearches.forEach(function(search) { %>
-                    <span><%= search %></span>
-                  <% }) %>
+
+              <div class="history-side-list">
+                <div class="history-side-item">
+                  <strong><%= insights.recipeSummary ? insights.recipeSummary.name : 'Belum ada resep utama' %></strong>
+                  <span><%= insights.recipeSummary ? `${insights.recipeSummary.duration} menit` : 'Tambahkan prompt resep' %></span>
                 </div>
-              <% } else { %>
-                <p class="history-detail-empty">Belum ada pencarian yang tercatat.</p>
-              <% } %>
+                <div class="history-side-item">
+                  <strong><%= insights.recipeSummary ? insights.recipeSummary.budget : 'Rp0' %></strong>
+                  <span>Estimasi budget resep</span>
+                </div>
+              </div>
             </article>
           </aside>
         </div>

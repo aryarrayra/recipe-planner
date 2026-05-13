@@ -57,14 +57,14 @@
 
                 <div class="user-recipe-detail-tags">
                   <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime %> menit</span>
-                  <span><i class="fa-solid fa-wallet"></i> Rp <%= formatPrice(recipe.estimatedPrice) %></span>
+                  <span><i class="fa-solid fa-wallet"></i> Perkiraan Rp <%= formatPrice(recipe.estimatedPrice) %></span>
                   <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
                   <span><i class="fa-solid fa-fire"></i> <%= recipe.calories %> kkal</span>
                 </div>
 
                 <div class="user-ai-actions">
                   <a class="auth-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">Masak lagi</a>
-                  <a class="auth-button auth-button-secondary" href="/chat-history">Simpan ke history</a>
+                  <a class="auth-button auth-button-secondary" href="/profile">Buka profile</a>
                 </div>
               </div>
 

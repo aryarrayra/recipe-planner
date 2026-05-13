@@ -1,5 +1,6 @@
 const axios = require('axios');
 const indonesiaFoodApi = require('./indonesiaFoodApi');
+const { estimateRecipePrice } = require('./priceEstimator');
 
 const BASE_URL = process.env.MEALDB_API_URL || 'https://www.themealdb.com/api/json/v1/1';
 const INDONESIA_TERMS = [
@@ -141,7 +142,15 @@ function mapMealToRecipe(meal = {}) {
         origin_place: meal.strArea || 'International',
         difficulty: estimateDifficulty(steps.length, ingredients.length),
         calories: 180 + ingredients.length * 28 + (seed % 90),
-        estimated_price: 12000 + ingredients.length * 1800 + (seed % 5000),
+        estimated_price: estimateRecipePrice(ingredients, {
+            title: meal.strMeal,
+            category: meal.strCategory,
+            cuisine: meal.strArea,
+            origin: meal.strArea,
+            servings: 2 + (seed % 3),
+            stepCount: steps.length,
+            baseKitchenCost: 3000
+        }),
         tags,
         likes_count: 40 + (seed % 460),
         saves_count: 15 + (seed % 180),
@@ -298,7 +307,7 @@ async function getFeedMeals(feed = 'random', count = 12) {
 }
 
 async function getCatalogMeals(count = 18) {
-    const letters = ['a', 'b', 'c', 'm', 's'];
+    const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u'];
     const results = await Promise.all(letters.map((letter) => searchMealsByLetter(letter)));
     const merged = uniqueById(results.flat());
 

@@ -64,7 +64,7 @@
                   <span><i class="fa-regular fa-clock"></i> <strong id="selectedRecipeTime"><%= activeRecipe.cookingTime %></strong> min</span>
                   <span><i class="fa-solid fa-star"></i> <strong id="selectedRecipeLikes"><%= activeRecipe.likesCount %></strong> likes</span>
                   <span><i class="fa-solid fa-bookmark"></i> <strong id="selectedRecipeSaves"><%= activeRecipe.savesCount %></strong> saves</span>
-                  <span><i class="fa-solid fa-coins"></i> Rp <strong id="selectedRecipePrice"><%= formatPrice(activeRecipe.estimatedPrice) %></strong></span>
+                  <span><i class="fa-solid fa-coins"></i> Perkiraan Rp <strong id="selectedRecipePrice"><%= formatPrice(activeRecipe.estimatedPrice) %></strong></span>
                   <span><i class="fa-solid fa-fire"></i> <strong id="selectedRecipeCalories"><%= activeRecipe.calories %></strong> kkal</span>
                   <span><i class="fa-solid fa-signal"></i> <strong id="selectedRecipeDifficulty"><%= activeRecipe.difficulty %></strong></span>
                 </div>
@@ -114,7 +114,6 @@
                       <div class="user-recipe-ingredient-list">
                         <% activeRecipe.ingredients.forEach((ingredient) => { %>
                           <label class="user-recipe-ingredient-item">
-                            <input type="checkbox" />
                             <span><%= ingredient.display || ingredient.name %></span>
                           </label>
                         <% }) %>
@@ -122,14 +121,16 @@
                     </article>
 
                     <article class="user-recipe-mini-panel">
-                      <h3>Keterangan video resep</h3>
-                      <p class="user-recipe-detail-description"><%= activeRecipe.description %></p>
+                      <h3>Ringkasan video resep</h3>
+                      <p class="user-recipe-detail-description is-summary">
+                        Video ini menunjukkan langkah utama resep ini. <%= activeRecipe.description %>
+                      </p>
                     </article>
 
                     <article class="user-recipe-mini-panel">
                       <h3>Recipe summary</h3>
                       <div class="user-recipe-summary-list">
-                        <span><strong>Biaya</strong> Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
+                        <span><strong>Perkiraan harga</strong> Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
                         <span><strong>Waktu</strong> <%= activeRecipe.cookingTime %> menit</span>
                         <span><strong>Difficulty</strong> <%= activeRecipe.difficulty %></span>
                         <span><strong>Servings</strong> <%= activeRecipe.servings %> porsi</span>

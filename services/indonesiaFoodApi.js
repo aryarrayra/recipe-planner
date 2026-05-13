@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { estimateRecipePrice } = require('./priceEstimator');
 
 const SOURCE = 'indonesia_food_api';
 const BASE_URL = process.env.INDONESIA_FOOD_API_URL || 'https://www.masakapahariini.com';
@@ -249,8 +250,16 @@ function estimateCookingTime(stepCount = 0, ingredientCount = 0, explicitTime = 
     return Math.max(10, 12 + stepCount * 3 + Math.ceil(ingredientCount * 1.5));
 }
 
-function estimateBudget(ingredientCount = 0) {
-    return 9000 + ingredientCount * 2500;
+function estimateBudget(ingredients = [], recipe = {}) {
+    return estimateRecipePrice(ingredients, {
+        title: recipe.title,
+        category: recipe.category,
+        cuisine: recipe.cuisine,
+        origin: recipe.origin_place || recipe.originPlace || recipe.cuisine,
+        servings: recipe.servings || recipe.yields || recipe.porsi || 1,
+        stepCount: Array.isArray(recipe.steps) ? recipe.steps.length : 0,
+        baseKitchenCost: 2000
+    });
 }
 
 function parseMinutes(text = '') {
@@ -604,7 +613,14 @@ function normalizeRecipe(recipe = {}) {
         origin_place: originPlace,
         difficulty: recipe.difficulty || recipe.dificulty || estimateDifficulty(steps.length, ingredients.length),
         calories: Number(recipe.calories || recipe.kalori || 0) || (200 + ingredients.length * 26),
-        estimated_price: Number(recipe.estimated_price || recipe.price || recipe.harga || 0) || estimateBudget(ingredients.length),
+        estimated_price: Number(recipe.estimated_price || recipe.price || recipe.harga || 0) || estimateBudget(ingredients, {
+            title,
+            category,
+            cuisine,
+            origin_place: originPlace,
+            servings: Number(recipe.servings || recipe.portions || recipe.porsi || recipe.yields || recipe.serve || 1) || 1,
+            steps
+        }),
         tags,
         likes_count: Number(recipe.likes_count || recipe.likes || 0) || 0,
         saves_count: Number(recipe.saves_count || recipe.saved || 0) || 0,
