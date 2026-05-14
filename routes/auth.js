@@ -4,6 +4,7 @@ const multer = require('multer');
 const pool = require('../config/db');
 const { preventBack } = require('../middleware/auth');
 const mealdb = require('../services/mealdb');
+const indonesiaFoodApi = require('../services/indonesiaFoodApi');
 const mealFavorites = require('../services/mealFavorites');
 const challengeService = require('../services/challengeService');
 
@@ -469,7 +470,12 @@ async function getRecipesForRegion(region, count) {
     }
 
     if (['indonesia', 'nusantara'].includes(key)) {
-        return indonesiaFoodApi.searchIndonesiaRecipes(count).catch(() => mealdb.getCatalogMeals(count));
+        const indonesiaRecipes = await indonesiaFoodApi.searchIndonesiaRecipes(Math.max(count, 12)).catch(() => []);
+        if (indonesiaRecipes.length) {
+            return indonesiaRecipes.slice(0, count);
+        }
+
+        return [];
     }
 
     const origins = getRegionSourceOrigins(key);
@@ -1298,7 +1304,16 @@ function renderAuthError(res, view, message, values = {}) {
     });
 }
 
-function getFallbackRecipeCatalog() {
+function getFallbackIndonesiaRecipeCatalog() {
+    return [];
+}
+
+function getFallbackRecipeCatalog(region = '') {
+    const key = String(region || '').trim().toLowerCase();
+    if (['indonesia', 'nusantara'].includes(key)) {
+        return [];
+    }
+
     return [
         mapRecipeCard({
             id: 'fallback-1',
@@ -2397,7 +2412,7 @@ router.get('/recipe-menu', async (req, res) => {
             }
         } catch (apiError) {
             console.error('TheMealDB recipe menu fallback:', apiError.message);
-            recipeList = getFallbackRecipeCatalog();
+            recipeList = getFallbackRecipeCatalog(selectedRegion);
         }
 
         const filteredRecipes = filterRecipesByPreferences(recipeList, preferences)
