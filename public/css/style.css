@@ -3356,9 +3356,14 @@ a {
   align-items: start;
 }
 
+.user-recipe-menu-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .user-recipe-menu-main {
   display: grid;
   gap: 20px;
+  max-width: 100%;
 }
 
 .user-recipe-menu-hero {
@@ -6249,7 +6254,7 @@ a {
   .user-recipe-detail-grid,
   .user-recipe-served-layout,
   .user-recipe-served-hero,
-  .user-recipe-menu-layout {
+  .user-recipe-menu-layout,
   .user-dashboard-stats,
   .user-shopping-layout {
     grid-template-columns: 1fr;

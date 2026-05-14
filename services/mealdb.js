@@ -3,6 +3,40 @@ const indonesiaFoodApi = require('./indonesiaFoodApi');
 const { estimateRecipePrice } = require('./priceEstimator');
 
 const BASE_URL = process.env.MEALDB_API_URL || 'https://www.themealdb.com/api/json/v1/1';
+const ALLOWED_CUISINE_KEYS = new Set([
+    'indonesia',
+    'china',
+    'korea',
+    'japan',
+    'malaysia',
+    'thailand',
+    'turkey',
+    'saudi arabia',
+    'india'
+]);
+const AREA_ALIAS_MAP = {
+    indonesian: 'indonesia',
+    indonesia: 'indonesia',
+    chinese: 'china',
+    china: 'china',
+    korean: 'korea',
+    korea: 'korea',
+    japanese: 'japan',
+    japan: 'japan',
+    malaysian: 'malaysia',
+    malaysia: 'malaysia',
+    thai: 'thailand',
+    thailand: 'thailand',
+    turkish: 'turkey',
+    turkey: 'turkey',
+    arabic: 'saudi arabia',
+    arabian: 'saudi arabia',
+    saudi: 'saudi arabia',
+    'saudi arabian': 'saudi arabia',
+    'saudi arabia': 'saudi arabia',
+    indian: 'india',
+    india: 'india'
+};
 const INDONESIA_TERMS = [
     'indonesia',
     'nusantara',
@@ -50,6 +84,25 @@ function parseRecipeId(value = '') {
         source: source || 'themealdb',
         sourceId
     };
+}
+
+function normalizeCuisineKey(value = '') {
+    const normalized = String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return AREA_ALIAS_MAP[normalized] || normalized;
+}
+
+function isAllowedRecipeCuisine(value = '') {
+    return ALLOWED_CUISINE_KEYS.has(normalizeCuisineKey(value));
+}
+
+function filterAllowedRecipes(items = []) {
+    return items.filter((item) => item && (item.source === indonesiaFoodApi.SOURCE || isAllowedRecipeCuisine(item.cuisine || item.origin_place)));
 }
 
 function splitInstructions(text = '') {
@@ -186,19 +239,40 @@ async function lookupMealById(id) {
     }
 
     const data = await request('/lookup.php', { i: parsed.sourceId });
-    return data.meals && data.meals[0] ? mapMealToRecipe(data.meals[0]) : null;
+    if (!data.meals || !data.meals[0]) {
+        return null;
+    }
+
+    const recipe = mapMealToRecipe(data.meals[0]);
+    return isAllowedRecipeCuisine(recipe.cuisine || recipe.origin_place) ? recipe : null;
 }
 
 async function getRandomMeals(count = 12) {
-    const tasks = Array.from({ length: count + 8 }, () => request('/random.php'));
-    const results = await Promise.all(tasks);
-    const meals = uniqueById(
-        results
-            .map((result) => (result.meals && result.meals[0] ? mapMealToRecipe(result.meals[0]) : null))
-            .filter(Boolean)
-    );
+    const collected = [];
+    const seen = new Set();
+    const batchSize = Math.max(count * 3, 18);
 
-    return meals.slice(0, count);
+    for (let attempt = 0; attempt < 4 && collected.length < count; attempt += 1) {
+        const tasks = Array.from({ length: batchSize }, () => request('/random.php'));
+        const results = await Promise.all(tasks);
+        const meals = filterAllowedRecipes(
+            results
+                .map((result) => (result.meals && result.meals[0] ? mapMealToRecipe(result.meals[0]) : null))
+                .filter(Boolean)
+        );
+
+        meals.forEach((meal) => {
+            const key = String(meal.id || '');
+            if (!key || seen.has(key)) {
+                return;
+            }
+
+            seen.add(key);
+            collected.push(meal);
+        });
+    }
+
+    return collected.slice(0, count);
 }
 
 async function searchMeals(query = '') {
@@ -209,7 +283,7 @@ async function searchMeals(query = '') {
 
     const [themealdbResults, indonesiaResults] = await Promise.all([
         request('/search.php', { s: keyword })
-            .then((data) => uniqueById((data.meals || []).map(mapMealToRecipe)))
+            .then((data) => uniqueById(filterAllowedRecipes((data.meals || []).map(mapMealToRecipe))))
             .catch(() => []),
         indonesiaFoodApi.searchRecipes(keyword, 12).catch(() => [])
     ]);
@@ -224,7 +298,7 @@ async function searchMealsByLetter(letter = 'a') {
     }
 
     const data = await request('/search.php', { f: key });
-    return uniqueById((data.meals || []).map(mapMealToRecipe));
+    return uniqueById(filterAllowedRecipes((data.meals || []).map(mapMealToRecipe)));
 }
 
 async function getMealCategories() {
@@ -250,15 +324,15 @@ async function getMealsByCategory(category, limit = 12) {
     const [themealdbFiltered, indonesiaFiltered] = await Promise.all([
         request('/filter.php', { c: categoryName })
             .then(async (filtered) => {
-            const candidates = (filtered.meals || []).slice(0, limit);
-            const details = await Promise.all(candidates.map((item) => lookupMealById(item.idMeal)));
-            return uniqueById(details.filter(Boolean));
+                const candidates = (filtered.meals || []).slice(0, limit);
+                const details = await Promise.all(candidates.map((item) => lookupMealById(item.idMeal)));
+                return uniqueById(filterAllowedRecipes(details.filter(Boolean)));
             })
             .catch(() => []),
         indonesiaFoodApi.getRecipes({ category: categoryName, size: limit, page: 1 }).catch(() => [])
     ]);
 
-    return uniqueById([...themealdbFiltered, ...indonesiaFiltered]).slice(0, limit);
+    return uniqueById(filterAllowedRecipes([...themealdbFiltered, ...indonesiaFiltered])).slice(0, limit);
 }
 
 async function getMealsByOrigin(origin, limit = 12) {
@@ -274,7 +348,7 @@ async function getMealsByOrigin(origin, limit = 12) {
     const filtered = await request('/filter.php', { a: originName });
     const candidates = (filtered.meals || []).slice(0, limit);
     const details = await Promise.all(candidates.map((item) => lookupMealById(item.idMeal)));
-    return uniqueById(details.filter(Boolean));
+    return uniqueById(filterAllowedRecipes(details.filter(Boolean)));
 }
 
 async function getFeedMeals(feed = 'random', count = 12) {
@@ -303,13 +377,13 @@ async function getFeedMeals(feed = 'random', count = 12) {
         return terms.some((term) => haystack.includes(term));
     });
 
-    return (filtered.length >= count ? filtered : randomMeals).slice(0, count);
+    return filterAllowedRecipes(filtered.length >= count ? filtered : randomMeals).slice(0, count);
 }
 
 async function getCatalogMeals(count = 18) {
     const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u'];
     const results = await Promise.all(letters.map((letter) => searchMealsByLetter(letter)));
-    const merged = uniqueById(results.flat());
+    const merged = uniqueById(filterAllowedRecipes(results.flat()));
 
     if (merged.length >= count) {
         return merged.slice(0, count);
@@ -319,10 +393,11 @@ async function getCatalogMeals(count = 18) {
         getRandomMeals(Math.max(count - merged.length, 6)),
         indonesiaFoodApi.searchIndonesiaRecipes(Math.max(count - merged.length, 6)).catch(() => [])
     ]);
-    return uniqueById([...merged, ...extra.flat()]).slice(0, count);
+    return uniqueById(filterAllowedRecipes([...merged, ...extra.flat()])).slice(0, count);
 }
 
 module.exports = {
+    ALLOWED_CUISINE_KEYS,
     getRandomMeals,
     searchMeals,
     searchMealsByLetter,
