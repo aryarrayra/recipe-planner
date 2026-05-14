@@ -199,13 +199,16 @@ function getRecipeFilterGroups() {
         regions: [
             { value: '', label: 'Semua region', hint: 'Campuran semua resep' },
             { value: 'indonesia', label: 'Indonesia / Nusantara', hint: 'Resep lokal' },
-            { value: 'asia', label: 'Asia', hint: 'Jepang, Korea, Thai, dll' },
-            { value: 'western', label: 'Western', hint: 'Eropa dan Amerika' },
-            { value: 'europe', label: 'Europe', hint: 'Italia, French, Greek' },
-            { value: 'middle-east', label: 'Middle East', hint: 'Timur Tengah' },
-            { value: 'latin', label: 'Latin America', hint: 'Mexican, Peru, dll' },
-            { value: 'africa', label: 'Africa', hint: 'Masakan Afrika' },
-            { value: 'global', label: 'Global', hint: 'Resep umum' }
+            { value: 'china', label: 'China', hint: 'Masakan China' },
+            { value: 'korea', label: 'Korea', hint: 'Masakan Korea' },
+            { value: 'japan', label: 'Jepang', hint: 'Masakan Jepang' },
+            { value: 'malaysia', label: 'Malaysia', hint: 'Masakan Malaysia' },
+            { value: 'thailand', label: 'Thailand', hint: 'Masakan Thailand' },
+            { value: 'india', label: 'India', hint: 'Masakan India' },
+            { value: 'turkey', label: 'Turki', hint: 'Masakan Turki' },
+            { value: 'saudi-arabia', label: 'Arab Saudi', hint: 'Masakan Arab Saudi' },
+            { value: 'asia', label: 'Asia Pilihan', hint: 'China, Korea, Jepang, Malaysia, Thailand, India' },
+            { value: 'middle-east', label: 'Timur Tengah Pilihan', hint: 'Turki dan Arab Saudi' }
         ],
         ingredients: [
             { value: '', label: 'Semua bahan', hint: 'Campuran semua bahan' },
@@ -227,6 +230,38 @@ function normalizeRecipeRegionFilter(value = '') {
     const normalized = String(value || '').trim().toLowerCase();
     if (['indonesia', 'nusantara', 'indonesia/nusantara', 'indonesia - nusantara'].includes(normalized)) {
         return 'indonesia';
+    }
+
+    if (['jepang', 'japanese'].includes(normalized)) {
+        return 'japan';
+    }
+
+    if (['china', 'cina', 'chinese'].includes(normalized)) {
+        return 'china';
+    }
+
+    if (['korea', 'korean'].includes(normalized)) {
+        return 'korea';
+    }
+
+    if (['malaysia', 'malaysian'].includes(normalized)) {
+        return 'malaysia';
+    }
+
+    if (['thailand', 'thai'].includes(normalized)) {
+        return 'thailand';
+    }
+
+    if (['india', 'indian'].includes(normalized)) {
+        return 'india';
+    }
+
+    if (['turki', 'turkish'].includes(normalized)) {
+        return 'turkey';
+    }
+
+    if (['arab saudi', 'arab-saudi', 'saudi', 'saudi arabian', 'saudi arabia'].includes(normalized)) {
+        return 'saudi-arabia';
     }
 
     if (['middle east', 'middle-east', 'timur tengah'].includes(normalized)) {
@@ -405,13 +440,16 @@ function getRegionSourceOrigins(region = '') {
     const key = String(region || '').trim().toLowerCase();
     const regionMap = {
         indonesia: ['Indonesia'],
-        asia: ['Chinese', 'Japanese', 'Indian', 'Thai', 'Vietnamese', 'Malaysian', 'Filipino', 'Korean'],
-        western: ['American', 'British', 'French', 'Italian', 'Spanish', 'Canadian'],
-        europe: ['British', 'French', 'Italian', 'Spanish', 'Greek', 'German', 'Dutch'],
-        'middle-east': ['Arabic', 'Turkish', 'Lebanese', 'Persian', 'Moroccan', 'Egyptian'],
-        latin: ['Mexican', 'Brazilian', 'Argentinian', 'Colombian', 'Peruvian'],
-        africa: ['African', 'Moroccan', 'Egyptian', 'Ethiopian', 'Nigerian', 'South African'],
-        global: []
+        china: ['Chinese'],
+        korea: ['Korean'],
+        japan: ['Japanese'],
+        malaysia: ['Malaysian'],
+        thailand: ['Thai'],
+        india: ['Indian'],
+        turkey: ['Turkish'],
+        'saudi-arabia': ['Saudi Arabian', 'Arabic'],
+        asia: ['Chinese', 'Japanese', 'Indian', 'Thai', 'Malaysian', 'Korean'],
+        'middle-east': ['Turkish', 'Saudi Arabian', 'Arabic']
     };
 
     return regionMap[key] || [];
@@ -426,13 +464,16 @@ function matchesRecipeRegion(recipe = {}, region = '') {
     const blob = getRecipeRegionBlob(recipe);
     const aliases = {
         indonesia: ['indonesia', 'nusantara', 'jawa', 'padang', 'sunda', 'betawi', 'bali', 'makassar', 'aceh', 'medan', 'sumatra', 'indonesian'],
-        asia: ['asia', 'japan', 'japanese', 'korea', 'korean', 'thai', 'thailand', 'china', 'chinese', 'vietnam', 'vietnamese', 'malaysia', 'malaysian', 'india', 'indian', 'philippines', 'filipino'],
-        western: ['western', 'america', 'american', 'british', 'french', 'italian', 'europe', 'european', 'euro'],
-        europe: ['europe', 'european', 'british', 'french', 'italian', 'spanish', 'greek', 'german', 'mediterranean'],
-        'middle-east': ['middle east', 'middle-east', 'arab', 'arabic', 'turkish', 'persian', 'lebanese', 'iraqi'],
-        latin: ['latin', 'mexican', 'peruvian', 'brazilian', 'argentinian', 'chilean', 'colombian'],
-        africa: ['africa', 'african', 'moroccan', 'egyptian', 'ethiopian', 'nigerian', 'south african'],
-        global: []
+        china: ['china', 'chinese'],
+        korea: ['korea', 'korean'],
+        japan: ['japan', 'japanese'],
+        malaysia: ['malaysia', 'malaysian'],
+        thailand: ['thailand', 'thai'],
+        india: ['india', 'indian'],
+        turkey: ['turkey', 'turkish'],
+        'saudi-arabia': ['saudi', 'saudi arabia', 'saudi arabian', 'arab saudi', 'arabic', 'arabian'],
+        asia: ['japan', 'japanese', 'korea', 'korean', 'thai', 'thailand', 'china', 'chinese', 'malaysia', 'malaysian', 'india', 'indian'],
+        'middle-east': ['saudi', 'saudi arabia', 'saudi arabian', 'arab', 'arabic', 'arabian', 'turkey', 'turkish']
     };
 
     const terms = aliases[key] || [key];
