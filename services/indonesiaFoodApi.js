@@ -302,7 +302,7 @@ function parseRecipeListPage(html = '') {
         const image = decodeHtmlEntities(
             (block.match(/<source[^>]*srcset="([^"]+)"/i) || [])[1] ||
                 (block.match(/data-fallback="([^"]+)"/i) || [])[1] ||
-                ''
+                buildMahiRecipeImageUrl(recipeId)
         );
         const prepTime = decodeHtmlEntities(
             (block.match(/<li class="cmp-recipe-listing-attribute prepTime">[\s\S]*?<p>[\s\S]*?<span[^>]*>[^<]*<\/span>\s*([^<]+)\s*<\/p>/i) || [])[1]
@@ -381,7 +381,7 @@ function normalizeRecipeListingItem(recipeData = {}) {
             recipeData?.newImage?.[0]?.url ||
             recipeData?.imageUrl ||
             recipeData?.image ||
-            ''
+            buildMahiRecipeImageUrl(recipeId)
     );
     const prepTime = parseMinutes(recipeData.prepTime || recipeData.preparationTime || recipeData.totalTime);
     const cookTime = parseMinutes(recipeData.cookTime || recipeData.cookingTime || recipeData.totalTime);
@@ -694,7 +694,44 @@ async function getRecipes(limit = 30) {
 async function searchIndonesiaRecipes(count = 12) {
     const recipes = await getListingRecipes(Math.max(count, 30));
     const filtered = recipes.filter(matchesIndonesiaRecipe);
-    return (filtered.length >= count ? filtered : recipes).slice(0, count);
+    const selected = (filtered.length >= count ? filtered : recipes).slice(0, count);
+    const detailLimit = Math.min(selected.length, 12);
+
+    const enriched = await Promise.all(
+        selected.slice(0, detailLimit).map(async (recipe) => {
+            try {
+                const detail = await getRecipeById(recipe.sourceId || recipe.id || recipe.idMeal || '');
+                if (!detail) {
+                    return recipe;
+                }
+
+                return {
+                    ...recipe,
+                    ...detail,
+                    id: recipe.id || detail.id,
+                    source: recipe.source || detail.source || SOURCE,
+                    sourceId: recipe.sourceId || detail.sourceId || '',
+                    idMeal: recipe.idMeal || detail.idMeal || '',
+                    title: detail.title || recipe.title,
+                    description: detail.description || recipe.description,
+                    image_url: detail.image_url || recipe.image_url,
+                    cooking_time: detail.cooking_time || recipe.cooking_time,
+                    servings: detail.servings || recipe.servings,
+                    ingredients: Array.isArray(detail.ingredients) && detail.ingredients.length ? detail.ingredients : recipe.ingredients,
+                    steps: Array.isArray(detail.steps) && detail.steps.length ? detail.steps : recipe.steps,
+                    category: detail.category || recipe.category,
+                    cuisine: detail.cuisine || recipe.cuisine,
+                    origin_place: detail.origin_place || recipe.origin_place,
+                    difficulty: detail.difficulty || recipe.difficulty,
+                    estimated_price: detail.estimated_price || recipe.estimated_price
+                };
+            } catch (error) {
+                return recipe;
+            }
+        })
+    );
+
+    return uniqueById([...enriched, ...selected.slice(detailLimit)]).slice(0, count);
 }
 
 async function searchRecipes(query = '', limit = 12) {
