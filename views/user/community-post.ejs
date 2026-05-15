@@ -11,7 +11,9 @@
 </head>
 <body>
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
-  <% const makeHandle = (value) => `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`; %>
+  <% const recipeIngredients = Array.isArray(post.ingredients) ? post.ingredients : []; %>
+  <% const recipeSteps = Array.isArray(post.steps) ? post.steps : []; %>
+  <% const recipeTags = Array.isArray(post.tags) ? post.tags : []; %>
   <% const formatRelativeTime = (value) => {
     if (!value) return 'baru saja';
     const created = new Date(value);
@@ -33,106 +35,205 @@
 
       <section class="user-dashboard-main community-main">
         <header class="community-post-topbar">
-          <a class="community-back-link" href="/community">
-            <i class="fa-solid fa-arrow-left"></i>
-            <span>Kembali ke community</span>
-          </a>
           <div class="community-post-topbar-copy">
-            <p class="user-panel-kicker">Community post</p>
             <h1><%= post.title %></h1>
+            <p class="community-post-topbar-subcopy">Resep komunitas, bahan, lalu langkah masak per step.</p>
           </div>
+          <a class="community-back-link community-post-back-button" href="/community">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Kembali</span>
+          </a>
         </header>
 
         <article class="community-post-layout">
           <section class="community-post-main">
-            <article class="community-detail-post">
-              <div class="community-detail-post-body">
-                <div class="community-detail-avatar">
+            <article class="community-book-cover-panel">
+              <div class="community-book-cover">
+                <img src="<%= post.imageUrl || '/images/1.png' %>" alt="<%= post.title %>" />
+              </div>
+
+              <div class="community-book-cover-copy">
+                <div class="community-book-author">
                   <img
-                    src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(post.creatorName || 'Community user') %>&background=0f1419&color=ffffff&bold=true"
+                    src="<%= post.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true` %>"
                     alt="<%= post.creatorName %>"
                   />
+                  <div>
+                    <strong><%= post.creatorName %></strong>
+                    <span><%= formatRelativeTime(post.createdAt) %></span>
+                  </div>
                 </div>
-                <div class="community-detail-copy">
-                  <div class="community-detail-head">
-                    <div class="community-tweet-user">
-                      <strong><%= post.creatorName %></strong>
-                      <span><%= makeHandle(post.creatorName) %></span>
-                      <span>&bull; <%= formatRelativeTime(post.createdAt) %></span>
-                    </div>
-                  </div>
 
-                  <p class="community-detail-text"><%= post.content || post.title %></p>
+                <p class="community-book-kicker"><%= post.cuisine || post.originPlace || 'Community' %> &bull; <%= post.category || 'recipe' %></p>
+                <h2 class="community-book-title"><%= post.title %></h2>
+                <p class="community-book-description"><%= post.content || post.title %></p>
 
-                  <div class="community-detail-media">
-                    <img src="<%= post.imageUrl || '/images/1.png' %>" alt="<%= post.title %>" />
-                  </div>
+                <div class="community-book-chip-row">
+                  <span><i class="fa-regular fa-clock"></i> <%= post.cookingTime || 0 %> menit</span>
+                  <span><i class="fa-solid fa-users"></i> <%= post.servings || 1 %> porsi</span>
+                  <span><i class="fa-solid fa-wallet"></i> Rp <%= formatPrice(post.estimatedPrice) %></span>
+                  <span><i class="fa-solid fa-signal"></i> <%= post.difficulty || 'easy' %></span>
+                  <span><i class="fa-solid fa-star"></i> <span id="detailLikeCount"><%= post.likesCount || 0 %></span> suka</span>
+                  <span><i class="fa-regular fa-comment"></i> <%= post.commentsCount || comments.length || 0 %> komentar</span>
+                </div>
 
-                  <div class="community-tweet-meta community-detail-meta">
-                    <span><i class="fa-solid fa-layer-group"></i> <%= post.title %></span>
-                    <span><i class="fa-regular fa-clock"></i> <%= post.cookingTime || 0 %> min</span>
-                    <span><i class="fa-solid fa-wallet"></i> Rp <%= formatPrice(post.estimatedPrice) %></span>
-                  </div>
+                <div class="community-detail-actions">
+                  <button type="button" class="community-tweet-action-button <%= post.likedByMe ? 'is-liked' : '' %>" id="detailLikeButton" <%= post.likedByMe ? 'disabled' : '' %>>
+                    <span class="community-action-icon"><i class="fa-regular fa-heart"></i></span>
+                    <span><%= post.likedByMe ? 'Sudah disukai' : 'Suka resep' %></span>
+                  </button>
+                  <a class="community-tweet-action-button" href="#comments">
+                    <span class="community-action-icon"><i class="fa-regular fa-comment"></i></span>
+                    <span><%= post.commentsCount || comments.length || 0 %> komentar</span>
+                  </a>
+                  <a class="community-tweet-action-button" href="#bahan">
+                    <span class="community-action-icon"><i class="fa-solid fa-list-check"></i></span>
+                    <span>Lihat bahan</span>
+                  </a>
+                </div>
+              </div>
+            </article>
 
-                  <div class="community-detail-actions">
-                    <button type="button" class="community-tweet-action-button <%= post.likedByMe ? 'is-liked' : '' %>" id="detailLikeButton" <%= post.likedByMe ? 'disabled' : '' %>>
-                      <span class="community-action-icon"><i class="fa-regular fa-heart"></i></span>
-                      <span id="detailLikeCount"><%= post.likesCount || 0 %></span>
-                    </button>
-                    <a class="community-tweet-action-button" href="#comments">
-                      <span class="community-action-icon"><i class="fa-regular fa-comment"></i></span>
-                      <span><%= post.commentsCount || comments.length || 0 %></span>
-                    </a>
+            <div class="community-book-columns">
+              <article class="community-book-section" id="bahan">
+                <div class="community-book-section-head">
+                  <div>
+                    <p class="community-detail-thread-kicker">Ingredients</p>
+                    <h3>Bahan</h3>
                   </div>
+                </div>
+
+                <% if (recipeIngredients.length) { %>
+                  <ul class="community-book-ingredient-list">
+                    <% recipeIngredients.forEach((ingredient) => { %>
+                      <li>
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span><%= ingredient.display || ingredient.label || ingredient.name %></span>
+                      </li>
+                    <% }) %>
+                  </ul>
+                <% } else { %>
+                  <div class="community-detail-empty">
+                    <p>Belum ada daftar bahan yang tersimpan untuk resep ini.</p>
+                  </div>
+                <% } %>
+              </article>
+
+              <article class="community-book-section">
+                <div class="community-book-section-head">
+                  <div>
+                    <p class="community-detail-thread-kicker">Method</p>
+                    <h3>Langkah memasak</h3>
+                  </div>
+                </div>
+
+                <% if (recipeSteps.length) { %>
+                  <ol class="community-book-step-list">
+                    <% recipeSteps.forEach((step) => { %>
+                      <li>
+                        <strong>Step <%= step.step %></strong>
+                        <p><%= step.instruction %></p>
+                        <% if (step.sectionImageUrl) { %>
+                          <div class="community-book-step-media">
+                            <img src="<%= step.sectionImageUrl %>" alt="Foto langkah <%= step.step %>" />
+                          </div>
+                        <% } %>
+                      </li>
+                    <% }) %>
+                  </ol>
+                <% } else { %>
+                  <div class="community-detail-empty">
+                    <p>Belum ada langkah memasak yang tersimpan untuk resep ini.</p>
+                  </div>
+                <% } %>
+              </article>
+            </div>
+
+            <section class="community-detail-comments" id="comments">
+              <div class="community-detail-comments-head">
+                <div>
+                  <p class="community-detail-thread-kicker">Replies</p>
+                  <h3>Komentar pembaca</h3>
+                </div>
+                <span id="communityDetailCommentState"><%= comments.length ? `${comments.length} balasan` : 'Belum ada komentar' %></span>
+              </div>
+
+              <div class="community-detail-comments-list" id="commentsList">
+                <% if (comments.length) { %>
+                  <% comments.forEach((comment) => { %>
+                    <article class="community-thread-item">
+                      <div class="community-thread-avatar">
+                        <img
+                          src="<%= comment.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true` %>"
+                          alt="<%= comment.creatorName %>"
+                        />
+                      </div>
+                      <div class="community-thread-body">
+                        <div class="community-thread-head">
+                          <strong><%= comment.creatorName %></strong>
+                          <span>&bull; <%= formatRelativeTime(comment.createdAt) %></span>
+                        </div>
+                        <p><%= comment.content %></p>
+                      </div>
+                    </article>
+                  <% }) %>
+                <% } else { %>
+                  <div class="community-detail-empty">
+                    <p>Belum ada komentar untuk postingan ini.</p>
+                  </div>
+                <% } %>
+              </div>
+
+              <form class="community-detail-reply-form" id="replyForm">
+                <textarea id="replyInput" rows="3" placeholder="Tulis komentar..." required></textarea>
+                <div class="community-detail-reply-actions">
+                  <span class="community-detail-reply-hint">Enter untuk kirim, Shift+Enter untuk baris baru.</span>
+                  <button type="submit" class="auth-button" id="replySubmit">Reply</button>
+                </div>
+              </form>
+            </section>
+          </section>
+
+          <aside class="community-book-sidebar">
+            <article class="user-panel community-book-sidecard">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Ringkasan resep</p>
+                  <h2>Detail cepat</h2>
                 </div>
               </div>
 
-              <section class="community-detail-comments" id="comments">
-                <div class="community-detail-comments-head">
-                  <div>
-                    <p class="community-detail-thread-kicker">Replies</p>
-                    <h3>Komentar</h3>
-                  </div>
-                  <span id="communityDetailCommentState"><%= comments.length ? `${comments.length} balasan` : 'Belum ada komentar' %></span>
-                </div>
-
-                <div class="community-detail-comments-list" id="commentsList">
-                  <% if (comments.length) { %>
-                    <% comments.forEach((comment) => { %>
-                      <article class="community-thread-item">
-                        <div class="community-thread-avatar">
-                          <img
-                            src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(comment.creatorName || 'Community user') %>&background=0f1419&color=ffffff&bold=true"
-                            alt="<%= comment.creatorName %>"
-                          />
-                        </div>
-                        <div class="community-thread-body">
-                          <div class="community-thread-head">
-                            <strong><%= comment.creatorName %></strong>
-                            <span><%= makeHandle(comment.creatorName) %></span>
-                            <span>&bull; <%= formatRelativeTime(comment.createdAt) %></span>
-                          </div>
-                          <p><%= comment.content %></p>
-                        </div>
-                      </article>
-                    <% }) %>
-                  <% } else { %>
-                    <div class="community-detail-empty">
-                      <p>Belum ada komentar untuk postingan ini.</p>
-                    </div>
-                  <% } %>
-                </div>
-
-                <form class="community-detail-reply-form" id="replyForm">
-                  <textarea id="replyInput" rows="3" placeholder="Tulis komentar..." required></textarea>
-                  <div class="community-detail-reply-actions">
-                    <span class="community-detail-reply-hint">Enter untuk kirim, Shift+Enter untuk baris baru.</span>
-                    <button type="submit" class="auth-button" id="replySubmit">Reply</button>
-                  </div>
-                </form>
-              </section>
+              <div class="community-book-summary-list">
+                <span><strong>Kategori</strong><%= post.category || 'community' %></span>
+                <span><strong>Cuisine</strong><%= post.cuisine || post.originPlace || 'Community' %></span>
+                <span><strong>Waktu</strong><%= post.cookingTime || 0 %> menit</span>
+                <span><strong>Porsi</strong><%= post.servings || 1 %> porsi</span>
+                <span><strong>Difficulty</strong><%= post.difficulty || 'easy' %></span>
+                <span><strong>Harga</strong>Rp <%= formatPrice(post.estimatedPrice) %></span>
+              </div>
             </article>
-          </section>
+
+            <article class="user-panel community-book-sidecard">
+              <div class="user-panel-head">
+                <div>
+                  <p class="user-panel-kicker">Tags</p>
+                  <h2>Catatan resep</h2>
+                </div>
+              </div>
+
+              <% if (recipeTags.length) { %>
+                <div class="community-book-tag-list">
+                  <% recipeTags.forEach((tag) => { %>
+                    <span><%= tag %></span>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="community-detail-empty">
+                  <p>Resep ini belum punya tag tambahan.</p>
+                </div>
+              <% } %>
+            </article>
+          </aside>
         </article>
       </section>
     </div>
@@ -155,10 +256,6 @@
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&#39;');
-      }
-
-      function makeHandle(value) {
-        return `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`;
       }
 
       function formatRelativeTime(value) {
@@ -185,7 +282,6 @@
             <div class="community-thread-body">
               <div class="community-thread-head">
                 <strong>${escapeHtml(comment.creatorName || 'Community user')}</strong>
-                <span>${escapeHtml(makeHandle(comment.creatorName))}</span>
                 <span>&bull; ${escapeHtml(formatRelativeTime(comment.createdAt))}</span>
               </div>
               <p>${escapeHtml(comment.content || '')}</p>

@@ -1628,12 +1628,29 @@ a {
 }
 
 .user-icon-button-soft {
-  width: 100%;
-  height: auto;
-  padding: 12px 10px;
+  width: 50px;
+  height: 50px;
+  padding: 0;
   border: 0;
   cursor: pointer;
   font: inherit;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.user-icon-button-soft i {
+  font-size: 1rem;
+}
+
+.user-icon-button-soft:hover,
+.user-icon-button-soft:focus-visible {
+  background: var(--accent-dark);
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(42, 127, 125, 0.22);
+  transform: translateY(-1px);
 }
 
 .user-dashboard-main {
@@ -4610,27 +4627,14 @@ a {
 }
 
 .community-page .community-feed-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  align-items: start;
+  gap: 18px;
+  padding-top: 6px;
 }
 
 .community-page .community-main-column > .user-panel {
-  min-height: 100%;
-}
-
-.community-page #community-feed.user-panel {
-  display: flex;
-  flex-direction: column;
-}
-
-.community-page #community-feed .community-feed-grid {
-  flex: 1;
-  min-height: 340px;
-}
-
-.community-page #community-feed .community-empty-state {
-  min-height: 240px;
-  display: grid;
-  align-content: center;
+  min-height: 0;
 }
 
 .community-page .community-stat-grid {
@@ -4742,7 +4746,7 @@ a {
 
 .community-page .community-feed-grid,
 .community-page .community-post-list {
-  gap: 0;
+  gap: 18px;
 }
 
 .community-page .community-side-column {
@@ -5181,14 +5185,15 @@ a {
 }
 
 .community-post-page .community-post-topbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 22px;
-  padding: 8px 0 0;
-  width: min(760px, 100%);
-  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  justify-items: start;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 0;
+  width: 100%;
+  margin-inline: 0;
 }
 
 .community-post-page .community-back-link {
@@ -5204,9 +5209,32 @@ a {
   color: #4ab1b7;
 }
 
+.community-post-page .community-post-back-button {
+  justify-self: end;
+  align-self: start;
+  padding: 11px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(154, 120, 75, 0.16);
+  background: #fffdf8;
+  color: #5a4632;
+  box-shadow: 0 10px 18px rgba(132, 96, 54, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.community-post-page .community-post-back-button:hover {
+  background: #fff8ef;
+  color: #2f2417;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(132, 96, 54, 0.08);
+}
+
 .community-post-page .community-post-topbar-copy {
   display: grid;
-  gap: 6px;
+  gap: 8px;
+  max-width: none;
+  padding-left: 0;
+  justify-self: start;
+  text-align: left;
 }
 
 .community-post-page .community-post-topbar-copy h1 {
@@ -5543,6 +5571,12 @@ a {
   color: var(--text);
 }
 
+.field-required {
+  color: #d63b3b;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .community-form-field input,
 .community-form-field textarea,
 .community-form-field select {
@@ -5554,6 +5588,94 @@ a {
   padding: 14px 16px;
   font: inherit;
   box-shadow: 0 12px 22px rgba(47, 43, 39, 0.04);
+}
+
+.community-upload-field {
+  align-items: start;
+}
+
+.community-upload-card {
+  display: grid;
+  gap: 12px;
+}
+
+.community-upload-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+  padding: 24px;
+  border-radius: 26px;
+  border: 1px dashed rgba(62, 59, 54, 0.18);
+  background:
+    radial-gradient(circle at top, rgba(56, 156, 154, 0.08), transparent 36%),
+    linear-gradient(180deg, #fcfbf7, #f5f1e9);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.community-upload-preview--compact {
+  min-height: 136px;
+}
+
+.community-upload-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 20px;
+}
+
+.community-upload-preview-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.community-upload-preview-empty i {
+  font-size: 2.2rem;
+  color: rgba(29, 29, 29, 0.34);
+}
+
+.community-upload-preview-empty strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.community-upload-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.community-upload-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.community-upload-controls {
+  display: grid;
+  gap: 8px;
+}
+
+.community-upload-controls input[type="file"] {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(62, 59, 54, 0.12);
+  background: #fff;
+  color: var(--muted);
+  font: inherit;
+  box-shadow: 0 12px 22px rgba(47, 43, 39, 0.04);
+}
+
+.community-upload-controls p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .community-form-field textarea {
@@ -5583,6 +5705,265 @@ a {
 .community-form-actions p {
   margin: 0;
   color: var(--muted);
+}
+
+.community-compose-page .community-compose-main {
+  display: grid;
+  gap: 20px;
+}
+
+.community-compose-page-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 24px 26px;
+  border-radius: 24px;
+  border: 1px solid rgba(15, 20, 25, 0.08);
+  background: #ffffff;
+}
+
+.community-compose-page-copy {
+  display: grid;
+  gap: 8px;
+  max-width: 72ch;
+}
+
+.community-compose-page-header h1 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(2rem, 3vw, 3rem);
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+}
+
+.community-compose-page-subcopy {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.community-compose-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+  align-self: start;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 20, 25, 0.1);
+  background: #f7f9fa;
+  color: #0f1419;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 10px 18px rgba(47, 43, 39, 0.04);
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.community-compose-back i {
+  font-size: 0.92rem;
+}
+
+.community-compose-back:hover {
+  background: #eef3f4;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(47, 43, 39, 0.06);
+}
+
+.community-compose-form {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 26px;
+  border: 1px solid rgba(15, 20, 25, 0.08);
+  background: #ffffff;
+}
+
+.community-compose-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.community-compose-column {
+  display: grid;
+  gap: 16px;
+}
+
+.community-compose-meta-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.community-ingredient-builder {
+  gap: 12px;
+}
+
+.community-ingredient-card-list {
+  display: grid;
+  gap: 10px;
+}
+
+.community-ingredient-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 20, 25, 0.08);
+  background: #ffffff;
+  box-shadow: 0 12px 22px rgba(47, 43, 39, 0.04);
+}
+
+.community-ingredient-card input {
+  padding: 12px 14px;
+  border-radius: 16px;
+}
+
+.community-ingredient-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.community-ingredient-card-head strong {
+  margin-right: auto;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.community-builder-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.community-icon-button {
+  appearance: none;
+  border: 1px solid rgba(15, 20, 25, 0.1);
+  background: #f7f9fa;
+  color: #0f1419;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.community-icon-button:hover {
+  background: #eef3f4;
+}
+
+.community-icon-button--danger {
+  color: #d63b3b;
+}
+
+.community-icon-button--danger:hover {
+  background: rgba(214, 59, 59, 0.08);
+}
+
+.community-step-number--ingredient {
+  width: 28px;
+  height: 28px;
+  font-size: 0.76rem;
+}
+
+.community-step-builder {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(15, 20, 25, 0.08);
+  background: linear-gradient(180deg, rgba(248, 247, 243, 0.96), rgba(255, 255, 255, 0.98));
+}
+
+.community-step-builder-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.community-step-builder-head h2 {
+  margin: 4px 0 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+  letter-spacing: -0.04em;
+}
+
+.community-step-builder-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.community-step-card-list {
+  display: grid;
+  gap: 12px;
+}
+
+.community-step-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 20, 25, 0.08);
+  background: #ffffff;
+  box-shadow: 0 10px 18px rgba(47, 43, 39, 0.05);
+}
+
+.community-step-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.community-step-card-index {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.community-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #0f1419;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.community-step-remove {
+  position: relative;
+}
+
+.community-step-remove:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.community-step-card-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(200px, 250px);
+  align-items: start;
+}
+
+.community-step-card .community-form-field textarea {
+  min-height: 84px;
+}
+
+.community-compose-submit-row {
+  justify-content: space-between;
 }
 
 .community-feed-grid {
@@ -5942,8 +6323,18 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .community-compose-grid,
+  .community-step-card-grid,
+  .community-compose-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
   .community-form-field-wide {
     grid-column: span 1;
+  }
+
+  .community-upload-preview {
+    min-height: 220px;
   }
 
   .community-hero-panel {
@@ -5953,6 +6344,19 @@ a {
   .community-composer-modal {
     width: min(100%, 820px);
     padding: 20px;
+  }
+
+  .community-compose-form,
+  .community-compose-page-header {
+    padding: 20px;
+  }
+
+  .community-compose-page-header {
+    grid-template-columns: 1fr;
+  }
+
+  .community-compose-back {
+    justify-self: start;
   }
 
   .community-post-page .community-post-main {
@@ -5974,6 +6378,23 @@ a {
     max-height: calc(100vh - 28px);
     border-radius: 24px;
     padding: 18px;
+  }
+
+  .community-upload-preview {
+    min-height: 200px;
+    padding: 18px;
+  }
+
+  .community-step-builder-head,
+  .community-ingredient-card-head,
+  .community-step-card-head,
+  .community-compose-submit-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .community-step-remove {
+    align-self: flex-end;
   }
 
   .community-composer-head {
@@ -7678,7 +8099,8 @@ body.history-page {
   min-height: calc(100vh - 20px);
   padding: 14px;
   gap: 14px;
-  grid-template-columns: 84px minmax(0, 1fr);
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
 }
 
 .history-dashboard-shell {
@@ -7686,7 +8108,15 @@ body.history-page {
   min-height: calc(100vh - 20px);
   padding: 14px;
   gap: 14px;
-  grid-template-columns: 84px minmax(0, 1fr);
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+}
+
+.chat-dashboard-shell > .user-dashboard-main,
+.history-dashboard-shell > .user-dashboard-main {
+  grid-column: 2;
+  min-width: 0;
+  width: 100%;
 }
 
 .chat-main {
@@ -8253,5 +8683,436 @@ body.history-page {
 
   .history-related-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Community cookbook refresh */
+.community-page .user-dashboard-main {
+  background:
+    radial-gradient(circle at top left, rgba(229, 195, 145, 0.28), transparent 34%),
+    linear-gradient(180deg, #fffaf1 0%, #fffdf8 100%);
+}
+
+.community-page .user-dashboard-topbar,
+.community-page .user-panel,
+.community-page .community-compose-shell,
+.community-page .community-book-cover-panel,
+.community-page .community-book-section,
+.community-page .community-book-sidecard {
+  border-color: rgba(154, 120, 75, 0.16);
+  background: #fffdf8;
+  box-shadow: 0 14px 36px rgba(132, 96, 54, 0.06);
+}
+
+.community-page .community-post-topbar-subcopy,
+.community-page .community-book-description,
+.community-page .community-book-kicker,
+.community-page .community-book-section-head span,
+.community-page .community-book-summary-list span,
+.community-page .community-detail-reply-hint,
+.community-page .community-detail-empty {
+  color: #6f5c46;
+}
+
+.community-page .community-recipe-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 26px;
+  border: 1px solid rgba(154, 120, 75, 0.18);
+  background: #fffdf8;
+  box-shadow: 0 18px 42px rgba(132, 96, 54, 0.08);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.community-page .community-recipe-card-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+}
+
+.community-page .community-recipe-card-author img {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.community-page .community-recipe-card-author strong {
+  display: block;
+  color: #2f2417;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.community-page .community-recipe-card-author span {
+  display: block;
+  color: #7a6550;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.community-page .community-recipe-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(154, 120, 75, 0.26);
+}
+
+.community-page .community-recipe-card-hero {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f5ead9 0%, #efe1ce 100%);
+}
+
+.community-page .community-recipe-card-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.community-page .community-recipe-card-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.9);
+  color: #5a4632;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(154, 120, 75, 0.18);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.community-page .community-recipe-card-body {
+  display: grid;
+  gap: 6px;
+  padding: 10px 14px 14px;
+}
+
+.community-page .community-recipe-card-title {
+  margin: 0;
+  color: #2b2015;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(0.98rem, 1.4vw, 1.18rem);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+
+.community-post-page .community-post-topbar {
+  width: 100%;
+  align-items: flex-end;
+}
+
+.community-post-page .community-post-topbar-copy {
+  gap: 8px;
+  max-width: none;
+}
+
+.community-post-page .community-post-topbar-copy h1 {
+  font-size: clamp(2rem, 4vw, 3.1rem);
+}
+
+.community-post-page .community-post-topbar-subcopy {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.community-post-page .community-post-layout {
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+  gap: 24px;
+  justify-items: stretch;
+}
+
+.community-post-page .community-post-main {
+  width: auto;
+  max-width: none;
+  margin: 0;
+}
+
+.community-post-page .community-book-cover-panel {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.community-post-page .community-book-cover {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f4eadc 0%, #efe1cf 100%);
+}
+
+.community-post-page .community-book-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.community-post-page .community-book-cover-copy {
+  display: grid;
+  gap: 16px;
+  padding: 22px 24px 24px;
+}
+
+.community-post-page .community-book-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.community-post-page .community-book-author img {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.community-post-page .community-book-author strong {
+  display: block;
+  color: #2f2417;
+}
+
+.community-post-page .community-book-author span {
+  color: #7a6550;
+  font-size: 0.9rem;
+}
+
+.community-post-page .community-book-kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.community-post-page .community-book-title {
+  margin: 0;
+  color: #251a10;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.08;
+  letter-spacing: -0.05em;
+}
+
+.community-post-page .community-book-description {
+  margin: 0;
+  font-size: 1.03rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.community-post-page .community-book-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.community-post-page .community-book-chip-row span,
+.community-post-page .community-book-summary-list span,
+.community-post-page .community-book-tag-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  background: #f7efe1;
+  border: 1px solid rgba(154, 120, 75, 0.12);
+  color: #624e38;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.community-post-page .community-book-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.community-post-page .community-book-section {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  justify-content: start;
+  padding: 22px 24px;
+}
+
+.community-post-page .community-book-section-media {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(154, 120, 75, 0.12);
+  background: #fff8ef;
+}
+
+.community-post-page .community-book-section-media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.community-post-page .community-book-section-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  width: 100%;
+}
+
+.community-post-page .community-book-section-head > div {
+  min-width: 0;
+}
+
+.community-post-page .community-book-section-head h3 {
+  margin: 0;
+  color: #251a10;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.community-post-page .community-book-ingredient-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.community-post-page .community-book-ingredient-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #fff8ef;
+  border: 1px solid rgba(154, 120, 75, 0.12);
+  color: #4a3726;
+}
+
+.community-post-page .community-book-ingredient-list li i {
+  color: #6f8a42;
+}
+
+.community-post-page .community-book-step-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.community-post-page .community-book-step-list li {
+  display: grid;
+  gap: 10px;
+  padding-left: 6px;
+}
+
+.community-post-page .community-book-step-list strong {
+  display: block;
+  color: #251a10;
+  font-size: 0.94rem;
+  margin-bottom: 5px;
+}
+
+.community-post-page .community-book-step-list p {
+  margin: 0;
+  color: #4a3726;
+  line-height: 1.7;
+}
+
+.community-post-page .community-book-step-media {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(154, 120, 75, 0.12);
+  background: #fff8ef;
+  max-width: 320px;
+}
+
+.community-post-page .community-book-step-media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.community-post-page .community-book-sidebar {
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 18px;
+  align-self: start;
+}
+
+.community-post-page .community-book-sidecard {
+  padding: 20px;
+}
+
+.community-post-page .community-book-summary-list {
+  display: grid;
+  gap: 10px;
+}
+
+.community-post-page .community-book-summary-list span {
+  justify-content: space-between;
+  width: 100%;
+}
+
+.community-post-page .community-book-summary-list span strong {
+  color: #2f2417;
+}
+
+.community-post-page .community-book-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.community-post-page .community-detail-actions {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+  .community-post-page .community-post-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .community-post-page .community-book-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 860px) {
+  .community-post-page .community-book-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .community-post-page .community-post-topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .community-post-page .community-post-back-button {
+    justify-self: start;
+  }
+
+  .community-post-page .community-book-cover-copy {
+    padding: 18px 18px 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .community-page .community-recipe-card-badge {
+    left: 12px;
+    top: 12px;
   }
 }

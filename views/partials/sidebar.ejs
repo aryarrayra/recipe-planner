@@ -55,7 +55,10 @@
     </nav>
 
     <form action="/logout" method="post" class="user-sidebar-logout">
-      <button type="submit" class="user-icon-button user-icon-button-soft">Logout</button>
+      <button type="submit" class="user-icon-button user-icon-button-soft" aria-label="Logout" title="Logout">
+        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+        <span class="sr-only">Logout</span>
+      </button>
     </form>
   </aside>
 </div>

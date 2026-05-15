@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="user-dashboard community-page community-compose-page">
+    <div class="user-dashboard-shell community-shell">
+      <%- include('../partials/sidebar', { mode: 'user', activePage: 'community', user }) %>
+
+      <section class="user-dashboard-main community-main community-compose-main">
+        <header class="community-compose-page-header">
+          <div class="community-compose-page-copy">
+            <p class="user-panel-kicker">Post resep</p>
+            <h1>Buat posting resep baru</h1>
+            <p class="community-compose-page-subcopy">
+              Isi foto utama, bahan, dan langkah di sini. Tiap langkah bisa ditambah foto kalau perlu.
+            </p>
+          </div>
+          <a class="community-back-link community-compose-back" href="/community">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Kembali ke community</span>
+          </a>
+        </header>
+
+        <% if (notice || error) { %>
+          <div class="admin-banner <%= error ? 'is-error' : 'is-success' %>">
+            <i class="fa-solid <%= error ? 'fa-triangle-exclamation' : 'fa-circle-check' %>" aria-hidden="true"></i>
+            <span><%= error || notice %></span>
+          </div>
+        <% } %>
+
+        <form class="community-compose-form" action="/community" method="post" enctype="multipart/form-data">
+          <div class="community-compose-grid">
+            <div class="community-compose-column">
+              <label class="community-form-field">
+                <span>Judul resep <em class="field-required">*</em></span>
+                <input type="text" name="title" required placeholder="Contoh: Ayam Goreng Bumbu Kuning" />
+              </label>
+
+              <label class="community-form-field community-upload-field">
+                <span>Foto resep</span>
+                <div class="community-upload-card">
+                  <label class="community-upload-preview" id="communityRecipeImagePreview">
+                    <img class="community-upload-preview-image" id="communityRecipeImagePreviewImg" hidden />
+                    <div class="community-upload-preview-empty" id="communityRecipeImagePreviewEmpty" aria-hidden="true"></div>
+                    <input type="file" name="image_file" accept="image/*" id="communityRecipeImageInput" class="community-upload-input" />
+                  </label>
+                </div>
+              </label>
+
+              <label class="community-form-field">
+                <span>Deskripsi</span>
+                <textarea name="description" rows="4" placeholder="Cerita singkat resep ini"></textarea>
+              </label>
+
+              <section class="community-step-builder community-ingredient-builder">
+                <div class="community-step-builder-head">
+                  <div>
+                    <p class="user-panel-kicker">Bahan-bahan</p>
+                    <h2>Bahan <em class="field-required">*</em></h2>
+                  </div>
+                </div>
+                <p class="community-step-builder-note">Isi bahan satu per satu supaya list-nya rapi dan mudah dibaca.</p>
+                <div class="community-ingredient-card-list" id="ingredientCardList"></div>
+                <div class="community-builder-actions">
+                  <button type="button" class="community-icon-button" id="addIngredientButton" aria-label="Tambah bahan" title="Tambah bahan">
+                    <i class="fa-solid fa-plus"></i>
+                  </button>
+                </div>
+              </section>
+
+              <label class="community-form-field">
+                <span>Tags</span>
+                <textarea name="tags" rows="2" placeholder="pedas&#10;ayam&#10;rumahan"></textarea>
+              </label>
+            </div>
+
+            <div class="community-compose-column">
+              <label class="community-form-field">
+                <span>Cuisine</span>
+                <input type="text" name="cuisine" placeholder="Indonesia / Japanese / dll" />
+              </label>
+
+              <label class="community-form-field">
+                <span>Kategori</span>
+                <select name="category">
+                  <option value="main course">Main course</option>
+                  <option value="dessert">Dessert</option>
+                  <option value="snack">Snack</option>
+                  <option value="drink">Drink</option>
+                  <option value="breakfast">Breakfast</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="dinner">Dinner</option>
+                  <option value="side dish">Side dish</option>
+                  <option value="soup">Soup</option>
+                </select>
+              </label>
+
+              <div class="community-compose-meta-grid">
+                <label class="community-form-field">
+                  <span>Waktu masak (menit)</span>
+                  <input type="number" name="cooking_time" min="0" placeholder="30" />
+                </label>
+                <label class="community-form-field">
+                  <span>Porsi</span>
+                  <input type="number" name="servings" min="1" placeholder="2" />
+                </label>
+                <label class="community-form-field">
+                  <span>Difficulty</span>
+                  <select name="difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </label>
+                <label class="community-form-field">
+                  <span>Perkiraan harga</span>
+                  <input type="text" name="estimated_price" placeholder="25000" />
+                </label>
+              </div>
+
+              <section class="community-step-builder">
+                <div class="community-step-builder-head">
+                  <div>
+                    <p class="user-panel-kicker">Langkah</p>
+                    <h2>1 langkah 1 foto <em class="field-required">*</em></h2>
+                  </div>
+                </div>
+                <p class="community-step-builder-note">Setiap langkah punya teks dan foto sendiri. Foto dipilih langsung dari kartu langkah.</p>
+                <div class="community-step-card-list" id="stepCardList"></div>
+                <div class="community-builder-actions">
+                  <button type="button" class="community-icon-button" id="addStepButton" aria-label="Tambah langkah" title="Tambah langkah">
+                    <i class="fa-solid fa-plus"></i>
+                  </button>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <div class="community-form-actions community-compose-submit-row">
+            <button type="submit" class="auth-button">Post ke community</button>
+            <p>Resep akan langsung tersimpan dan tampil di community.</p>
+          </div>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <template id="stepCardTemplate">
+    <article class="community-step-card">
+      <div class="community-step-card-head">
+        <div class="community-step-card-index">
+          <span class="community-step-number"></span>
+          <strong>Langkah</strong>
+        </div>
+        <button type="button" class="community-icon-button community-icon-button--danger community-step-remove" aria-label="Hapus langkah" title="Hapus langkah">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+
+      <div class="community-step-card-grid">
+        <label class="community-form-field community-form-field-wide">
+          <span>Uraian langkah <em class="field-required">*</em></span>
+          <textarea name="step_texts" rows="3" required placeholder="Contoh: Potong ayam menjadi beberapa bagian, sisihkan."></textarea>
+        </label>
+
+        <label class="community-form-field community-upload-field">
+          <span>Foto langkah</span>
+          <div class="community-upload-card community-upload-card--compact">
+            <label class="community-upload-preview community-upload-preview--compact">
+              <img class="community-upload-preview-image" alt="" hidden />
+              <div class="community-upload-preview-empty">
+                <i class="fa-regular fa-image"></i>
+                <strong>Foto langkah</strong>
+                <span>Opsional, 1 langkah 1 foto</span>
+              </div>
+              <input type="file" name="step_images" accept="image/*" class="community-upload-input" />
+            </label>
+          </div>
+        </label>
+      </div>
+    </article>
+  </template>
+
+  <template id="ingredientCardTemplate">
+    <article class="community-ingredient-card">
+      <div class="community-ingredient-card-head">
+        <span class="community-step-number community-step-number--ingredient"></span>
+        <strong>Bahan</strong>
+        <button type="button" class="community-icon-button community-icon-button--danger community-step-remove" aria-label="Hapus bahan" title="Hapus bahan">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+      <input type="text" name="ingredient_texts" placeholder="Contoh: 1/2 ekor ayam" />
+    </article>
+  </template>
+
+  <script>
+    (() => {
+      const recipeImageInput = document.getElementById('communityRecipeImageInput');
+      const recipePreviewImage = document.getElementById('communityRecipeImagePreviewImg');
+      const recipePreviewEmpty = document.getElementById('communityRecipeImagePreviewEmpty');
+      const ingredientList = document.getElementById('ingredientCardList');
+      const addIngredientButton = document.getElementById('addIngredientButton');
+      const stepList = document.getElementById('stepCardList');
+      const addStepButton = document.getElementById('addStepButton');
+      const stepTemplate = document.getElementById('stepCardTemplate');
+      const ingredientTemplate = document.getElementById('ingredientCardTemplate');
+
+      let recipePreviewObjectUrl = '';
+      const ingredientPreviewUrls = new WeakMap();
+      const stepPreviewUrls = new WeakMap();
+
+      function syncPreview(input, previewImage, previewEmpty, objectUrlRef) {
+        const file = input && input.files && input.files[0] ? input.files[0] : null;
+        if (objectUrlRef.current) {
+          URL.revokeObjectURL(objectUrlRef.current);
+          objectUrlRef.current = '';
+        }
+
+        if (!file) {
+          previewImage.hidden = true;
+          previewImage.removeAttribute('src');
+          previewEmpty.hidden = false;
+          return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        objectUrlRef.current = objectUrl;
+        previewImage.src = objectUrl;
+        previewImage.hidden = false;
+        previewEmpty.hidden = true;
+      }
+
+      function renumberIngredients() {
+        [...ingredientList.querySelectorAll('.community-ingredient-card')].forEach((card, index) => {
+          const numberNode = card.querySelector('.community-step-number--ingredient');
+          if (numberNode) {
+            numberNode.textContent = String(index + 1).padStart(2, '0');
+          }
+
+          const removeButton = card.querySelector('.community-step-remove');
+          if (removeButton) {
+            removeButton.disabled = ingredientList.children.length <= 1;
+          }
+        });
+      }
+
+      function createIngredientCard() {
+        const fragment = ingredientTemplate.content.cloneNode(true);
+        const card = fragment.querySelector('.community-ingredient-card');
+        const removeButton = fragment.querySelector('.community-step-remove');
+
+        removeButton?.addEventListener('click', () => {
+          if (ingredientList.children.length <= 1) {
+            return;
+          }
+
+          card.remove();
+          renumberIngredients();
+        });
+
+        ingredientPreviewUrls.set(card, { current: '' });
+        return fragment;
+      }
+
+      function renumberSteps() {
+        [...stepList.querySelectorAll('.community-step-card')].forEach((card, index) => {
+          const numberNode = card.querySelector('.community-step-number');
+          if (numberNode) {
+            numberNode.textContent = String(index + 1).padStart(2, '0');
+          }
+
+          const removeButton = card.querySelector('.community-step-remove');
+          if (removeButton) {
+            removeButton.disabled = stepList.children.length <= 1;
+          }
+        });
+      }
+
+      function createStepCard() {
+        const fragment = stepTemplate.content.cloneNode(true);
+        const card = fragment.querySelector('.community-step-card');
+        const fileInput = fragment.querySelector('input[type="file"]');
+        const previewImage = fragment.querySelector('.community-upload-preview-image');
+        const previewEmpty = fragment.querySelector('.community-upload-preview-empty');
+        const removeButton = fragment.querySelector('.community-step-remove');
+
+        const objectUrlRef = { current: '' };
+
+        fileInput?.addEventListener('change', () => {
+          syncPreview(fileInput, previewImage, previewEmpty, objectUrlRef);
+        });
+
+        removeButton?.addEventListener('click', () => {
+          if (stepList.children.length <= 1) {
+            return;
+          }
+
+          if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current);
+          }
+
+          card.remove();
+          renumberSteps();
+        });
+
+        stepPreviewUrls.set(card, objectUrlRef);
+        return fragment;
+      }
+
+      recipeImageInput?.addEventListener('change', () => {
+        syncPreview(recipeImageInput, recipePreviewImage, recipePreviewEmpty, {
+          get current() {
+            return recipePreviewObjectUrl;
+          },
+          set current(nextValue) {
+            recipePreviewObjectUrl = nextValue;
+          }
+        });
+      });
+
+      addIngredientButton?.addEventListener('click', () => {
+        ingredientList.appendChild(createIngredientCard());
+        renumberIngredients();
+      });
+
+      addStepButton?.addEventListener('click', () => {
+        stepList.appendChild(createStepCard());
+        renumberSteps();
+      });
+
+      ingredientList?.appendChild(createIngredientCard());
+      ingredientList?.appendChild(createIngredientCard());
+      stepList?.appendChild(createStepCard());
+      stepList?.appendChild(createStepCard());
+      renumberIngredients();
+      renumberSteps();
+
+      window.addEventListener('beforeunload', () => {
+        if (recipePreviewObjectUrl) {
+          URL.revokeObjectURL(recipePreviewObjectUrl);
+        }
+        [...ingredientList.querySelectorAll('.community-ingredient-card')].forEach((card) => {
+          const ref = ingredientPreviewUrls.get(card);
+          if (ref?.current) {
+            URL.revokeObjectURL(ref.current);
+          }
+        });
+        [...stepList.querySelectorAll('.community-step-card')].forEach((card) => {
+          const ref = stepPreviewUrls.get(card);
+          if (ref?.current) {
+            URL.revokeObjectURL(ref.current);
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

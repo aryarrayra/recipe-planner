@@ -48,8 +48,7 @@
         }))
       : []
   })); %>
-  <% const formatChallengeLabel = (recipe) => recipe ? `${recipe.category || 'Recipe'} - ${recipe.cuisine || 'Community'}` : 'Belum tersedia'; %>
-  <% const makeHandle = (value) => `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`; %>
+  <% const formatChallengeLabel = (recipe) => recipe ? `${recipe.category || 'Recipe'} - ${recipe.originPlace || recipe.cuisine || 'Community'}` : 'Belum tersedia'; %>
   <% const formatRelativeTime = (value) => {
     if (!value) return 'baru saja';
     const created = new Date(value);
@@ -74,9 +73,9 @@
         <header class="user-dashboard-topbar">
           <div class="user-topbar-copy">
             <p class="user-panel-kicker">Community kitchen</p>
-            <h1>Bagikan resep dan tampilkan ke community</h1>
+            <h1>Bagikan resep seperti halaman buku masak</h1>
             <p class="user-dashboard-subcopy">
-              Postingan resep langsung tersimpan dan tampil ke community. Daily dan weekly challenge tetap berjalan otomatis dari API.
+              Tampilan dibuat lebih mirip buku resep: cover besar, ringkasan bahan, dan langkah masak yang mudah dibaca. Daily dan weekly challenge tetap berjalan otomatis dari API.
             </p>
           </div>
 
@@ -159,82 +158,33 @@
               </div>
             </article>
 
-            <article class="user-panel" id="community-feed">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Public feed</p>
-                  <h2>Resep community terbaru</h2>
-                </div>
-                <span class="user-panel-meta"><%= approvedRecipes.length %> resep</span>
-              </div>
-
-              <div class="community-feed-grid">
-                <% if (approvedRecipes.length) { %>
-                  <% approvedRecipes.forEach((recipe) => { %>
-                    <article
-                      class="community-tweet-card"
-                      data-post-id="<%= recipe.communityPostId || recipe.id %>"
-                      data-post-url="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>"
-                    >
-                      <div class="community-tweet-avatar">
+            <% if (approvedRecipes.length) { %>
+              <div class="community-feed-grid" id="community-feed">
+                <% approvedRecipes.forEach((recipe) => { %>
+                  <article
+                    class="community-tweet-card community-recipe-card"
+                    data-post-id="<%= recipe.communityPostId || recipe.id %>"
+                    data-post-url="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>"
+                  >
+                    <div class="community-recipe-card-hero">
+                      <img src="<%= recipe.imageUrl || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                    </div>
+                    <div class="community-recipe-card-body">
+                      <div class="community-recipe-card-author">
                         <img
-                          src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(recipe.creatorName || 'Community user') %>&background=0f1419&color=ffffff&bold=true"
+                          src="<%= recipe.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipe.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true` %>"
                           alt="<%= recipe.creatorName %>"
                         />
-                      </div>
-                      <div class="community-tweet-body">
-                        <div class="community-tweet-head">
-                          <div class="community-tweet-user">
-                            <strong><%= recipe.creatorName %></strong>
-                            <span><%= makeHandle(recipe.creatorName) %></span>
-                            <span>&bull; <%= formatRelativeTime(recipe.createdAt) %></span>
-                          </div>
-                          <button type="button" class="community-tweet-more" aria-label="More">
-                            <i class="fa-solid fa-ellipsis"></i>
-                          </button>
-                        </div>
-
-                        <p class="community-tweet-text"><%= recipe.description || recipe.title %></p>
-
-                        <div class="community-tweet-card-visual">
-                          <img src="<%= recipe.imageUrl || '/images/1.png' %>" alt="<%= recipe.title %>" />
-                        </div>
-
-                        <div class="community-tweet-meta">
-                          <span><i class="fa-solid fa-layer-group"></i> <%= recipe.category %> / <%= recipe.cuisine %></span>
-                          <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime || 0 %> min</span>
-                          <span><i class="fa-solid fa-wallet"></i> Rp <%= formatPrice(recipe.estimatedPrice) %></span>
-                        </div>
-
-                        <div class="community-tweet-actions">
-                          <a class="community-tweet-action-button" href="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>#comments" aria-label="Komentar">
-                            <i class="fa-regular fa-comment"></i>
-                            <span class="community-tweet-action-count"><%= recipe.commentsCount || 0 %></span>
-                          </a>
-                          <a class="community-tweet-action-button" href="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>" aria-label="Bagikan">
-                            <i class="fa-solid fa-retweet"></i>
-                            <span class="community-tweet-action-count"><%= recipe.viewsCount || 0 %></span>
-                          </a>
-                          <button
-                            type="button"
-                            class="community-tweet-action-button <%= recipe.likedByMe ? 'is-liked' : '' %>"
-                            data-action="like"
-                            aria-label="Suka"
-                            <%= recipe.likedByMe ? 'disabled' : '' %>
-                          >
-                            <i class="fa-regular fa-heart"></i>
-                            <span class="community-tweet-action-count"><%= recipe.likesCount || 0 %></span>
-                          </button>
-                          <a href="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>" aria-label="Buka detail resep">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                          </a>
+                        <div>
+                          <strong><%= recipe.creatorName %></strong>
                         </div>
                       </div>
-                    </article>
-                  <% }) %>
-                <% } %>
+                      <h3 class="community-recipe-card-title"><%= recipe.title %></h3>
+                    </div>
+                  </article>
+                <% }) %>
               </div>
-            </article>
+            <% } %>
           </section>
 
         </div>
@@ -257,9 +207,22 @@
                   <span>Judul resep</span>
                   <input type="text" name="title" required placeholder="Contoh: Ayam Goreng Bumbu Kuning" />
                 </label>
-                <label class="community-form-field">
+                <label class="community-form-field community-form-field-wide community-upload-field">
                   <span>Foto resep</span>
-                  <input type="file" name="image_file" accept="image/*" />
+                  <div class="community-upload-card">
+                    <div class="community-upload-preview" id="communityRecipeImagePreview">
+                      <img class="community-upload-preview-image" id="communityRecipeImagePreviewImg" alt="Preview foto resep" hidden />
+                      <div class="community-upload-preview-empty" id="communityRecipeImagePreviewEmpty">
+                        <i class="fa-regular fa-image"></i>
+                        <strong>[Opsional] Foto Resep</strong>
+                        <span>Tambahkan foto akhir masakan</span>
+                      </div>
+                    </div>
+                    <div class="community-upload-controls">
+                      <input type="file" name="image_file" accept="image/*" id="communityRecipeImageInput" />
+                      <p>Setelah dipilih, foto akan tampil di preview.</p>
+                    </div>
+                  </div>
                 </label>
                 <label class="community-form-field">
                   <span>Cuisine</span>
@@ -267,7 +230,17 @@
                 </label>
                 <label class="community-form-field">
                   <span>Kategori</span>
-                  <input type="text" name="category" placeholder="Main course / Dessert / Snack" />
+                  <select name="category">
+                    <option value="main course">Main course</option>
+                    <option value="dessert">Dessert</option>
+                    <option value="snack">Snack</option>
+                    <option value="drink">Drink</option>
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="side dish">Side dish</option>
+                    <option value="soup">Soup</option>
+                  </select>
                 </label>
                 <label class="community-form-field">
                   <span>Waktu masak (menit)</span>
@@ -304,6 +277,23 @@
                 <label class="community-form-field community-form-field-wide">
                   <span>Langkah</span>
                   <textarea name="steps" rows="5" required placeholder="Tulis per baris, misalnya:&#10;Panaskan wajan&#10;Tumis bumbu"></textarea>
+                </label>
+                <label class="community-form-field community-form-field-wide community-upload-field">
+                  <span>Foto langkah (opsional)</span>
+                  <div class="community-upload-card community-upload-card--compact">
+                    <div class="community-upload-preview community-upload-preview--compact" id="communityStepsImagePreview">
+                      <img class="community-upload-preview-image" id="communityStepsImagePreviewImg" alt="Preview foto langkah" hidden />
+                      <div class="community-upload-preview-empty" id="communityStepsImagePreviewEmpty">
+                        <i class="fa-regular fa-image"></i>
+                        <strong>Foto langkah</strong>
+                        <span>Opsional, untuk menampilkan visual langkah masak</span>
+                      </div>
+                    </div>
+                    <div class="community-upload-controls">
+                      <input type="file" name="steps_image_file" accept="image/*" id="communityStepsImageInput" />
+                      <p>Preview akan muncul setelah memilih foto.</p>
+                    </div>
+                  </div>
                 </label>
                 <label class="community-form-field community-form-field-wide">
                   <span>Tags</span>
@@ -356,9 +346,17 @@
       const detailReplyInput = document.getElementById('communityDetailReplyInput');
       const detailLikeCount = document.getElementById('communityDetailLikeCount');
       const detailCommentCount = document.getElementById('communityDetailCommentCount');
+      const recipeImageInput = document.getElementById('communityRecipeImageInput');
+      const recipePreviewImage = document.getElementById('communityRecipeImagePreviewImg');
+      const recipePreviewEmpty = document.getElementById('communityRecipeImagePreviewEmpty');
+      const stepsImageInput = document.getElementById('communityStepsImageInput');
+      const stepsPreviewImage = document.getElementById('communityStepsImagePreviewImg');
+      const stepsPreviewEmpty = document.getElementById('communityStepsImagePreviewEmpty');
 
       let activePostId = '';
       let activePost = null;
+      let recipePreviewObjectUrl = '';
+      let stepsPreviewObjectUrl = '';
 
       function escapeHtml(value) {
         return String(value || '')
@@ -384,20 +382,16 @@
         return created.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
       }
 
-      function makeHandle(value) {
-        return `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`;
-      }
-
       function renderCommentItem(comment) {
+        const avatarUrl = comment.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true`;
         return `
           <article class="community-detail-comment">
             <div class="community-detail-comment-avatar">
-              <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true" alt="${escapeHtml(comment.creatorName || 'Community user')}" />
+              <img src="${avatarUrl}" alt="${escapeHtml(comment.creatorName || 'Community user')}" />
             </div>
             <div class="community-detail-comment-body">
               <div class="community-detail-comment-head">
                 <strong>${escapeHtml(comment.creatorName || 'Community user')}</strong>
-                <span>${escapeHtml(makeHandle(comment.creatorName))}</span>
                 <span>&bull; ${escapeHtml(formatRelativeTime(comment.createdAt))}</span>
               </div>
               <p>${escapeHtml(comment.content || '')}</p>
@@ -412,20 +406,40 @@
         document.body.classList.toggle('community-detail-open', visible);
       }
 
+      function setUploadPreview(input, previewImage, previewEmpty, previousObjectUrlRef) {
+        const file = input && input.files && input.files[0] ? input.files[0] : null;
+        if (previousObjectUrlRef.value) {
+          URL.revokeObjectURL(previousObjectUrlRef.value);
+          previousObjectUrlRef.value = '';
+        }
+
+        if (!file) {
+          previewImage.hidden = true;
+          previewImage.removeAttribute('src');
+          previewEmpty.hidden = false;
+          return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        previousObjectUrlRef.value = objectUrl;
+        previewImage.src = objectUrl;
+        previewImage.hidden = false;
+        previewEmpty.hidden = true;
+      }
+
       function renderDetail(post) {
         if (!post) return;
 
         activePost = post;
         activePostId = String(post.communityPostId || post.id || '');
-        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true`;
+        const avatarUrl = post.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true`;
         const postComments = Array.isArray(post.comments) ? post.comments : [];
         const mediaUrl = post.imageUrl || '/images/1.png';
-        const cuisineText = post.cuisine || 'Community';
+        const cuisineText = post.originPlace || post.cuisine || 'Community';
         const categoryText = post.category || 'recipe';
 
         if (detailAvatar) detailAvatar.src = avatarUrl;
         if (detailAuthor) detailAuthor.textContent = post.creatorName || 'Community user';
-        if (detailHandle) detailHandle.textContent = makeHandle(post.creatorName);
         if (detailTime) detailTime.textContent = `• ${formatRelativeTime(post.createdAt)}`;
         if (detailTitle) detailTitle.textContent = post.title || 'Postingan community';
         if (detailText) detailText.textContent = post.description || post.title || '';
@@ -500,11 +514,7 @@
       }
 
       const openComposer = () => {
-        if (!overlay) return;
-        overlay.hidden = false;
-        document.body.classList.add('community-composer-open');
-        const firstInput = overlay.querySelector('input, textarea, select, button');
-        firstInput?.focus?.();
+        window.location.href = '/community/new';
       };
 
       const closeComposer = () => {
@@ -515,6 +525,38 @@
 
       openButtons.forEach((button) => button.addEventListener('click', openComposer));
       closeButton?.addEventListener('click', closeComposer);
+
+      recipeImageInput?.addEventListener('change', () => {
+        setUploadPreview(
+          recipeImageInput,
+          recipePreviewImage,
+          recipePreviewEmpty,
+          {
+            get value() {
+              return recipePreviewObjectUrl;
+            },
+            set value(nextValue) {
+              recipePreviewObjectUrl = nextValue;
+            }
+          }
+        );
+      });
+
+      stepsImageInput?.addEventListener('change', () => {
+        setUploadPreview(
+          stepsImageInput,
+          stepsPreviewImage,
+          stepsPreviewEmpty,
+          {
+            get value() {
+              return stepsPreviewObjectUrl;
+            },
+            set value(nextValue) {
+              stepsPreviewObjectUrl = nextValue;
+            }
+          }
+        );
+      });
 
       overlay?.addEventListener('click', (event) => {
         if (event.target === overlay) {

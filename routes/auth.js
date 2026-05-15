@@ -9,8 +9,23 @@ const mealFavorites = require('../services/mealFavorites');
 const shoppingListService = require('../services/shoppingListService');
 const challengeService = require('../services/challengeService');
 
+const fs = require('fs');
+const path = require('path');
+
 const router = express.Router();
-const profileUpload = multer({ storage: multer.memoryStorage() });
+const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
+fs.mkdirSync(uploadDir, { recursive: true });
+const profileUpload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, uploadDir),
+        filename: (req, file, cb) => {
+            const safeName = String(file.originalname || 'upload')
+                .toLowerCase()
+                .replace(/[^a-z0-9.]+/g, '-');
+            cb(null, `${Date.now()}-${safeName}`);
+        }
+    })
+});
 const COMMUNITY_RECIPE_SOURCE = 'community';
 const ALLERGY_OPTIONS = [
     { key: 'nuts', label: 'Kacang' },
@@ -285,12 +300,38 @@ function normalizeRecipeIngredientFilter(value = '') {
     return normalized;
 }
 
-function fileToDataUrl(file = null) {
-    if (!file || !file.buffer || !file.mimetype || !String(file.mimetype).startsWith('image/')) {
+function fileToPublicUrl(file = null) {
+    if (!file || !file.filename || !file.mimetype || !String(file.mimetype).startsWith('image/')) {
         return '';
     }
 
-    return `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    return `/uploads/${encodeURIComponent(file.filename)}`;
+}
+
+function getUploadedFile(files = {}, fieldName = '') {
+    if (!files || !fieldName) {
+        return null;
+    }
+
+    const value = files[fieldName];
+    if (Array.isArray(value)) {
+        return value[0] || null;
+    }
+
+    return value || null;
+}
+
+function getUploadedFiles(files = {}, fieldName = '') {
+    if (!files || !fieldName) {
+        return [];
+    }
+
+    const value = files[fieldName];
+    if (Array.isArray(value)) {
+        return value.filter(Boolean);
+    }
+
+    return value ? [value] : [];
 }
 
 function parseRecipeFormList(value) {
@@ -305,9 +346,25 @@ function parseRecipeFormList(value) {
         .filter(Boolean);
 }
 
-function parseCommunityRecipePayload(body = {}, file = null) {
-    const uploadedImage = fileToDataUrl(file);
+function parseCommunityRecipePayload(body = {}, files = {}) {
+    const uploadedImage = fileToPublicUrl(getUploadedFile(files, 'image_file'));
+    const stepImageFiles = [
+        ...getUploadedFiles(files, 'step_images'),
+        ...getUploadedFiles(files, 'steps_image_file')
+    ];
     const imageUrl = uploadedImage || normalizeText(body.image_url);
+    const ingredientTexts = parseRecipeFormList(body.ingredient_texts);
+    const ingredients = (ingredientTexts.length ? ingredientTexts : parseRecipeFormList(body.ingredients)).map(normalizeIngredientItem);
+    const stepTexts = parseRecipeFormList(body.step_texts);
+    const legacySteps = parseRecipeFormList(body.steps);
+    const steps = (stepTexts.length ? stepTexts : legacySteps).map((item, index) => {
+        const normalized = normalizeStepItem(item, index);
+        const uploadedStepImage = fileToPublicUrl(stepImageFiles[index] || null);
+        if (uploadedStepImage) {
+            normalized.sectionImageUrl = uploadedStepImage;
+        }
+        return normalized;
+    });
 
     return {
         title: normalizeText(body.title),
@@ -321,8 +378,8 @@ function parseCommunityRecipePayload(body = {}, file = null) {
         cuisine: normalizeText(body.cuisine) || 'Community',
         estimated_price: Number.parseInt(String(body.estimated_price || '').replace(/[^\d]/g, ''), 10) || 0,
         price_rating: normalizeText(body.price_rating) || 'standard',
-        ingredients: parseRecipeFormList(body.ingredients).map(normalizeIngredientItem),
-        steps: parseRecipeFormList(body.steps).map((item, index) => normalizeStepItem(item, index)),
+        ingredients,
+        steps,
         tags: parseRecipeFormList(body.tags),
         is_approved: false
     };
@@ -335,6 +392,7 @@ function mapCommunityRecipeCard(recipe = {}, favoriteIds = new Set()) {
         source: COMMUNITY_RECIPE_SOURCE,
         sourceLabel: 'Community',
         creatorName: recipe.creator_name || recipe.username || 'Community user',
+        creatorAvatarUrl: recipe.creator_avatar_url || recipe.avatar_url || '',
         createdAt: recipe.created_at,
         statusLabel: recipe.is_approved ? 'Published' : 'Draft',
         communityPostId: recipe.community_post_id || recipe.post_id || recipe.communityPostId || null,
@@ -343,6 +401,8 @@ function mapCommunityRecipeCard(recipe = {}, favoriteIds = new Set()) {
         likedByMe: Boolean(recipe.liked_by_me),
         favoriteKey: `${COMMUNITY_RECIPE_SOURCE}:${recipe.id}`,
         isFavorite: favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${recipe.id}`),
+        servings: Number(recipe.servings || 1),
+        priceRating: recipe.price_rating || 'standard',
         ingredients: parseRecipeItems(recipe.ingredients).map(normalizeIngredientItem),
         steps: parseRecipeItems(recipe.steps).map((item, index) => normalizeStepItem(item, index))
     };
@@ -355,6 +415,7 @@ function mapCommunityCommentCard(comment = {}) {
         title: normalizeText(comment.post_title) || 'Postingan community',
         content: normalizeText(comment.content),
         creatorName: normalizeText(comment.creator_name) || 'Community user',
+        creatorAvatarUrl: normalizeText(comment.creator_avatar_url || comment.avatar_url) || '',
         createdAt: comment.created_at,
         postId: normalizeText(comment.post_id)
     };
@@ -401,7 +462,8 @@ async function getCommunityRecipeById(recipeId, { approvedOnly = true } = {}) {
         `
             SELECT
                 r.*,
-                COALESCE(u.username, 'Community user') AS creator_name
+                COALESCE(u.username, 'Community user') AS creator_name,
+                u.avatar_url AS creator_avatar_url
             FROM recipes r
             LEFT JOIN users u ON u.id = r.created_by
             WHERE r.id = $1
@@ -730,10 +792,12 @@ function normalizeStepItem(item, index = 0) {
     if (item && typeof item === 'object') {
         const instruction = String(item.instruction || item.text || item.step || '').trim();
         const stepNumber = Number.parseInt(item.step, 10);
+        const sectionImageUrl = String(item.sectionImageUrl || item.imageUrl || item.photoUrl || '').trim();
 
         return {
             step: Number.isFinite(stepNumber) ? stepNumber : index + 1,
-            instruction: instruction || `Langkah ${index + 1}`
+            instruction: instruction || `Langkah ${index + 1}`,
+            sectionImageUrl
         };
     }
 
@@ -971,7 +1035,8 @@ async function fetchCommunityPageData(userId, search = '') {
                         WHERE cpl.post_id = p.id
                           AND cpl.user_id = $1
                     ) AS liked_by_me,
-                    COALESCE(u.username, 'Community user') AS creator_name
+                    COALESCE(u.username, 'Community user') AS creator_name,
+                    u.avatar_url AS creator_avatar_url
                 FROM recipes r
                 INNER JOIN community_posts p ON p.recipe_id = r.id
                 LEFT JOIN users u ON u.id = r.created_by
@@ -996,7 +1061,8 @@ async function fetchCommunityPageData(userId, search = '') {
                         WHERE cpl.post_id = p.id
                           AND cpl.user_id = $1
                     ) AS liked_by_me,
-                    COALESCE(u.username, 'Community user') AS creator_name
+                    COALESCE(u.username, 'Community user') AS creator_name,
+                    u.avatar_url AS creator_avatar_url
                 FROM recipes r
                 INNER JOIN community_posts p ON p.recipe_id = r.id
                 LEFT JOIN users u ON u.id = r.created_by
@@ -1067,7 +1133,8 @@ async function fetchCommunityCommentsByPostIds(postIds = []) {
                 c.content,
                 c.created_at,
                 c.post_id,
-                COALESCE(u.username, 'Community user') AS creator_name
+                COALESCE(u.username, 'Community user') AS creator_name,
+                u.avatar_url AS creator_avatar_url
             FROM comments c
             LEFT JOIN users u ON u.id = c.user_id
             WHERE c.post_id = ANY($1::uuid[])
@@ -1108,7 +1175,8 @@ async function getCommunityPostById(postId, userId = null) {
                     WHERE cpl.post_id = p.id
                       AND cpl.user_id = $2
                 ) AS liked_by_me,
-                COALESCE(u.username, 'Community user') AS creator_name
+                COALESCE(u.username, 'Community user') AS creator_name,
+                u.avatar_url AS creator_avatar_url
             FROM community_posts p
             LEFT JOIN users u ON u.id = p.user_id
             WHERE p.id = $1
@@ -1126,13 +1194,17 @@ async function fetchCommunityPostDetailData(postId, userId) {
         return null;
     }
 
+    const recipe = post.recipe_id ? await getCommunityRecipeById(post.recipe_id, { approvedOnly: false }) : null;
+    const recipeCard = recipe ? mapCommunityRecipeCard(recipe) : null;
+
     const commentsResult = await pool.query(
         `
             SELECT
                 c.id,
                 c.content,
                 c.created_at,
-                COALESCE(u.username, 'Community user') AS creator_name
+                COALESCE(u.username, 'Community user') AS creator_name,
+                u.avatar_url AS creator_avatar_url
             FROM comments c
             LEFT JOIN users u ON u.id = c.user_id
             WHERE c.post_id = $1
@@ -1144,16 +1216,29 @@ async function fetchCommunityPostDetailData(postId, userId) {
     return {
         post: {
             id: post.id,
-            title: post.title,
-            content: post.content,
-            imageUrl: post.image_url,
+            title: recipeCard?.title || post.title,
+            content: post.content || recipeCard?.description || post.title,
+            imageUrl: post.image_url || recipeCard?.imageUrl || '/images/1.png',
             likesCount: Number(post.likes_count || 0),
             commentsCount: Number(post.comments_count || 0),
             sharesCount: Number(post.shares_count || 0),
-            creatorName: post.creator_name,
-            createdAt: post.created_at,
+            creatorName: post.creator_name || recipeCard?.creatorName || 'Community user',
+            creatorAvatarUrl: post.creator_avatar_url || recipeCard?.creatorAvatarUrl || '',
+            createdAt: post.created_at || recipeCard?.createdAt || null,
             recipeId: post.recipe_id,
-            likedByMe: Boolean(post.liked_by_me)
+            likedByMe: Boolean(post.liked_by_me),
+            category: recipeCard?.category || post.category || 'community',
+            cuisine: recipeCard?.originPlace || post.cuisine || 'Community',
+            originPlace: recipeCard?.originPlace || post.cuisine || 'Community',
+            cookingTime: recipeCard?.cookingTime || 0,
+            servings: recipeCard?.servings || 1,
+            difficulty: recipeCard?.difficulty || 'easy',
+            estimatedPrice: recipeCard?.estimatedPrice || 0,
+            calories: recipeCard?.calories || 0,
+            tags: recipeCard?.tags || [],
+            ingredients: recipeCard?.ingredients || [],
+            steps: recipeCard?.steps || [],
+            viewsCount: recipeCard?.viewsCount || 0
         },
         comments: commentsResult.rows.map((row) => mapCommunityCommentCard({
             ...row,
@@ -1179,7 +1264,8 @@ async function fetchProfileCommunityFeed(userId, limit = 8) {
                         WHERE cpl.post_id = p.id
                           AND cpl.user_id = $1
                     ) AS liked_by_me,
-                    COALESCE(u.username, 'Community user') AS creator_name
+                    COALESCE(u.username, 'Community user') AS creator_name,
+                    u.avatar_url AS creator_avatar_url
                 FROM recipes r
                 INNER JOIN community_posts p ON p.recipe_id = r.id
                 LEFT JOIN users u ON u.id = r.created_by
@@ -1698,7 +1784,7 @@ router.post('/profile/details', profileUpload.single('avatar_image'), async (req
             [req.session.user.id]
         );
         const currentUser = currentUserResult.rows[0] || {};
-        const uploadedAvatar = fileToDataUrl(req.file);
+        const uploadedAvatar = fileToPublicUrl(req.file);
         const avatarUrl = uploadedAvatar || String(req.session.user.avatar_url || currentUser.avatar_url || '').trim();
         const rawBio = String(req.body.bio || '').trim();
         const budgetRaw = String(req.body.budget_per_meal || '').replace(/[^\d.]/g, '');
@@ -1827,7 +1913,7 @@ router.get('/community', async (req, res) => {
     }
 });
 
-router.post('/community', profileUpload.single('image_file'), async (req, res) => {
+router.get('/community/new', async (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
     }
@@ -1845,7 +1931,47 @@ router.post('/community', profileUpload.single('image_file'), async (req, res) =
             };
         }
 
-        const payload = parseCommunityRecipePayload(req.body, req.file);
+        const preferences = await fetchUserPreferences(req.session.user.id);
+        req.session.user.preferences = preferences;
+
+        res.render('user/community-compose', {
+            title: 'Post resep - AI Recipe Planner',
+            user: req.session.user,
+            preferences,
+            notice: req.query.notice ? String(req.query.notice) : '',
+            error: req.query.error ? String(req.query.error) : ''
+        });
+    } catch (error) {
+        console.error('Community compose page error:', error.message);
+        res.status(500).send('Gagal memuat halaman posting resep.');
+    }
+});
+
+const communityPostUpload = profileUpload.fields([
+    { name: 'image_file', maxCount: 1 },
+    { name: 'step_images', maxCount: 20 },
+    { name: 'steps_image_file', maxCount: 1 }
+]);
+
+router.post('/community', communityPostUpload, async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    if (req.session.user.role === 'admin') {
+        return res.redirect('/admin/dashboard');
+    }
+
+    try {
+        const freshUser = await getFreshSessionUser(req.session.user.id);
+        if (freshUser) {
+            req.session.user = {
+                ...req.session.user,
+                ...freshUser
+            };
+        }
+
+        const payload = parseCommunityRecipePayload(req.body, req.files || {});
 
         if (!payload.title || !payload.ingredients.length || !payload.steps.length) {
             return res.redirect('/community?error=Judul,+bahan,+dan+langkah+wajib+diisi');
@@ -1972,7 +2098,6 @@ router.get('/community/posts/:postId', async (req, res) => {
             post: detail.post,
             comments: detail.comments,
             formatPrice: (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)),
-            makeHandle: (value) => `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`,
             formatRelativeTime: (value) => {
                 if (!value) return 'baru saja';
                 const created = new Date(value);
@@ -2117,7 +2242,8 @@ router.post('/community/posts/:postId/comments', async (req, res) => {
                 ...createdComment,
                 post_title: post.title,
                 post_id: post.id,
-                creator_name: req.session.user.username
+                creator_name: req.session.user.username,
+                creator_avatar_url: req.session.user.avatar_url || ''
             })
         });
     } catch (error) {
