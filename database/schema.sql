@@ -107,6 +107,39 @@ CREATE TABLE IF NOT EXISTS shopping_lists (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 6b. Tabel Shopping List Recipes (serving scaler source)
+CREATE TABLE IF NOT EXISTS shopping_list_recipes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    source VARCHAR(50) NOT NULL,
+    source_id VARCHAR(120) NOT NULL,
+    recipe_title VARCHAR(200) NOT NULL,
+    recipe_image_url TEXT,
+    recipe_category VARCHAR(100),
+    base_servings NUMERIC(10,2) NOT NULL DEFAULT 1,
+    desired_servings NUMERIC(10,2) NOT NULL DEFAULT 1,
+    estimated_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+    recipe_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+    scaled_ingredients JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, source, source_id)
+);
+
+-- 6c. Tabel Shopping List Item States (checkbox checked/unchecked)
+CREATE TABLE IF NOT EXISTS shopping_list_item_states (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    item_key VARCHAR(220) NOT NULL,
+    item_name VARCHAR(200) NOT NULL,
+    unit VARCHAR(100) DEFAULT '',
+    category VARCHAR(50) DEFAULT 'lainnya',
+    checked BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, item_key)
+);
+
 -- 7. Tabel Community Posts
 CREATE TABLE IF NOT EXISTS community_posts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -226,6 +259,8 @@ CREATE INDEX IF NOT EXISTS idx_recipe_media_sources_cuisine ON recipe_media_sour
 CREATE INDEX IF NOT EXISTS idx_recipe_media_sources_tags ON recipe_media_sources USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_cooking_history_user ON cooking_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_shopping_list_recipes_user ON shopping_list_recipes(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_shopping_list_item_states_user ON shopping_list_item_states(user_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_community_post_likes_user_post ON community_post_likes(user_id, post_id);
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id);
 CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_session_created ON ai_chat_messages(session_id, created_at);

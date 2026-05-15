@@ -1,6 +1,7 @@
 const express = require('express');
 const mealdb = require('../services/mealdb');
 const mealFavorites = require('../services/mealFavorites');
+const shoppingListService = require('../services/shoppingListService');
 
 const router = express.Router();
 
@@ -110,6 +111,94 @@ router.post('/:id/favorite', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+router.get('/shopping-list', async (req, res) => {
+    try {
+        if (!ensureUserSession(req, res)) {
+            return;
+        }
+
+        const summary = await shoppingListService.getShoppingList(req.session.user.id);
+
+        res.json({
+            success: true,
+            data: summary
+        });
+    } catch (error) {
+        console.error('Shopping list fetch error:', error.message);
+        res.status(500).json({ success: false, error: 'Gagal mengambil shopping list.' });
+    }
+});
+
+router.post('/:id/shopping-list', async (req, res) => {
+    try {
+        if (!ensureUserSession(req, res)) {
+            return;
+        }
+
+        const desiredServings = Math.max(1, Number(req.body?.desiredServings || 1));
+        const summary = await shoppingListService.upsertRecipeSelection(
+            req.session.user.id,
+            req.params.id,
+            desiredServings
+        );
+
+        res.json({
+            success: true,
+            message: 'Resep ditambahkan ke shopping list.',
+            data: summary
+        });
+    } catch (error) {
+        console.error('Shopping list upsert error:', error.message);
+        res.status(500).json({ success: false, error: error.message || 'Gagal menambahkan ke shopping list.' });
+    }
+});
+
+router.delete('/shopping-list/recipes/:recipeKey', async (req, res) => {
+    try {
+        if (!ensureUserSession(req, res)) {
+            return;
+        }
+
+        const summary = await shoppingListService.removeRecipeSelection(
+            req.session.user.id,
+            req.params.recipeKey
+        );
+
+        res.json({
+            success: true,
+            message: 'Resep dihapus dari shopping list.',
+            data: summary
+        });
+    } catch (error) {
+        console.error('Shopping list remove error:', error.message);
+        res.status(500).json({ success: false, error: 'Gagal menghapus resep dari shopping list.' });
+    }
+});
+
+router.patch('/shopping-list/items/:itemKey', async (req, res) => {
+    try {
+        if (!ensureUserSession(req, res)) {
+            return;
+        }
+
+        const summary = await shoppingListService.updateItemCheckedState(
+            req.session.user.id,
+            req.params.itemKey,
+            req.body?.checked,
+            req.body || {}
+        );
+
+        res.json({
+            success: true,
+            message: 'Status item belanja diperbarui.',
+            data: summary
+        });
+    } catch (error) {
+        console.error('Shopping list item update error:', error.message);
+        res.status(500).json({ success: false, error: 'Gagal memperbarui item shopping list.' });
     }
 });
 
