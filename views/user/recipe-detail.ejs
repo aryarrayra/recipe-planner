@@ -98,8 +98,25 @@
                 <div class="user-recipe-detail-grid">
                   <div class="user-recipe-sidecards">
                     <article class="user-recipe-mini-panel">
-                      <h3>Ingredients</h3>
-                      <div class="user-recipe-ingredient-list">
+                      <div class="recipe-serving-head">
+                        <div>
+                          <h3>Bahan</h3>
+                          <p class="recipe-serving-copy">Ubah porsi, quantity bahan ikut menyesuaikan otomatis.</p>
+                        </div>
+                        <div class="recipe-serving-scaler" id="recipeServingScaler">
+                          <button type="button" class="recipe-serving-btn" data-serving-action="decrease" aria-label="Kurangi porsi">
+                            <i class="fa-solid fa-minus"></i>
+                          </button>
+                          <label class="recipe-serving-input-wrap">
+                            <span>Porsi</span>
+                            <input type="number" min="1" step="1" value="<%= activeRecipe.servings %>" id="recipeServingInput" />
+                          </label>
+                          <button type="button" class="recipe-serving-btn" data-serving-action="increase" aria-label="Tambah porsi">
+                            <i class="fa-solid fa-plus"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="user-recipe-ingredient-list" id="recipeIngredientList">
                         <% activeRecipe.ingredients.forEach((ingredient) => { %>
                           <label class="user-recipe-ingredient-item">
                             <span><%= ingredient.display || ingredient.label || ingredient.name %></span>
@@ -111,10 +128,10 @@
                     <article class="user-recipe-mini-panel">
                       <h3>Recipe summary</h3>
                       <div class="user-recipe-summary-list">
-                        <span><strong>Perkiraan harga</strong> Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
+                        <span><strong>Perkiraan harga</strong> Rp <span id="recipeEstimatedPrice"><%= formatPrice(activeRecipe.estimatedPrice) %></span></span>
                         <span><strong>Waktu</strong> <%= activeRecipe.cookingTime %> menit</span>
-                        <span><strong>Difficulty</strong> <%= activeRecipe.difficulty %></span>
-                        <span><strong>Servings</strong> <%= activeRecipe.servings %> porsi</span>
+                        <span><strong>Tingkat</strong> <%= activeRecipe.difficulty %></span>
+                        <span><strong>Porsi</strong> <span id="recipeServingLabel"><%= activeRecipe.servings %></span> porsi</span>
                       </div>
                     </article>
 
@@ -142,9 +159,18 @@
                     <i class="fa-<%= activeRecipe.isFavorite ? 'solid' : 'regular' %> fa-heart"></i>
                     <span><%= activeRecipe.isFavorite ? 'Hapus dari favorit' : 'Simpan ke favorit' %></span>
                   </button>
-                  <a class="user-recipe-action-btn" href="/shopping-list">
+                  <button
+                    type="button"
+                    class="user-recipe-action-btn"
+                    id="recipeAddToShoppingList"
+                    data-recipe-id="<%= activeRecipe.favoriteKey || activeRecipe.id %>"
+                  >
                     <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Shopping list</span>
+                    <span>Add to Shopping List</span>
+                  </button>
+                  <a class="user-recipe-action-btn" href="/shopping-list">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Lihat shopping list</span>
                   </a>
                   <a class="user-recipe-action-btn" href="/recipes?feed=<%= encodeURIComponent(feed) %>&recipeId=<%= encodeURIComponent(activeRecipe.id) %>">
                     <i class="fa-solid fa-compass"></i>
@@ -284,13 +310,112 @@
       const selectedRecipeSnapshot = <%- JSON.stringify(activeRecipe || null).replace(/</g, '\\u003c') %>;
       const selectedFavoriteButton = document.getElementById('recipeDetailFavorite');
       const selectedShareButton = document.getElementById('recipeDetailShare');
+      const shoppingListButton = document.getElementById('recipeAddToShoppingList');
+      const ingredientList = document.getElementById('recipeIngredientList');
+      const servingInput = document.getElementById('recipeServingInput');
+      const servingLabel = document.getElementById('recipeServingLabel');
+      const estimatedPriceNode = document.getElementById('recipeEstimatedPrice');
       const selectedRecipeId = String(<%- JSON.stringify(activeRecipe ? (activeRecipe.favoriteKey || activeRecipe.id) : '') %>);
+      const recipeScalerState = {
+        originalServings: Math.max(1, Number(selectedRecipeSnapshot?.servings || 1)),
+        desiredServings: Math.max(1, Number(selectedRecipeSnapshot?.servings || 1)),
+        estimatedPrice: Number(selectedRecipeSnapshot?.estimatedPrice || 0),
+        ingredients: Array.isArray(selectedRecipeSnapshot?.ingredients) ? selectedRecipeSnapshot.ingredients : []
+      };
       const escapeSelector = (value) => {
         if (window.CSS && typeof window.CSS.escape === 'function') {
           return window.CSS.escape(String(value || ''));
         }
 
         return String(value || '').replace(/"/g, '\\"');
+      };
+
+      const parseFractionToken = (value) => {
+        const text = String(value || '').trim();
+        if (!text) return null;
+        if (/^\d+\s+\d+\/\d+$/.test(text)) {
+          const [whole, fraction] = text.split(/\s+/);
+          const [numerator, denominator] = fraction.split('/').map(Number);
+          return denominator ? Number(whole) + (numerator / denominator) : null;
+        }
+        if (/^\d+\/\d+$/.test(text)) {
+          const [numerator, denominator] = text.split('/').map(Number);
+          return denominator ? numerator / denominator : null;
+        }
+        const parsed = Number.parseFloat(text.replace(',', '.'));
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+
+      const extractQuantity = (ingredient = {}) => {
+        const name = String(ingredient.name || '').trim();
+        const amountText = String(ingredient.amount || '').trim();
+        const unitText = String(ingredient.unit || '').trim();
+        const labelText = String(ingredient.display || ingredient.label || '').trim();
+        let quantitySource = [amountText, unitText].filter(Boolean).join(' ').trim();
+
+        if (!quantitySource && labelText) {
+          quantitySource = name ? labelText.replace(new RegExp(`\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'), '').trim() : labelText;
+        }
+
+        const match = quantitySource.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?)\s*(.*)$/);
+        if (!match) {
+          return {
+            quantity: null,
+            unit: unitText,
+            fallbackText: quantitySource
+          };
+        }
+
+        return {
+          quantity: parseFractionToken(match[1]),
+          unit: unitText || String(match[2] || '').trim(),
+          fallbackText: match[1]
+        };
+      };
+
+      const formatQuantityValue = (value) => {
+        const rounded = Math.round(Number(value || 0) * 100) / 100;
+        if (Number.isInteger(rounded)) return String(rounded);
+        return rounded.toFixed(2).replace(/\.00$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+      };
+
+      const scaleIngredientDisplay = (ingredient) => {
+        const parsed = extractQuantity(ingredient);
+        const ratio = recipeScalerState.desiredServings / recipeScalerState.originalServings;
+        const scaled = parsed.quantity === null ? null : (parsed.quantity * ratio);
+        const prefix = scaled !== null
+          ? [formatQuantityValue(scaled), parsed.unit].filter(Boolean).join(' ').trim()
+          : parsed.fallbackText || '';
+        return [prefix, ingredient.name].filter(Boolean).join(' ').trim() || ingredient.display || ingredient.label || ingredient.name;
+      };
+
+      const renderScaledIngredients = () => {
+        if (servingInput) {
+          servingInput.value = String(recipeScalerState.desiredServings);
+        }
+
+        if (servingLabel) {
+          servingLabel.textContent = String(recipeScalerState.desiredServings);
+        }
+
+        if (estimatedPriceNode) {
+          const scaledPrice = recipeScalerState.estimatedPrice * (recipeScalerState.desiredServings / recipeScalerState.originalServings);
+          estimatedPriceNode.textContent = new Intl.NumberFormat('id-ID').format(Math.round(scaledPrice));
+        }
+
+        if (!ingredientList) {
+          return;
+        }
+
+        ingredientList.innerHTML = '';
+        recipeScalerState.ingredients.forEach((ingredient) => {
+          const item = document.createElement('label');
+          item.className = 'user-recipe-ingredient-item';
+          const text = document.createElement('span');
+          text.textContent = scaleIngredientDisplay(ingredient);
+          item.appendChild(text);
+          ingredientList.appendChild(item);
+        });
       };
 
       if (!cards.length || !nextButton) {
@@ -453,12 +578,67 @@
         });
       }
 
+      document.querySelectorAll('[data-serving-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const action = button.dataset.servingAction;
+          recipeScalerState.desiredServings = Math.max(
+            1,
+            recipeScalerState.desiredServings + (action === 'increase' ? 1 : -1)
+          );
+          renderScaledIngredients();
+        });
+      });
+
+      if (servingInput) {
+        servingInput.addEventListener('input', () => {
+          const nextValue = Math.max(1, Number(servingInput.value || 1));
+          recipeScalerState.desiredServings = nextValue;
+          renderScaledIngredients();
+        });
+      }
+
+      if (shoppingListButton) {
+        shoppingListButton.addEventListener('click', async () => {
+          const recipeId = shoppingListButton.dataset.recipeId;
+          if (!recipeId) {
+            return;
+          }
+
+          try {
+            shoppingListButton.disabled = true;
+            const response = await fetch(`/api/recipes/${encodeURIComponent(recipeId)}/shopping-list`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                desiredServings: recipeScalerState.desiredServings
+              })
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || 'Gagal menambahkan ke shopping list.');
+            }
+
+            shoppingListButton.innerHTML = '<i class="fa-solid fa-check"></i><span>Tersimpan di shopping list</span>';
+          } catch (error) {
+            console.error(error);
+            alert(error.message || 'Gagal menambahkan ke shopping list.');
+          } finally {
+            shoppingListButton.disabled = false;
+          }
+        });
+      }
+
       if (selectedRecipeSnapshot && selectedRecipeSnapshot.id) {
         recipeMap.set(String(selectedRecipeSnapshot.id), selectedRecipeSnapshot);
         if (selectedRecipeSnapshot.favoriteKey) {
           recipeMap.set(String(selectedRecipeSnapshot.favoriteKey), selectedRecipeSnapshot);
         }
       }
+
+      renderScaledIngredients();
     })();
   </script>
 </body>

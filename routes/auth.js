@@ -6,6 +6,7 @@ const { preventBack } = require('../middleware/auth');
 const mealdb = require('../services/mealdb');
 const indonesiaFoodApi = require('../services/indonesiaFoodApi');
 const mealFavorites = require('../services/mealFavorites');
+const shoppingListService = require('../services/shoppingListService');
 const challengeService = require('../services/challengeService');
 
 const router = express.Router();
@@ -2210,37 +2211,24 @@ router.get('/shopping-list', async (req, res) => {
         const userId = req.session.user.id;
         const budgetTargetRaw = String(req.query.budget || '').replace(/[^\d]/g, '');
         const budgetTarget = budgetTargetRaw ? Number(budgetTargetRaw) : null;
-        const favoriteRecipes = await mealFavorites.getFavoriteMeals(userId);
-        const summary = buildShoppingSummary(
-            favoriteRecipes.map((recipe) => ({
-                title: recipe.title,
-                estimated_price: recipe.estimated_price,
-                ingredients: recipe.ingredients,
-                steps: recipe.steps
-            }))
-        );
-
-        const estimatedBudget = summary.estimatedBudget || 0;
+        const summary = await shoppingListService.getShoppingList(userId);
+        const selectedRecipes = summary.recipes || [];
+        const estimatedBudget = Number(summary.totalEstimatedPrice || 0);
         const budgetDelta =
             budgetTarget === null
                 ? null
                 : Number(budgetTarget) - Number(estimatedBudget);
-        const totalItems =
-            (summary.sections?.bahan?.length || 0) +
-            (summary.sections?.bumbu?.length || 0) +
-            (summary.sections?.alat?.length || 0) +
-            (summary.sections?.lainnya?.length || 0);
 
         res.render('user/shopping-list', {
             title: 'Shopping List - AI Recipe Planner',
             user: req.session.user,
             shoppingListData: {
-                favoriteRecipes,
-                ingredients: summary.ingredients,
+                favoriteRecipes: selectedRecipes,
+                ingredients: summary.items,
                 sections: summary.sections,
-                estimatedBudget: summary.estimatedBudget,
-                totalRecipes: favoriteRecipes.length,
-                totalIngredients: totalItems,
+                estimatedBudget,
+                totalRecipes: Number(summary.totalRecipes || 0),
+                totalIngredients: Number(summary.totalItems || 0),
                 budgetTarget,
                 budgetDelta
             }

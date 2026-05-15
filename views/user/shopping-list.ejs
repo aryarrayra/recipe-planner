@@ -18,7 +18,7 @@
 </head>
 <body>
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
-  <% const data = shoppingListData || { favoriteRecipes: [], ingredients: [], sections: { bahan: [], bumbu: [], alat: [], lainnya: [] }, estimatedBudget: 0, totalRecipes: 0, totalIngredients: 0, budgetTarget: null, budgetDelta: null }; %>
+  <% const data = shoppingListData || { favoriteRecipes: [], ingredients: [], sections: { sayur: [], protein: [], bumbu: [], dairy: [], karbohidrat: [], saus: [], alat: [], lainnya: [] }, estimatedBudget: 0, totalRecipes: 0, totalIngredients: 0, budgetTarget: null, budgetDelta: null }; %>
   <% const budgetInput = data.budgetTarget !== null ? Number(data.budgetTarget).toLocaleString('id-ID') : ''; %>
 
   <main class="user-dashboard user-shopping-page">
@@ -66,8 +66,8 @@
           <div class="user-dashboard-stats">
             <article class="user-stat-card">
               <i class="fa-solid fa-heart" aria-hidden="true"></i>
-              <strong><%= data.totalRecipes %> resep favorit</strong>
-              <span>Sumber bahan yang dipakai untuk rekap ini</span>
+              <strong><%= data.totalRecipes %> resep dipilih</strong>
+              <span>Sumber bahan yang dipakai untuk shopping list ini</span>
             </article>
             <article class="user-stat-card">
               <i class="fa-solid fa-basket-shopping" aria-hidden="true"></i>
@@ -77,7 +77,7 @@
             <article class="user-stat-card">
               <i class="fa-solid fa-coins" aria-hidden="true"></i>
               <strong>Rp <%= formatPrice(data.estimatedBudget) %></strong>
-              <span>Perkiraan belanja dari resep favorit yang disimpan</span>
+              <span>Perkiraan belanja dari resep yang masuk ke shopping list</span>
             </article>
           </div>
 
@@ -107,13 +107,17 @@
                 </div>
               </div>
 
-              <% const shoppingSections = data.sections || { bahan: [], bumbu: [], alat: [], lainnya: [] }; %>
+              <% const shoppingSections = data.sections || { sayur: [], protein: [], bumbu: [], dairy: [], karbohidrat: [], saus: [], alat: [], lainnya: [] }; %>
 
               <% if (data.totalIngredients) { %>
                 <div class="shopping-sections">
                   <% [
-                    { key: 'bahan', title: 'Bahan utama', icon: 'fa-seedling', empty: 'Belum ada bahan utama.' },
+                    { key: 'sayur', title: 'Sayur', icon: 'fa-seedling', empty: 'Belum ada sayur.' },
+                    { key: 'protein', title: 'Protein', icon: 'fa-drumstick-bite', empty: 'Belum ada protein.' },
                     { key: 'bumbu', title: 'Bumbu', icon: 'fa-pepper-hot', empty: 'Belum ada bumbu.' },
+                    { key: 'dairy', title: 'Dairy', icon: 'fa-cheese', empty: 'Belum ada dairy.' },
+                    { key: 'karbohidrat', title: 'Karbohidrat', icon: 'fa-bowl-rice', empty: 'Belum ada karbohidrat.' },
+                    { key: 'saus', title: 'Saus & pelengkap', icon: 'fa-bottle-droplet', empty: 'Belum ada saus atau pelengkap.' },
                     { key: 'alat', title: 'Alat', icon: 'fa-kitchen-set', empty: 'Belum ada alat.' },
                     { key: 'lainnya', title: 'Lainnya', icon: 'fa-circle-dot', empty: 'Belum ada item lain.' }
                   ].forEach((group) => { %>
@@ -128,12 +132,19 @@
                       <% if ((shoppingSections[group.key] || []).length) { %>
                         <div class="shopping-list-grid">
                           <% (shoppingSections[group.key] || []).forEach((item) => { %>
-                            <label class="shopping-item shopping-item-<%= group.key %>">
-                              <input type="checkbox" />
+                            <label class="shopping-item shopping-item-<%= group.key %> <%= item.checked ? 'is-checked' : '' %>">
+                              <input
+                                type="checkbox"
+                                data-item-key="<%= item.key %>"
+                                data-item-name="<%= item.name %>"
+                                data-item-unit="<%= item.unit || '' %>"
+                                data-item-category="<%= item.category || group.key %>"
+                                <%= item.checked ? 'checked' : '' %>
+                              />
                               <span class="shopping-item-copy">
-                                <strong><%= item.amount ? `${item.amount}${item.unit ? ` ${item.unit}` : ''}` : '1 item' %></strong>
+                                <strong><%= item.displayQuantity ? `${item.displayQuantity}${item.unit ? ` ${item.unit}` : ''}` : 'Secukupnya' %></strong>
                                 <span><%= item.name %></span>
-                                <small><%= item.count %> resep</small>
+                                <small><%= item.recipes.length %> resep • <%= item.recipes.join(', ') %></small>
                               </span>
                             </label>
                           <% }) %>
@@ -147,7 +158,7 @@
               <% } else { %>
                 <div class="user-empty-state">
                   <i class="fa-regular fa-list-check"></i>
-                  <p>Belum ada resep favorit. Simpan resep dulu supaya shopping list terisi otomatis.</p>
+                  <p>Belum ada resep di shopping list. Tambahkan dulu dari halaman detail resep.</p>
                 </div>
               <% } %>
             </article>
@@ -157,19 +168,23 @@
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Favorite recipes</p>
+                  <p class="user-panel-kicker">Selected recipes</p>
                   <h2>Resep sumber belanja</h2>
                 </div>
               </div>
 
               <div class="user-card-grid user-shopping-card-grid">
                 <% data.favoriteRecipes.forEach((recipe) => { %>
-                  <article class="user-mini-recipe-card">
+                  <article class="user-mini-recipe-card shopping-recipe-card">
                     <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
                     <div class="user-mini-recipe-copy">
                       <h3><%= recipe.title %></h3>
                       <p><%= recipe.category %></p>
-                      <small>Perkiraan Rp <%= formatPrice(recipe.estimatedPrice) %> - <%= recipe.ingredients.length %> bahan</small>
+                      <small>Perkiraan Rp <%= formatPrice(recipe.estimatedPrice) %> - <%= recipe.desiredServings %> porsi</small>
+                      <div class="shopping-recipe-actions">
+                        <a class="shopping-recipe-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.source === 'community' ? recipe.sourceId : (recipe.recipeKey || recipe.id)) %>">Buka resep</a>
+                        <button type="button" class="shopping-recipe-remove" data-recipe-key="<%= recipe.recipeKey || recipe.id %>">Hapus</button>
+                      </div>
                     </div>
                   </article>
                 <% }) %>
@@ -177,7 +192,7 @@
                 <% if (!data.favoriteRecipes.length) { %>
                   <div class="user-empty-state">
                     <i class="fa-regular fa-heart"></i>
-                    <p>Resep favorit akan muncul di sini setelah kamu menekan tombol love.</p>
+                    <p>Resep yang ditambahkan lewat tombol Add to Shopping List akan muncul di sini.</p>
                   </div>
                 <% } %>
               </div>
@@ -192,7 +207,7 @@
               </div>
 
               <p class="user-ai-copy">
-                Total budget di atas masih estimasi dari resep yang disimpan. Cocok untuk bantu belanja anak kost atau meal prep mingguan.
+                Total budget di atas masih estimasi. Quantity otomatis digabung jika bahan yang sama muncul dari beberapa resep.
               </p>
 
               <div class="user-ai-actions">
@@ -204,5 +219,73 @@
       </section>
     </div>
   </main>
+  <script>
+    (() => {
+      const syncCheckedStyle = (checkbox) => {
+        const wrapper = checkbox.closest('.shopping-item');
+        if (wrapper) {
+          wrapper.classList.toggle('is-checked', checkbox.checked);
+        }
+      };
+
+      document.querySelectorAll('.shopping-item input[type="checkbox"]').forEach((checkbox) => {
+        syncCheckedStyle(checkbox);
+        checkbox.addEventListener('change', async () => {
+          try {
+            const response = await fetch(`/api/recipes/shopping-list/items/${encodeURIComponent(checkbox.dataset.itemKey || '')}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                checked: checkbox.checked,
+                itemName: checkbox.dataset.itemName,
+                unit: checkbox.dataset.itemUnit,
+                category: checkbox.dataset.itemCategory
+              })
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || 'Gagal memperbarui checklist.');
+            }
+
+            syncCheckedStyle(checkbox);
+          } catch (error) {
+            console.error(error);
+            checkbox.checked = !checkbox.checked;
+            syncCheckedStyle(checkbox);
+            alert(error.message || 'Gagal memperbarui checklist.');
+          }
+        });
+      });
+
+      document.querySelectorAll('.shopping-recipe-remove').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const recipeKey = button.dataset.recipeKey;
+          if (!recipeKey) {
+            return;
+          }
+
+          try {
+            button.disabled = true;
+            const response = await fetch(`/api/recipes/shopping-list/recipes/${encodeURIComponent(recipeKey)}`, {
+              method: 'DELETE'
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || 'Gagal menghapus resep dari shopping list.');
+            }
+
+            window.location.reload();
+          } catch (error) {
+            console.error(error);
+            alert(error.message || 'Gagal menghapus resep dari shopping list.');
+            button.disabled = false;
+          }
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

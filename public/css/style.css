@@ -2376,11 +2376,21 @@ a {
   padding: 14px 16px;
   border-radius: 20px;
   background: #faf9f6;
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
 }
 
 .shopping-item input {
   margin-top: 4px;
   accent-color: var(--accent);
+}
+
+.shopping-item.is-checked {
+  opacity: 0.72;
+}
+
+.shopping-item.is-checked .shopping-item-copy strong,
+.shopping-item.is-checked .shopping-item-copy span {
+  text-decoration: line-through;
 }
 
 .shopping-item-copy {
@@ -2415,6 +2425,53 @@ a {
   background: rgba(29, 29, 29, 0.04);
 }
 
+.shopping-item-sayur {
+  background: rgba(56, 156, 154, 0.1);
+}
+
+.shopping-item-protein {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.shopping-item-dairy {
+  background: rgba(250, 204, 21, 0.12);
+}
+
+.shopping-item-karbohidrat {
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.shopping-item-saus {
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.shopping-recipe-card {
+  gap: 12px;
+}
+
+.shopping-recipe-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.shopping-recipe-link,
+.shopping-recipe-remove {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shopping-recipe-remove {
+  color: #b42318;
+}
+
 .user-empty-state {
   display: grid;
   justify-items: start;
@@ -2446,6 +2503,58 @@ a {
   grid-template-columns: minmax(0, 1.2fr) 320px;
   gap: 20px;
   align-items: start;
+}
+
+.recipe-serving-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.recipe-serving-copy {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.recipe-serving-scaler {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgba(29, 29, 29, 0.04);
+}
+
+.recipe-serving-input-wrap {
+  display: grid;
+  gap: 6px;
+  text-align: center;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.recipe-serving-input-wrap input {
+  width: 78px;
+  padding: 10px 12px;
+  border: 1px solid rgba(29, 29, 29, 0.08);
+  border-radius: 14px;
+  text-align: center;
+  font: inherit;
+  font-weight: 700;
+}
+
+.recipe-serving-btn {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(29, 29, 29, 0.08);
 }
 
 .user-feed-column {
@@ -6755,6 +6864,32 @@ a {
   .auth-button,
   .user-feed-filter {
     width: 100%;
+  }
+
+  .recipe-serving-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .recipe-serving-scaler {
+    justify-content: space-between;
+  }
+
+  .recipe-serving-input-wrap {
+    flex: 1;
+  }
+
+  .recipe-serving-input-wrap input {
+    width: 100%;
+  }
+
+  .shopping-item {
+    padding: 12px 14px;
+  }
+
+  .shopping-recipe-actions {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
