@@ -29,7 +29,8 @@
   <% const communityFeed = profileData.communityFeed || { posts: [], comments: [] }; %>
   <% const communityPosts = Array.isArray(communityFeed.posts) ? communityFeed.posts : []; %>
   <% const communityComments = Array.isArray(communityFeed.comments) ? communityFeed.comments : []; %>
-  <% const makeHandle = (value) => `@${String(value || 'community user').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18) || 'community'}`; %>
+  <% const communityPostUrl = (recipe) => `/community/posts/${encodeURIComponent(recipe.communityPostId || recipe.postId || recipe.post_id || recipe.id || '')}`; %>
+  <% const communityCommentUrl = (comment) => `/community/posts/${encodeURIComponent(comment.postId || comment.post_id || '')}`; %>
   <% const formatRelativeTime = (value) => {
     if (!value) return 'baru saja';
     const created = new Date(value);
@@ -723,6 +724,16 @@
       gap: 0;
     }
 
+    .profile-community-card-link {
+      display: block;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .profile-community-card-link:hover .profile-community-text {
+      color: #0f1419;
+    }
+
     .profile-community-tweet,
     .profile-community-reply {
       display: grid;
@@ -1150,10 +1161,6 @@
                   <h3>Postingan dan komentar kamu</h3>
                   <p class="profile-muted">Semua post community kamu tampil di sini. Komentar yang kamu kirim ke postingan orang lain juga muncul di bawahnya.</p>
                 </div>
-                <div class="profile-community-actions">
-                  <a class="profile-primary-button" href="/community?openComposer=1">Post ke community</a>
-                  <a class="profile-secondary-button" href="/community">Buka community</a>
-                </div>
               </div>
 
               <div class="profile-community-grid" style="margin-top: 16px;">
@@ -1166,10 +1173,11 @@
                   <% if (communityPosts.length) { %>
                     <div class="profile-community-stream">
                       <% communityPosts.forEach((recipe) => { %>
+                        <a class="profile-community-card-link" href="<%= communityPostUrl(recipe) %>">
                         <article class="profile-community-tweet">
                           <div class="profile-community-avatar">
                             <img
-                              src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(recipe.creatorName || user.username || 'Community user') %>&background=0f1419&color=ffffff&bold=true"
+                              src="<%= recipe.creatorAvatarUrl || user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipe.creatorName || user.username || 'Community user')}&background=0f1419&color=ffffff&bold=true` %>"
                               alt="<%= recipe.creatorName || user.username %>"
                             />
                           </div>
@@ -1177,8 +1185,7 @@
                             <div class="profile-community-head">
                               <div class="profile-community-user">
                                 <strong><%= recipe.creatorName || user.username %></strong>
-                                <span><%= makeHandle(recipe.creatorName || user.username) %></span>
-                                <span>&bull; <%= formatRelativeTime(recipe.createdAt) %></span>
+                                <span><%= formatRelativeTime(recipe.createdAt) %></span>
                               </div>
                               <span class="community-status is-approved">Published</span>
                             </div>
@@ -1193,6 +1200,7 @@
                             </div>
                           </div>
                         </article>
+                        </a>
                       <% }) %>
                     </div>
                   <% } else { %>
@@ -1211,10 +1219,11 @@
                   <% if (communityComments.length) { %>
                     <div class="profile-community-stream">
                       <% communityComments.forEach((comment) => { %>
+                        <a class="profile-community-card-link" href="<%= communityCommentUrl(comment) %>">
                         <article class="profile-community-reply">
                           <div class="profile-community-avatar">
                             <img
-                              src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(comment.creatorName || user.username || 'Community user') %>&background=0f1419&color=ffffff&bold=true"
+                              src="<%= user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || user.username || 'Community user')}&background=0f1419&color=ffffff&bold=true` %>"
                               alt="<%= comment.creatorName || user.username %>"
                             />
                           </div>
@@ -1222,14 +1231,14 @@
                             <div class="profile-community-head">
                               <div class="profile-community-user">
                                 <strong><%= comment.creatorName || user.username %></strong>
-                                <span><%= makeHandle(comment.creatorName || user.username) %></span>
-                                <span>&bull; <%= formatRelativeTime(comment.createdAt) %></span>
+                                <span><%= formatRelativeTime(comment.createdAt) %></span>
                               </div>
                             </div>
                             <p class="profile-community-text"><%= comment.content %></p>
                             <p class="profile-community-subtext">Balasan ke <%= comment.title %></p>
                           </div>
                         </article>
+                        </a>
                       <% }) %>
                     </div>
                   <% } else { %>
