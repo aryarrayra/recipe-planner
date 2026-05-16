@@ -459,7 +459,8 @@ router.get('/chat-ai', async (req, res) => {
             html: item.metadata?.html || textToHtml(item.content),
             attachment: item.metadata?.attachment || null,
             tips: item.metadata?.tips || [],
-            followUps: item.metadata?.followUps || []
+            followUps: item.metadata?.followUps || [],
+            fallback: item.metadata?.provider === 'fallback'
         }));
     } catch (error) {
         console.error('Failed to load chat history:', error.message);

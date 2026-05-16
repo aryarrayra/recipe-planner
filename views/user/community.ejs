@@ -78,7 +78,11 @@
               Tampilan dibuat lebih mirip buku resep: cover besar, ringkasan bahan, dan langkah masak yang mudah dibaca. Daily dan weekly challenge tetap berjalan otomatis dari API.
             </p>
           </div>
-
+          <div class="community-compose-shell">
+            <button type="button" class="community-compose-launch" id="openCommunityComposerInlinePost">
+              Post resep kamu
+            </button>
+          </div>
         </header>
 
         <% if (notice || error) { %>
@@ -87,29 +91,6 @@
             <span><%= error || notice %></span>
           </div>
         <% } %>
-
-        <section class="community-compose-shell">
-          <div class="community-compose-avatar">
-            <img
-              src="<%= user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || 'User')}&background=0f1419&color=ffffff&bold=true` %>"
-              alt="<%= user.username %>"
-            />
-          </div>
-          <div class="community-compose-body">
-            <button type="button" class="community-compose-field" id="openCommunityComposerInline">
-              Ada apa di dapur?
-            </button>
-            <div class="community-compose-toolbar" aria-hidden="true">
-              <span><i class="fa-regular fa-image"></i></span>
-              <span><i class="fa-solid fa-table-cells-large"></i></span>
-              <span><i class="fa-regular fa-face-smile"></i></span>
-              <span><i class="fa-regular fa-calendar"></i></span>
-              <span><i class="fa-solid fa-location-dot"></i></span>
-              <span><i class="fa-regular fa-flag"></i></span>
-              <button type="button" class="community-compose-submit" id="openCommunityComposerInlinePost">Post</button>
-            </div>
-          </div>
-        </section>
 
         <div class="community-layout">
           <section class="community-main-column">
