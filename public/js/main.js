@@ -108,6 +108,13 @@ if (chatWindow && chatForm && chatInput) {
     meta.textContent = message.label || (message.role === 'ai' ? 'AI' : 'You');
     bubble.appendChild(meta);
 
+    if (message.fallback) {
+      const status = document.createElement('div');
+      status.className = 'chat-status';
+      status.innerHTML = '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span>Fallback lokal aktif</span>';
+      bubble.appendChild(status);
+    }
+
     if (message.attachment && message.attachment.dataUrl) {
       const figure = document.createElement('figure');
       figure.className = 'message-attachment';
@@ -341,7 +348,8 @@ if (chatWindow && chatForm && chatInput) {
         text: result.reply,
         html: result.html || textToHtml(result.reply),
         tips: result.tips,
-        followUps: result.followUps
+        followUps: result.followUps,
+        fallback: Boolean(result.fallback)
       });
     } catch (error) {
       typingNode.remove();

@@ -895,7 +895,21 @@
 
     @media (max-width: 1100px) {
       .profile-layout {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .profile-main,
+      .profile-sidebar {
+        width: 100%;
+      }
+
+      .profile-sidebar {
+        order: 1;
+      }
+
+      .profile-main {
+        order: 2;
       }
 
       .profile-stats-grid {
@@ -934,6 +948,50 @@
       .profile-form-grid,
       .profile-preference-grid {
         grid-template-columns: 1fr;
+      }
+
+      .profile-layout {
+        gap: 16px;
+      }
+
+      .profile-settings-overlay {
+        padding: 10px;
+      }
+
+      .profile-settings-modal {
+        width: 100%;
+        max-height: calc(100vh - 20px);
+        padding: 16px;
+        border-radius: 20px;
+      }
+
+      .profile-settings-head {
+        flex-direction: column;
+        align-items: stretch;
+        margin-bottom: 14px;
+      }
+
+      .profile-settings-close {
+        align-self: flex-end;
+      }
+
+      .profile-settings-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .profile-settings-column {
+        gap: 14px;
+      }
+
+      .profile-settings-section {
+        padding: 16px;
+      }
+
+      .profile-settings-section .profile-preference-grid {
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
       }
     }
   </style>
