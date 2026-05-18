@@ -48,6 +48,8 @@
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="/js/confirm-dialog.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -139,7 +141,7 @@
                     >
                       Ubah
                     </button>
-                    <form action="/admin/recipes/<%= recipe.id %>/delete" method="post">
+                    <form action="/admin/recipes/<%= recipe.id %>/delete" method="post" data-confirm-delete="Apakah yakin anda menghapus resep ini?" data-confirm-title="Hapus resep">
                       <button type="submit" class="admin-link is-danger">Hapus</button>
                     </form>
                   </div>

@@ -20,6 +20,8 @@
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
   <% const serializedRecipes = JSON.stringify(recipes || []).replace(/</g, '\\u003c'); %>
   <% const activeRecipeId = activeRecipe ? String(activeRecipe.favoriteKey || activeRecipe.id) : ''; %>
+  <% const activeRecipeSource = activeRecipe ? String(activeRecipe.source || 'themealdb') : ''; %>
+  <% const activeRecipeSourceId = activeRecipe ? String(activeRecipe.sourceId || activeRecipe.id || '') : ''; %>
 
   <main class="user-dashboard user-feed-page user-recipe-detail-page">
     <div class="user-dashboard-shell">
@@ -86,6 +88,7 @@
                   <span><i class="fa-solid fa-wallet"></i> Perkiraan Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
                   <span><i class="fa-solid fa-signal"></i> <%= activeRecipe.difficulty %></span>
                   <span><i class="fa-solid fa-fire"></i> <%= activeRecipe.calories %> kkal</span>
+                  <span><i class="fa-solid fa-rotate-right"></i> <%= Number(activeRecipe.recookCount || 0) %> kali recook</span>
                 </div>
 
                 <% if (activeRecipe.warning) { %>
@@ -322,6 +325,15 @@
         estimatedPrice: Number(selectedRecipeSnapshot?.estimatedPrice || 0),
         ingredients: Array.isArray(selectedRecipeSnapshot?.ingredients) ? selectedRecipeSnapshot.ingredients : []
       };
+      const recookIdentity = {
+        source: <%- JSON.stringify(activeRecipeSource) %>,
+        sourceId: <%- JSON.stringify(activeRecipeSourceId) %>,
+        recipeId: <%- JSON.stringify(activeRecipe && activeRecipe.recipeId ? String(activeRecipe.recipeId) : '') %>,
+        title: <%- JSON.stringify(activeRecipe ? activeRecipe.title : '') %>,
+        imageUrl: <%- JSON.stringify(activeRecipe ? activeRecipe.imageUrl : '') %>,
+        category: <%- JSON.stringify(activeRecipe ? activeRecipe.category : '') %>,
+        cuisine: <%- JSON.stringify(activeRecipe ? activeRecipe.cuisine : '') %>
+      };
       const escapeSelector = (value) => {
         if (window.CSS && typeof window.CSS.escape === 'function') {
           return window.CSS.escape(String(value || ''));
@@ -418,6 +430,38 @@
         });
       };
 
+      const recordRecook = async () => {
+        if (!recookIdentity.sourceId && !recookIdentity.recipeId) {
+          return { recookCount: Number(<%- JSON.stringify(activeRecipe ? Number(activeRecipe.recookCount || 0) : 0) %>) };
+        }
+
+        const requestBody = {
+          source: recookIdentity.source,
+          sourceId: recookIdentity.sourceId,
+          recipeId: recookIdentity.recipeId,
+          title: recookIdentity.title,
+          imageUrl: recookIdentity.imageUrl,
+          category: recookIdentity.category,
+          cuisine: recookIdentity.cuisine
+        };
+
+        const response = await fetch(`/api/recipes/${encodeURIComponent(recookIdentity.recipeId || recookIdentity.sourceId)}/recook`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Gagal menyimpan recook.');
+        }
+
+        return result.data || {};
+      };
+
       if (!cards.length || !nextButton) {
         // Still keep the page interactive for favorites/sharing below.
       } else {
@@ -444,9 +488,24 @@
             return;
           }
 
-          if (nextButton.dataset.finishUrl) {
-            window.location.href = nextButton.dataset.finishUrl;
+          const finishUrl = nextButton.dataset.finishUrl;
+          if (!finishUrl) {
+            return;
           }
+
+          nextButton.disabled = true;
+          recordRecook()
+            .then((result) => {
+              const nextUrl = new URL(finishUrl, window.location.origin);
+              if (Number.isFinite(Number(result?.recookCount))) {
+                nextUrl.searchParams.set('recookCount', String(Number(result.recookCount)));
+              }
+              window.location.href = nextUrl.toString();
+            })
+            .catch((error) => {
+              window.alert(error.message || 'Gagal menyimpan recook.');
+              nextButton.disabled = false;
+            });
         });
 
         syncState();

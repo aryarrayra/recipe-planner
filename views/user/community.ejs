@@ -25,6 +25,7 @@
   <% const communityPostsData = (Array.isArray(approvedRecipes) ? approvedRecipes : []).map((recipe) => ({
     id: recipe.id,
     communityPostId: recipe.communityPostId || recipe.postId || '',
+    creatorUserId: recipe.creatorUserId || recipe.createdBy || recipe.created_by || '',
     title: recipe.title,
     description: recipe.description || recipe.title || '',
     imageUrl: recipe.imageUrl || '/images/1.png',
@@ -146,6 +147,7 @@
                     class="community-tweet-card community-recipe-card"
                     data-post-id="<%= recipe.communityPostId || recipe.id %>"
                     data-post-url="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>"
+                    data-creator-user-id="<%= recipe.creatorUserId || '' %>"
                   >
                     <div class="community-recipe-card-hero">
                       <img src="<%= recipe.imageUrl || '/images/1.png' %>" alt="<%= recipe.title %>" />
@@ -167,7 +169,6 @@
               </div>
             <% } %>
           </section>
-
         </div>
 
         <div class="community-composer-overlay" id="communityComposerOverlay" hidden>
@@ -566,7 +567,7 @@
 
       feed?.addEventListener('click', async (event) => {
         const likeButton = event.target.closest('[data-action="like"]');
-        const card = event.target.closest('.community-tweet-card');
+        const card = event.target.closest('.community-recipe-card') || event.target.closest('.community-tweet-card');
 
         if (!card) {
           return;

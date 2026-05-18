@@ -378,6 +378,41 @@ function relatedFromTitles(titles = [], fallbackRecipes = []) {
     });
 }
 
+function describeChatError(error) {
+    const apiError = error?.response?.data?.error || {};
+    const status = error?.response?.status || null;
+    const code = apiError.status || error?.code || null;
+    const message = apiError.message || error?.message || 'Unknown Gemini error';
+
+    if (status === 403 && /reported as leaked/i.test(message)) {
+        return {
+            type: 'gemini_key_blocked',
+            message: 'Gemini ditolak karena API key diblokir oleh Google.',
+            details: message,
+            status,
+            code
+        };
+    }
+
+    if (message.includes('GEMINI_API_KEY')) {
+        return {
+            type: 'gemini_key_missing',
+            message: 'GEMINI_API_KEY belum diisi di .env.',
+            details: message,
+            status,
+            code
+        };
+    }
+
+    return {
+        type: 'gemini_error',
+        message: 'Gemini gagal merespons.',
+        details: message,
+        status,
+        code
+    };
+}
+
 function toGeminiContents(history, message) {
     const contents = history.map((item) => ({
         role: item.role === 'assistant' ? 'model' : 'user',
@@ -460,7 +495,8 @@ router.get('/chat-ai', async (req, res) => {
             attachment: item.metadata?.attachment || null,
             tips: item.metadata?.tips || [],
             followUps: item.metadata?.followUps || [],
-            fallback: item.metadata?.provider === 'fallback'
+            fallback: item.metadata?.provider === 'fallback',
+            fallbackReason: item.metadata?.fallbackReason || null
         }));
     } catch (error) {
         console.error('Failed to load chat history:', error.message);
@@ -559,20 +595,30 @@ router.post('/api/chat', upload.single('photo'), async (req, res) => {
         console.error('Chat AI error:', error.response?.data || error.message);
 
         const fallback = fallbackReply(messageText || messageContent);
+        const fallbackReason = describeChatError(error);
 
-        await saveChatMessage(sessionId, 'assistant', fallback.reply, {
-            title: fallback.title,
-            tips: fallback.tips,
-            followUps: fallback.followUps,
-            html: textToHtml(fallback.reply),
-            provider: 'fallback'
-        });
+        try {
+            await saveChatMessage(sessionId, 'assistant', fallback.reply, {
+                title: fallback.title,
+                tips: fallback.tips,
+                followUps: fallback.followUps,
+                html: textToHtml(fallback.reply),
+                provider: 'fallback',
+                fallbackReason
+            });
+        } catch (saveError) {
+            console.error('Failed to save fallback chat response:', saveError.message);
+        }
 
-        await upsertChatSession(
-            sessionId,
-            req.session.user?.id || null,
-            fallback.title?.slice(0, 80) || messageContent.slice(0, 80)
-        );
+        try {
+            await upsertChatSession(
+                sessionId,
+                req.session.user?.id || null,
+                fallback.title?.slice(0, 80) || messageContent.slice(0, 80)
+            );
+        } catch (sessionError) {
+            console.error('Failed to update fallback chat session:', sessionError.message);
+        }
 
         res.json({
             success: true,
@@ -582,7 +628,8 @@ router.post('/api/chat', upload.single('photo'), async (req, res) => {
                 tips: fallback.tips,
                 followUps: fallback.followUps,
                 html: textToHtml(fallback.reply),
-                fallback: true
+                fallback: true,
+                fallbackReason
             }
         });
     }

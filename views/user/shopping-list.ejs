@@ -14,6 +14,8 @@
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="/js/confirm-dialog.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -264,6 +266,17 @@
         button.addEventListener('click', async () => {
           const recipeKey = button.dataset.recipeKey;
           if (!recipeKey) {
+            return;
+          }
+
+          const confirmed = await window.confirmDanger(
+            `Apakah yakin anda menghapus "${button.closest('.shopping-recipe-card')?.querySelector('h3')?.textContent || 'resep ini'}" dari shopping list?`,
+            {
+              title: 'Hapus dari shopping list',
+              confirmButtonText: 'Ya, hapus'
+            }
+          );
+          if (!confirmed) {
             return;
           }
 

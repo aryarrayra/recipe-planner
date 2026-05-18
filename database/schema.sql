@@ -88,11 +88,18 @@ CREATE TABLE IF NOT EXISTS cooking_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
+    recipe_source VARCHAR(50),
+    recipe_source_id VARCHAR(120),
+    recipe_title VARCHAR(200),
+    recipe_image_url TEXT,
+    recipe_category VARCHAR(100),
+    recipe_cuisine VARCHAR(100),
     rating INT CHECK (rating >= 1 AND rating <= 5),
     review TEXT,
     cooking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     modified_ingredients JSONB,
-    notes TEXT
+    notes TEXT,
+    recipe_payload JSONB DEFAULT '{}'::jsonb
 );
 
 -- 6. Tabel Shopping Lists
@@ -138,6 +145,24 @@ CREATE TABLE IF NOT EXISTS shopping_list_item_states (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, item_key)
+);
+
+-- 7. Tabel Community Reports
+CREATE TABLE IF NOT EXISTS community_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reporter_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    reported_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    target_type VARCHAR(20) NOT NULL CHECK (target_type IN ('post', 'user', 'comment')),
+    target_id UUID NOT NULL,
+    post_id UUID REFERENCES community_posts(id) ON DELETE CASCADE,
+    reason VARCHAR(100) NOT NULL,
+    details TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'reviewing', 'resolved', 'dismissed')),
+    admin_note TEXT,
+    resolver_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    resolved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 7. Tabel Community Posts

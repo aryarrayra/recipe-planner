@@ -18,6 +18,7 @@
 </head>
 <body>
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
+  <% const recookCountText = Number(recookCount || recipe.recookCount || 0); %>
 
   <main class="user-dashboard user-feed-page user-recipe-served-page">
     <div class="user-dashboard-shell">
@@ -60,6 +61,7 @@
                   <span><i class="fa-solid fa-wallet"></i> Perkiraan Rp <%= formatPrice(recipe.estimatedPrice) %></span>
                   <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
                   <span><i class="fa-solid fa-fire"></i> <%= recipe.calories %> kkal</span>
+                  <span><i class="fa-solid fa-rotate-right"></i> <%= recookCountText %> kali recook</span>
                 </div>
 
                 <div class="user-ai-actions">
@@ -112,6 +114,7 @@
                 <span><strong>Porsi</strong> <%= recipe.servings %></span>
                 <span><strong>Kategori</strong> <%= recipe.category %></span>
                 <span><strong>Total step</strong> <%= recipe.steps.length %></span>
+                <span><strong>Recook kamu</strong> <%= recookCountText %> kali</span>
               </div>
             </article>
 

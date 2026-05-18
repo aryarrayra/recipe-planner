@@ -26,6 +26,47 @@ function toInt(value, fallback = 0) {
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+let communityReportsSchemaReady = null;
+
+function ensureCommunityReportsSchema() {
+    if (!communityReportsSchemaReady) {
+        communityReportsSchemaReady = pool
+            .query(`
+                CREATE TABLE IF NOT EXISTS community_reports (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    reporter_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                    reported_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                    target_type VARCHAR(20) NOT NULL CHECK (target_type IN ('post', 'user', 'comment')),
+                    target_id UUID NOT NULL,
+                    post_id UUID REFERENCES community_posts(id) ON DELETE CASCADE,
+                    reason VARCHAR(100) NOT NULL,
+                    details TEXT,
+                    status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'reviewing', 'resolved', 'dismissed')),
+                    admin_note TEXT,
+                    resolver_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                    resolved_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `)
+            .then(() => pool.query(`
+                ALTER TABLE community_reports
+                DROP CONSTRAINT IF EXISTS community_reports_target_type_check
+            `))
+            .then(() => pool.query(`
+                ALTER TABLE community_reports
+                ADD CONSTRAINT community_reports_target_type_check
+                CHECK (target_type IN ('post', 'user', 'comment'))
+            `))
+            .catch((error) => {
+                communityReportsSchemaReady = null;
+                throw error;
+            });
+    }
+
+    return communityReportsSchemaReady;
+}
+
 function uniqueRecipesById(items = []) {
     const seen = new Set();
 
@@ -847,11 +888,60 @@ async function fetchTrendingPageData() {
 }
 
 async function fetchReportsPageData() {
+    await ensureCommunityReportsSchema();
+
+    const [reportsResult, totalsResult] = await Promise.all([
+        pool.query(
+            `
+                SELECT
+                    cr.*,
+                    reporter.username AS reporter_name,
+                    reporter.avatar_url AS reporter_avatar_url,
+                    reported.username AS reported_name,
+                    reported.avatar_url AS reported_avatar_url,
+                    p.title AS post_title,
+                    p.content AS post_content,
+                    p.image_url AS post_image_url,
+                    r.title AS recipe_title,
+                    c.content AS comment_content,
+                    c.created_at AS comment_created_at,
+                    comment_author.username AS comment_author_name,
+                    comment_author.avatar_url AS comment_author_avatar_url
+                FROM community_reports cr
+                LEFT JOIN users reporter ON reporter.id = cr.reporter_user_id
+                LEFT JOIN users reported ON reported.id = cr.reported_user_id
+                LEFT JOIN community_posts p ON p.id = cr.post_id
+                LEFT JOIN recipes r ON r.id = p.recipe_id
+                LEFT JOIN comments c ON c.id = cr.target_id AND cr.target_type = 'comment'
+                LEFT JOIN users comment_author ON comment_author.id = c.user_id
+                ORDER BY
+                    CASE cr.status
+                        WHEN 'open' THEN 0
+                        WHEN 'reviewing' THEN 1
+                        WHEN 'resolved' THEN 2
+                        ELSE 3
+                    END,
+                    cr.created_at DESC
+                LIMIT 100
+            `
+        ),
+        pool.query(
+            `
+                SELECT
+                    COUNT(*) FILTER (WHERE status IN ('open', 'reviewing'))::int AS open_count,
+                    COUNT(*) FILTER (WHERE status = 'resolved')::int AS resolved_count,
+                    COUNT(*)::int AS total_count
+                FROM community_reports
+            `
+        )
+    ]);
+
     return {
-        reports: [],
+        reports: reportsResult.rows,
         totals: {
-            open: 0,
-            resolved: 0
+            open: Number(totalsResult.rows[0]?.open_count || 0),
+            resolved: Number(totalsResult.rows[0]?.resolved_count || 0),
+            total: Number(totalsResult.rows[0]?.total_count || 0)
         }
     };
 }
@@ -1035,6 +1125,47 @@ router.get('/reports', async (req, res) => {
     } catch (error) {
         console.error('Admin reports error:', error.message);
         res.status(500).send('Gagal memuat halaman report admin.');
+    }
+});
+
+router.post('/reports/:id/status', async (req, res) => {
+    const reportId = normalizeText(req.params.id);
+    const status = normalizeText(req.body.status).toLowerCase();
+    const adminNote = optionalText(req.body.admin_note);
+
+    try {
+        await ensureCommunityReportsSchema();
+
+        if (!reportId) {
+            return res.redirect('/admin/reports?error=Report+tidak+valid');
+        }
+
+        if (!['open', 'reviewing', 'resolved', 'dismissed'].includes(status)) {
+            return res.redirect('/admin/reports?error=Status+tidak+valid');
+        }
+
+        const result = await pool.query(
+            `
+                UPDATE community_reports
+                SET status = $2,
+                    admin_note = COALESCE($3, admin_note),
+                    resolver_user_id = CASE WHEN $2 IN ('resolved', 'dismissed') THEN $4 ELSE resolver_user_id END,
+                    resolved_at = CASE WHEN $2 IN ('resolved', 'dismissed') THEN CURRENT_TIMESTAMP ELSE resolved_at END,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $1
+                RETURNING id
+            `,
+            [reportId, status, adminNote, req.session.user.id]
+        );
+
+        if (!result.rows.length) {
+            return res.redirect('/admin/reports?error=Report+tidak+ditemukan');
+        }
+
+        return res.redirect('/admin/reports?notice=Status+laporan+berhasil+diupdate');
+    } catch (error) {
+        console.error('Admin report status error:', error.message);
+        return res.redirect('/admin/reports?error=Gagal+memperbarui+laporan');
     }
 });
 

@@ -6,19 +6,27 @@
   <title><%= title %></title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
-    rel="stylesheet"
-  />
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
   <% const reportItems = Array.isArray(reports) ? reports : []; %>
-  <% const reportTotals = totals || { open: 0, resolved: 0 }; %>
+  <% const reportTotals = totals || { open: 0, resolved: 0, total: 0 }; %>
+  <% const formatRelativeTime = (value) => {
+    if (!value) return 'baru saja';
+    const created = new Date(value);
+    if (Number.isNaN(created.getTime())) return 'baru saja';
+    const diff = Date.now() - created.getTime();
+    const minutes = Math.max(0, Math.floor(diff / 60000));
+    if (minutes < 1) return 'baru saja';
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d`;
+    return created.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+  }; %>
 
   <main class="user-dashboard admin-dashboard">
     <div class="user-dashboard-shell admin-shell">
@@ -27,8 +35,8 @@
       <section class="user-dashboard-main admin-main">
         <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
           <div class="admin-topbar-copy">
-            <p class="user-panel-kicker">Report user</p>
-            <h1>Daftar dan penanganan laporan</h1>
+            <p class="user-panel-kicker">Community moderation</p>
+            <h1>Tracking laporan user dan konten</h1>
           </div>
 
           <div class="user-topbar-actions">
@@ -39,40 +47,46 @@
           </div>
         </header>
 
+        <% if (notice || error) { %>
+          <div class="admin-banner <%= error ? 'is-error' : 'is-success' %>">
+            <i class="fa-solid <%= error ? 'fa-triangle-exclamation' : 'fa-circle-check' %>" aria-hidden="true"></i>
+            <span><%= error || notice %></span>
+          </div>
+        <% } %>
+
         <section class="admin-hero-panel">
           <div class="user-panel-head">
             <div>
-              <p class="user-panel-kicker">Ringkasan</p>
-              <h1>Halaman ini disiapkan untuk laporan user yang akan diproses admin.</h1>
+              <p class="user-panel-kicker">Ringkasan laporan</p>
+              <h1>Kelola report untuk post dan akun dari satu tempat.</h1>
             </div>
           </div>
 
           <p class="admin-hero-copy">
-            Saat modul report user sudah aktif, laporan akan bisa ditinjau, dipilah, dan
-            diselesaikan dari sini. Untuk sekarang, alurnya masih disiapkan supaya tidak mengganggu
-            fokus utama admin.
+            Laporan dari community post akan masuk ke queue ini. Admin bisa menandai sebagai
+            reviewing, resolved, atau dismissed tanpa pindah halaman.
           </p>
 
           <div class="admin-stat-grid">
             <article class="admin-stat-card">
               <span>Laporan terbuka</span>
               <strong><%= reportTotals.open || 0 %></strong>
-              <small>Menunggu tindak lanjut</small>
+              <small>Menunggu ditinjau</small>
             </article>
             <article class="admin-stat-card">
               <span>Laporan selesai</span>
               <strong><%= reportTotals.resolved || 0 %></strong>
-              <small>Sudah ditangani</small>
+              <small>Sudah ditutup</small>
+            </article>
+            <article class="admin-stat-card">
+              <span>Total laporan</span>
+              <strong><%= reportTotals.total || 0 %></strong>
+              <small>Semua laporan yang tercatat</small>
             </article>
             <article class="admin-stat-card">
               <span>Status</span>
-              <strong>Scaffold</strong>
-              <small>Siap dipakai nanti</small>
-            </article>
-            <article class="admin-stat-card">
-              <span>Fokus</span>
-              <strong>User</strong>
-              <small>Bukan resep</small>
+              <strong>Live queue</strong>
+              <small>Post dan user</small>
             </article>
           </div>
         </section>
@@ -96,10 +110,57 @@
                       </div>
                       <div class="admin-user-copy">
                         <div class="admin-list-topline">
-                          <h3><%= report.title || 'Laporan user' %></h3>
-                          <span class="admin-status is-pending"><%= report.status || 'open' %></span>
+                          <h3>
+                            <%= report.target_type === 'user' ? 'Laporan user' : report.target_type === 'comment' ? 'Laporan komentar' : 'Laporan konten' %>
+                          </h3>
+                          <span class="admin-status <%= report.status === 'open' ? 'is-pending' : report.status === 'resolved' ? 'is-approved' : 'is-neutral' %>"><%= report.status %></span>
                         </div>
-                        <p><%= report.details || 'Tidak ada detail laporan.' %></p>
+
+                        <p>
+                          <strong>Alasan:</strong> <%= report.reason %>
+                          <% if (report.details) { %>
+                            <br /><%= report.details %>
+                          <% } %>
+                        </p>
+
+                        <div class="admin-report-meta">
+                          <span><strong>Pelapor</strong> <%= report.reporter_name || 'Unknown user' %></span>
+                          <span><strong>Target</strong> <%= report.target_type %> / <%= report.target_id %></span>
+                          <% if (report.reported_name) { %>
+                            <span><strong>Terlapor</strong> <%= report.reported_name %></span>
+                          <% } %>
+                          <% if (report.post_title) { %>
+                            <span><strong>Post</strong> <%= report.post_title %></span>
+                          <% } %>
+                          <% if (report.comment_content) { %>
+                            <span><strong>Komentar</strong> <%= report.comment_content %></span>
+                          <% } %>
+                          <% if (report.comment_author_name) { %>
+                            <span><strong>Penulis komentar</strong> <%= report.comment_author_name %></span>
+                          <% } %>
+                          <span><strong>Dibuat</strong> <%= formatRelativeTime(report.created_at) %></span>
+                        </div>
+
+                        <% if (report.admin_note) { %>
+                          <p class="admin-report-note"><strong>Catatan admin:</strong> <%= report.admin_note %></p>
+                        <% } %>
+
+                        <form class="admin-report-actions" action="/admin/reports/<%= report.id %>/status" method="post">
+                          <label class="admin-report-field">
+                            <span>Status</span>
+                            <select name="status">
+                              <option value="open" <%= report.status === 'open' ? 'selected' : '' %>>open</option>
+                              <option value="reviewing" <%= report.status === 'reviewing' ? 'selected' : '' %>>reviewing</option>
+                              <option value="resolved" <%= report.status === 'resolved' ? 'selected' : '' %>>resolved</option>
+                              <option value="dismissed" <%= report.status === 'dismissed' ? 'selected' : '' %>>dismissed</option>
+                            </select>
+                          </label>
+                          <label class="admin-report-field admin-report-field-wide">
+                            <span>Catatan admin</span>
+                            <textarea name="admin_note" rows="2" placeholder="Opsional, jelaskan tindak lanjutnya"></textarea>
+                          </label>
+                          <button type="submit" class="auth-button auth-button-secondary">Update laporan</button>
+                        </form>
                       </div>
                     </article>
                   <% }) %>
@@ -107,7 +168,7 @@
               <% } else { %>
                 <div class="admin-empty-state">
                   <h3>Belum ada laporan user.</h3>
-                  <p>Begitu modul report siap, laporan akan muncul di sini untuk diproses.</p>
+                  <p>Begitu community post menerima report, item akan muncul di queue ini.</p>
                 </div>
               <% } %>
             </article>
@@ -118,13 +179,16 @@
               <div class="user-panel-head">
                 <div>
                   <p class="user-panel-kicker">Panduan</p>
-                  <h2>Alur penanganan laporan</h2>
+                  <h2>Alur penanganan</h2>
                 </div>
               </div>
 
               <div class="admin-empty-state">
-                <h3>Belum diaktifkan</h3>
-                <p>Ketika laporan user sudah tersedia, admin bisa menindaklanjuti dari panel ini tanpa harus pindah konteks.</p>
+                <h3>Checklist singkat</h3>
+                <p>
+                  Review isi report, cek post atau akun yang dilaporkan, lalu ubah status ke
+                  reviewing, resolved, atau dismissed sesuai tindak lanjut.
+                </p>
               </div>
             </article>
           </aside>

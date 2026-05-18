@@ -113,6 +113,13 @@ if (chatWindow && chatForm && chatInput) {
       status.className = 'chat-status';
       status.innerHTML = '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span>Fallback lokal aktif</span>';
       bubble.appendChild(status);
+
+      if (message.fallbackReason) {
+        const reason = document.createElement('div');
+        reason.className = 'chat-status-note';
+        reason.textContent = message.fallbackReason.message || String(message.fallbackReason);
+        bubble.appendChild(reason);
+      }
     }
 
     if (message.attachment && message.attachment.dataUrl) {
@@ -291,7 +298,14 @@ if (chatWindow && chatForm && chatInput) {
   });
 
   removeAttachment?.addEventListener('click', () => {
-    resetAttachment();
+    Promise.resolve(window.confirmDanger ? window.confirmDanger('Apakah yakin anda menghapus lampiran ini?', {
+      title: 'Hapus lampiran',
+      confirmButtonText: 'Ya, hapus'
+    }) : window.confirm('Apakah yakin anda menghapus lampiran ini?'))
+      .then((confirmed) => {
+        if (!confirmed) return;
+        resetAttachment();
+      });
   });
 
   chatForm.addEventListener('submit', async (event) => {
@@ -349,7 +363,8 @@ if (chatWindow && chatForm && chatInput) {
         html: result.html || textToHtml(result.reply),
         tips: result.tips,
         followUps: result.followUps,
-        fallback: Boolean(result.fallback)
+        fallback: Boolean(result.fallback),
+        fallbackReason: result.fallbackReason || null
       });
     } catch (error) {
       typingNode.remove();
@@ -366,13 +381,18 @@ if (chatWindow && chatForm && chatInput) {
   });
 
   clearChat?.addEventListener('click', () => {
-    const confirmed = window.confirm('Bersihkan tampilan chat ini tanpa menghapus history?');
-    if (!confirmed) return;
+    Promise.resolve(window.confirmDanger ? window.confirmDanger('Bersihkan tampilan chat ini tanpa menghapus history?', {
+      title: 'Clear chat',
+      confirmButtonText: 'Ya, bersihkan'
+    }) : window.confirm('Bersihkan tampilan chat ini tanpa menghapus history?'))
+      .then((confirmed) => {
+        if (!confirmed) return;
 
-    setComposerText('');
-    resetAttachment();
-    chatWindow.innerHTML = '';
-    renderMessage(starterMessage);
+        setComposerText('');
+        resetAttachment();
+        chatWindow.innerHTML = '';
+        renderMessage(starterMessage);
+      });
   });
 
   renderInitialState();

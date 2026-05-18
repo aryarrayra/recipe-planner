@@ -90,6 +90,12 @@
                     <span class="community-action-icon"><i class="fa-solid fa-list-check"></i></span>
                     <span>Lihat bahan</span>
                   </a>
+                  <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportContentButton" aria-label="Report content" title="Report content">
+                    <span class="community-action-icon"><i class="fa-regular fa-flag"></i></span>
+                  </button>
+                  <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportUserButton" aria-label="Report user" title="Report user">
+                    <span class="community-action-icon"><i class="fa-solid fa-user-slash"></i></span>
+                  </button>
                 </div>
               </div>
             </article>
@@ -235,6 +241,49 @@
             </article>
           </aside>
         </article>
+
+        <div class="community-report-overlay" id="communityReportOverlay" hidden>
+          <div class="community-report-modal" role="dialog" aria-modal="true" aria-labelledby="communityReportTitle">
+            <div class="community-composer-head">
+              <div>
+                <p class="user-panel-kicker">Report</p>
+                <h2 id="communityReportTitle">Laporkan konten atau user</h2>
+              </div>
+              <button type="button" class="community-composer-close" id="closeCommunityReport" aria-label="Tutup">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <form class="community-report-form" id="communityReportForm">
+              <input type="hidden" name="postId" value="<%= post.id %>" />
+              <input type="hidden" name="targetId" id="communityReportTargetId" />
+              <input type="hidden" name="targetType" id="communityReportTargetType" value="post" />
+              <input type="hidden" name="targetUserId" id="communityReportTargetUserId" value="<%= post.creatorUserId || '' %>" />
+              <label class="community-form-field">
+                <span>Alasan</span>
+                <select name="reason" id="communityReportReason" required>
+                  <option value="">Pilih alasan</option>
+                  <option value="spam">Spam / promosi</option>
+                  <option value="harassment">Hate / harassment</option>
+                  <option value="misleading">Konten menyesatkan</option>
+                  <option value="copyright">Pelanggaran hak cipta</option>
+                  <option value="abuse">Konten tidak pantas</option>
+                  <option value="other">Lainnya</option>
+                </select>
+              </label>
+              <label class="community-form-field community-form-field-wide">
+                <span>Detail tambahan</span>
+                <textarea name="details" id="communityReportDetails" rows="4" placeholder="Jelaskan singkat kenapa kamu melaporkan ini"></textarea>
+              </label>
+              <div class="community-form-actions">
+                <button type="submit" class="auth-button">Kirim laporan</button>
+                <p>Laporan akan masuk ke panel admin untuk ditinjau.</p>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="community-toast" id="communityReportToast" hidden role="status" aria-live="polite"></div>
       </section>
     </div>
   </main>
@@ -242,12 +291,24 @@
   <script>
     (() => {
       const postId = <%- JSON.stringify(post.id) %>;
+      const postCreatorUserId = <%- JSON.stringify(post.creatorUserId || '') %>;
       const likeButton = document.getElementById('detailLikeButton');
       const likeCount = document.getElementById('detailLikeCount');
       const replyForm = document.getElementById('replyForm');
       const replyInput = document.getElementById('replyInput');
       const commentsList = document.getElementById('commentsList');
       const commentState = document.getElementById('communityDetailCommentState');
+      const reportOverlay = document.getElementById('communityReportOverlay');
+      const reportClose = document.getElementById('closeCommunityReport');
+      const reportForm = document.getElementById('communityReportForm');
+      const reportTargetId = document.getElementById('communityReportTargetId');
+      const reportTargetType = document.getElementById('communityReportTargetType');
+      const reportTargetUserId = document.getElementById('communityReportTargetUserId');
+      const reportReason = document.getElementById('communityReportReason');
+      const reportDetails = document.getElementById('communityReportDetails');
+      const reportToast = document.getElementById('communityReportToast');
+      const reportContentButton = document.getElementById('reportContentButton');
+      const reportUserButton = document.getElementById('reportUserButton');
 
       function escapeHtml(value) {
         return String(value || '')
@@ -274,8 +335,9 @@
       }
 
       function renderComment(comment) {
+        const commentTitle = String(comment.content || 'Komentar').slice(0, 48);
         return `
-          <article class="community-thread-item">
+          <article class="community-thread-item" data-comment-id="${escapeHtml(comment.id || '')}" data-comment-user-id="${escapeHtml(comment.creatorUserId || '')}">
             <div class="community-thread-avatar">
               <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true" alt="${escapeHtml(comment.creatorName || 'Community user')}" />
             </div>
@@ -285,9 +347,89 @@
                 <span>&bull; ${escapeHtml(formatRelativeTime(comment.createdAt))}</span>
               </div>
               <p>${escapeHtml(comment.content || '')}</p>
+              <div class="community-detail-comment-actions">
+                <button
+                  type="button"
+                  class="community-comment-report-button"
+                  data-action="report-comment"
+                  data-report-target-type="comment"
+                  data-report-target-id="${escapeHtml(comment.id || '')}"
+                  data-report-target-user-id="${escapeHtml(comment.creatorUserId || '')}"
+                  data-report-title="${escapeHtml(commentTitle)}"
+                  aria-label="Report comment"
+                  title="Report comment"
+                >
+                  <i class="fa-regular fa-flag"></i>
+                </button>
+              </div>
             </div>
           </article>
         `;
+      }
+
+      function setReportVisible(visible) {
+        if (!reportOverlay) return;
+        reportOverlay.hidden = !visible;
+        document.body.classList.toggle('community-report-open', visible);
+      }
+
+      let reportToastTimer = null;
+
+      function showReportToast(message, variant = 'success') {
+        if (!reportToast) return;
+        reportToast.textContent = String(message || '');
+        reportToast.dataset.variant = variant;
+        reportToast.hidden = false;
+        if (reportToastTimer) {
+          window.clearTimeout(reportToastTimer);
+        }
+        reportToastTimer = window.setTimeout(() => {
+          reportToast.hidden = true;
+        }, 3200);
+      }
+
+      function openReportModal({ targetType = 'post', targetId = '', targetUserId = '', title = '' } = {}) {
+        if (reportTargetType) {
+          reportTargetType.value = ['post', 'user', 'comment'].includes(targetType) ? targetType : 'post';
+        }
+        if (reportTargetId) {
+          reportTargetId.value = String(targetId || '');
+        }
+        if (reportTargetUserId) {
+          reportTargetUserId.value = String(targetUserId || postCreatorUserId || '');
+        }
+        if (reportReason) {
+          reportReason.value = '';
+        }
+        if (reportDetails) {
+          reportDetails.value = '';
+        }
+        const titleNode = document.getElementById('communityReportTitle');
+        if (titleNode) {
+          titleNode.textContent = title || (targetType === 'user' ? 'Report user' : targetType === 'comment' ? 'Report comment' : 'Report content');
+        }
+        setReportVisible(true);
+      }
+
+      async function sendReport() {
+        const formData = new FormData(reportForm);
+        const payload = new URLSearchParams();
+        formData.forEach((value, key) => {
+          payload.set(key, String(value || ''));
+        });
+        const response = await fetch(`/community/posts/${encodeURIComponent(postId)}/report`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+          },
+          body: payload
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Gagal mengirim laporan');
+        }
+        return data;
       }
 
       likeButton?.addEventListener('click', async () => {
@@ -347,6 +489,57 @@
           commentState.textContent = `${currentCount} balasan`;
         } catch (error) {
           window.alert(error.message || 'Gagal mengirim komentar');
+        }
+      });
+
+      reportClose?.addEventListener('click', () => setReportVisible(false));
+      reportOverlay?.addEventListener('click', (event) => {
+        if (event.target === reportOverlay) {
+          setReportVisible(false);
+        }
+      });
+      reportContentButton?.addEventListener('click', () => openReportModal({
+        targetType: 'post',
+        targetId: postId,
+        targetUserId: postCreatorUserId,
+        title: 'Report content'
+      }));
+      reportUserButton?.addEventListener('click', () => openReportModal({
+        targetType: 'user',
+        targetId: postCreatorUserId,
+        targetUserId: postCreatorUserId,
+        title: 'Report user'
+      }));
+
+      commentsList?.addEventListener('click', (event) => {
+        const reportCommentButton = event.target.closest('[data-action="report-comment"]');
+        if (!reportCommentButton) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        openReportModal({
+          targetType: 'comment',
+          targetId: reportCommentButton.getAttribute('data-report-target-id') || '',
+          targetUserId: reportCommentButton.getAttribute('data-report-target-user-id') || '',
+          title: reportCommentButton.getAttribute('data-report-title') || 'Report comment'
+        });
+      });
+      reportForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        try {
+          if (reportTargetType?.value === 'user') {
+            if (reportTargetId && !reportTargetId.value) {
+              reportTargetId.value = postCreatorUserId || '';
+            }
+          }
+          await sendReport();
+          setReportVisible(false);
+          showReportToast('Laporan berhasil dikirim. Tim admin akan meninjaunya.');
+        } catch (error) {
+          showReportToast(error.message || 'Gagal mengirim laporan', 'error');
         }
       });
     })();
