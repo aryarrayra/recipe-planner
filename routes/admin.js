@@ -26,6 +26,35 @@ function toInt(value, fallback = 0) {
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function buildUsersRedirect(page, userId = '', notice = '', error = '', filters = {}) {
+    const params = new URLSearchParams();
+    const safePage = Math.max(1, toInt(page, 1));
+
+    params.set('page', String(safePage));
+
+    if (userId) {
+        params.set('userId', userId);
+    }
+
+    if (notice) {
+        params.set('notice', notice);
+    }
+
+    if (error) {
+        params.set('error', error);
+    }
+
+    if (filters.search) {
+        params.set('search', filters.search);
+    }
+
+    if (filters.role) {
+        params.set('role', filters.role);
+    }
+
+    return `/admin/users?${params.toString()}`;
+}
+
 let communityReportsSchemaReady = null;
 
 function ensureCommunityReportsSchema() {
@@ -467,13 +496,24 @@ function buildFeedClause(feed, alias = 'r') {
     };
 }
 
-async function fetchDashboardData() {
-    const [userMetrics, recipeMetrics, categoryRows, recipeRows, userRows, analyticsRows, dailyRows, weeklyRows, monthlyRows, engagementRecipeRows] = await Promise.all([
+async function fetchDashboardData(auditPage = 1, auditPageSize = 5) {
+    await ensureCommunityReportsSchema();
+
+    const [
+        userMetrics,
+        recipeMetrics,
+        reportTotalsResult,
+        categoryRows,
+        approvalQueueResult,
+        reportQueueResult
+    ] = await Promise.all([
         pool.query(`
             SELECT
                 COUNT(*)::int AS users_count,
                 COUNT(*) FILTER (WHERE role = 'admin')::int AS admin_count,
-                COUNT(*) FILTER (WHERE role = 'user')::int AS user_count
+                COUNT(*) FILTER (WHERE role = 'user')::int AS user_count,
+                COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE)::int AS new_users_today,
+                COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE - INTERVAL '6 days')::int AS new_users_week
             FROM users
         `),
         pool.query(`
@@ -484,6 +524,13 @@ async function fetchDashboardData() {
                 COALESCE(SUM(likes_count), 0)::int AS total_likes,
                 COALESCE((SELECT COUNT(*) FROM user_favorites), 0)::int AS total_wishlist
             FROM recipes
+        `),
+        pool.query(`
+            SELECT
+                COUNT(*) FILTER (WHERE status IN ('open', 'reviewing'))::int AS open_reports_count,
+                COUNT(*) FILTER (WHERE status = 'resolved')::int AS resolved_reports_count,
+                COUNT(*)::int AS total_reports_count
+            FROM community_reports
         `),
         pool.query(`
             SELECT
@@ -502,269 +549,158 @@ async function fetchDashboardData() {
                 r.title,
                 r.description,
                 r.image_url,
-                r.cooking_time,
                 r.category,
+                r.cuisine,
+                r.cooking_time,
                 r.estimated_price,
-                r.is_approved,
                 r.created_at,
-                COALESCE(u.username, 'Tidak diketahui') AS creator_name
+                COALESCE(u.username, 'Community user') AS creator_name
             FROM recipes r
             LEFT JOIN users u ON u.id = r.created_by
-            ORDER BY r.created_at DESC
-            LIMIT 4
+            WHERE r.created_by IS NOT NULL
+              AND r.is_approved = false
+            ORDER BY r.created_at ASC
+            LIMIT 6
         `),
         pool.query(`
             SELECT
-                id,
-                username,
-                email,
-                role,
-                avatar_url,
-                created_at
-            FROM users
-            ORDER BY created_at DESC
-            LIMIT 4
-        `),
-        pool.query(`
-            WITH windows AS (
-                SELECT 'today' AS period, CURRENT_DATE::timestamp AS start_at, (CURRENT_DATE + INTERVAL '1 day')::timestamp AS end_at
-                UNION ALL
-                SELECT 'week' AS period, (CURRENT_DATE - INTERVAL '6 days')::timestamp AS start_at, (CURRENT_DATE + INTERVAL '1 day')::timestamp AS end_at
-                UNION ALL
-                SELECT 'month' AS period, (CURRENT_DATE - INTERVAL '29 days')::timestamp AS start_at, (CURRENT_DATE + INTERVAL '1 day')::timestamp AS end_at
-            ),
-            recipe_counts AS (
-                SELECT w.period, COUNT(r.id)::int AS recipe_count
-                FROM windows w
-                LEFT JOIN recipes r ON r.created_at >= w.start_at AND r.created_at < w.end_at
-                GROUP BY w.period
-            ),
-            wishlist_counts AS (
-                SELECT w.period, COUNT(uf.id)::int AS wishlist_count
-                FROM windows w
-                LEFT JOIN user_favorites uf ON uf.created_at >= w.start_at AND uf.created_at < w.end_at
-                GROUP BY w.period
-            ),
-            like_counts AS (
-                SELECT w.period, COALESCE(SUM(r.likes_count), 0)::int AS likes_count
-                FROM windows w
-                LEFT JOIN recipes r ON r.created_at >= w.start_at AND r.created_at < w.end_at
-                GROUP BY w.period
-            ),
-            active_users AS (
-                SELECT w.period, COUNT(DISTINCT activity.user_id)::int AS active_users_count
-                FROM windows w
-                LEFT JOIN (
-                    SELECT user_id, created_at AS event_time FROM user_favorites
-                    UNION ALL
-                    SELECT user_id, cooking_date AS event_time FROM cooking_history
-                ) activity ON activity.event_time >= w.start_at AND activity.event_time < w.end_at
-                GROUP BY w.period
-            )
-            SELECT
-                w.period,
-                COALESCE(rc.recipe_count, 0) AS recipe_count,
-                COALESCE(wc.wishlist_count, 0) AS wishlist_count,
-                COALESCE(lc.likes_count, 0) AS likes_count,
-                COALESCE(au.active_users_count, 0) AS active_users_count
-            FROM windows w
-            LEFT JOIN recipe_counts rc ON rc.period = w.period
-            LEFT JOIN wishlist_counts wc ON wc.period = w.period
-            LEFT JOIN like_counts lc ON lc.period = w.period
-            LEFT JOIN active_users au ON au.period = w.period
-            ORDER BY CASE w.period WHEN 'today' THEN 1 WHEN 'week' THEN 2 ELSE 3 END
-        `),
-        pool.query(`
-            WITH buckets AS (
-                SELECT generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, INTERVAL '1 day')::date AS bucket
-            ),
-            recipe_series AS (
-                SELECT date_trunc('day', r.created_at)::date AS bucket, COUNT(r.id)::int AS recipe_count
-                FROM recipes r
-                WHERE r.created_at >= CURRENT_DATE - INTERVAL '6 days'
-                GROUP BY 1
-            ),
-            active_series AS (
-                SELECT date_trunc('day', activity.event_time)::date AS bucket, COUNT(DISTINCT activity.user_id)::int AS active_users_count
-                FROM (
-                    SELECT user_id, created_at AS event_time FROM user_favorites
-                    UNION ALL
-                    SELECT user_id, cooking_date AS event_time FROM cooking_history
-                ) activity
-                WHERE activity.event_time >= CURRENT_DATE - INTERVAL '6 days'
-                GROUP BY 1
-            ),
-            wishlist_series AS (
-                SELECT date_trunc('day', uf.created_at)::date AS bucket, COUNT(uf.id)::int AS wishlist_count
-                FROM user_favorites uf
-                WHERE uf.created_at >= CURRENT_DATE - INTERVAL '6 days'
-                GROUP BY 1
-            ),
-            like_series AS (
-                SELECT date_trunc('day', r.created_at)::date AS bucket, COALESCE(SUM(r.likes_count), 0)::int AS likes_count
-                FROM recipes r
-                WHERE r.created_at >= CURRENT_DATE - INTERVAL '6 days'
-                GROUP BY 1
-            )
-            SELECT
-                b.bucket,
-                COALESCE(rs.recipe_count, 0) AS recipe_count,
-                COALESCE(asv.active_users_count, 0) AS active_users_count,
-                COALESCE(ws.wishlist_count, 0) AS wishlist_count,
-                COALESCE(ls.likes_count, 0) AS likes_count
-            FROM buckets b
-            LEFT JOIN recipe_series rs ON rs.bucket = b.bucket
-            LEFT JOIN active_series asv ON asv.bucket = b.bucket
-            LEFT JOIN wishlist_series ws ON ws.bucket = b.bucket
-            LEFT JOIN like_series ls ON ls.bucket = b.bucket
-            ORDER BY b.bucket
-        `),
-        pool.query(`
-            WITH buckets AS (
-                SELECT generate_series(date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks', date_trunc('week', CURRENT_DATE), INTERVAL '1 week')::date AS bucket
-            ),
-            recipe_series AS (
-                SELECT date_trunc('week', r.created_at)::date AS bucket, COUNT(r.id)::int AS recipe_count
-                FROM recipes r
-                WHERE r.created_at >= date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks'
-                GROUP BY 1
-            ),
-            active_series AS (
-                SELECT date_trunc('week', activity.event_time)::date AS bucket, COUNT(DISTINCT activity.user_id)::int AS active_users_count
-                FROM (
-                    SELECT user_id, created_at AS event_time FROM user_favorites
-                    UNION ALL
-                    SELECT user_id, cooking_date AS event_time FROM cooking_history
-                ) activity
-                WHERE activity.event_time >= date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks'
-                GROUP BY 1
-            ),
-            wishlist_series AS (
-                SELECT date_trunc('week', uf.created_at)::date AS bucket, COUNT(uf.id)::int AS wishlist_count
-                FROM user_favorites uf
-                WHERE uf.created_at >= date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks'
-                GROUP BY 1
-            ),
-            like_series AS (
-                SELECT date_trunc('week', r.created_at)::date AS bucket, COALESCE(SUM(r.likes_count), 0)::int AS likes_count
-                FROM recipes r
-                WHERE r.created_at >= date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks'
-                GROUP BY 1
-            )
-            SELECT
-                b.bucket,
-                COALESCE(rs.recipe_count, 0) AS recipe_count,
-                COALESCE(asv.active_users_count, 0) AS active_users_count,
-                COALESCE(ws.wishlist_count, 0) AS wishlist_count,
-                COALESCE(ls.likes_count, 0) AS likes_count
-            FROM buckets b
-            LEFT JOIN recipe_series rs ON rs.bucket = b.bucket
-            LEFT JOIN active_series asv ON asv.bucket = b.bucket
-            LEFT JOIN wishlist_series ws ON ws.bucket = b.bucket
-            LEFT JOIN like_series ls ON ls.bucket = b.bucket
-            ORDER BY b.bucket
-        `),
-        pool.query(`
-            WITH buckets AS (
-                SELECT generate_series(date_trunc('month', CURRENT_DATE) - INTERVAL '11 months', date_trunc('month', CURRENT_DATE), INTERVAL '1 month')::date AS bucket
-            ),
-            recipe_series AS (
-                SELECT date_trunc('month', r.created_at)::date AS bucket, COUNT(r.id)::int AS recipe_count
-                FROM recipes r
-                WHERE r.created_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
-                GROUP BY 1
-            ),
-            active_series AS (
-                SELECT date_trunc('month', activity.event_time)::date AS bucket, COUNT(DISTINCT activity.user_id)::int AS active_users_count
-                FROM (
-                    SELECT user_id, created_at AS event_time FROM user_favorites
-                    UNION ALL
-                    SELECT user_id, cooking_date AS event_time FROM cooking_history
-                ) activity
-                WHERE activity.event_time >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
-                GROUP BY 1
-            ),
-            wishlist_series AS (
-                SELECT date_trunc('month', uf.created_at)::date AS bucket, COUNT(uf.id)::int AS wishlist_count
-                FROM user_favorites uf
-                WHERE uf.created_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
-                GROUP BY 1
-            ),
-            like_series AS (
-                SELECT date_trunc('month', r.created_at)::date AS bucket, COALESCE(SUM(r.likes_count), 0)::int AS likes_count
-                FROM recipes r
-                WHERE r.created_at >= date_trunc('month', CURRENT_DATE) - INTERVAL '11 months'
-                GROUP BY 1
-            )
-            SELECT
-                b.bucket,
-                COALESCE(rs.recipe_count, 0) AS recipe_count,
-                COALESCE(asv.active_users_count, 0) AS active_users_count,
-                COALESCE(ws.wishlist_count, 0) AS wishlist_count,
-                COALESCE(ls.likes_count, 0) AS likes_count
-            FROM buckets b
-            LEFT JOIN recipe_series rs ON rs.bucket = b.bucket
-            LEFT JOIN active_series asv ON asv.bucket = b.bucket
-            LEFT JOIN wishlist_series ws ON ws.bucket = b.bucket
-            LEFT JOIN like_series ls ON ls.bucket = b.bucket
-            ORDER BY b.bucket
-        `),
-        pool.query(`
-            SELECT
-                r.id,
-                r.title,
-                r.image_url,
-                COALESCE(r.likes_count, 0)::int AS likes_count,
-                COALESCE(f.wishlist_count, 0)::int AS wishlist_count
-            FROM recipes r
-            LEFT JOIN (
-                SELECT recipe_id, COUNT(*)::int AS wishlist_count
-                FROM user_favorites
-                GROUP BY recipe_id
-            ) f ON f.recipe_id = r.id
-            ORDER BY r.likes_count DESC, wishlist_count DESC, r.created_at DESC
-            LIMIT 12
+                cr.id,
+                cr.target_type,
+                cr.target_id,
+                cr.reason,
+                cr.details,
+                cr.status,
+                cr.created_at,
+                COALESCE(reporter.username, 'Unknown user') AS reporter_name,
+                COALESCE(reported.username, '') AS reported_name,
+                COALESCE(p.title, r.title, '') AS target_title
+            FROM community_reports cr
+            LEFT JOIN users reporter ON reporter.id = cr.reporter_user_id
+            LEFT JOIN users reported ON reported.id = cr.reported_user_id
+            LEFT JOIN community_posts p ON p.id = cr.post_id
+            LEFT JOIN recipes r ON r.id = p.recipe_id
+            WHERE cr.status IN ('open', 'reviewing')
+            ORDER BY
+                CASE cr.status WHEN 'open' THEN 0 ELSE 1 END,
+                cr.created_at ASC
+            LIMIT 6
         `)
     ]);
 
-    const analyticsMap = new Map((analyticsRows.rows || []).map((row) => [row.period, row]));
-    const analytics = {
-        today: analyticsMap.get('today') || { recipe_count: 0, wishlist_count: 0, likes_count: 0, active_users_count: 0 },
-        week: analyticsMap.get('week') || { recipe_count: 0, wishlist_count: 0, likes_count: 0, active_users_count: 0 },
-        month: analyticsMap.get('month') || { recipe_count: 0, wishlist_count: 0, likes_count: 0, active_users_count: 0 },
-        ranges: {
-            daily: mapTimelineSeries(dailyRows.rows || [], { day: '2-digit', month: 'short' }),
-            weekly: mapTimelineSeries(weeklyRows.rows || [], { day: '2-digit', month: 'short' }),
-            monthly: mapTimelineSeries(monthlyRows.rows || [], { month: 'short', year: 'numeric' })
-        },
-        engagementRecipes: (engagementRecipeRows.rows || []).map((row) => ({
-            id: row.id,
-            title: row.title,
-            likes_count: Number(row.likes_count || 0),
-            wishlist_count: Number(row.wishlist_count || 0),
-            image_url: row.image_url || ''
-        })),
-        summary: {
-            likes: Number((recipeMetrics.rows[0] && recipeMetrics.rows[0].total_likes) || 0),
-            wishlist: Number((recipeMetrics.rows[0] && recipeMetrics.rows[0].total_wishlist) || 0)
-        },
-        topCategories: (categoryRows.rows || []).map((row) => ({
-            category: row.category,
-            recipe_count: Number(row.recipe_count || 0),
-            likes_count: Number(row.likes_count || 0),
-            views_count: Number(row.views_count || 0)
-        })),
-        defaultRange: 'daily'
+    const auditTrailData = await fetchAdminAuditTrail(auditPage, auditPageSize);
+
+    const metrics = {
+        ...(userMetrics.rows[0] || {}),
+        ...(recipeMetrics.rows[0] || {}),
+        ...(reportTotalsResult.rows[0] || {})
     };
+    const topCategories = (categoryRows.rows || []).map((row) => ({
+        category: row.category,
+        recipe_count: Number(row.recipe_count || 0),
+        likes_count: Number(row.likes_count || 0),
+        views_count: Number(row.views_count || 0)
+    }));
 
     return {
-        metrics: {
-            ...(userMetrics.rows[0] || {}),
-            ...(recipeMetrics.rows[0] || {})
+        metrics,
+        approvalQueue: approvalQueueResult.rows || [],
+        reportQueue: reportQueueResult.rows || [],
+        topCategories,
+        secondaryInsights: {
+            topCategory: topCategories[0] || null,
+            totalEngagement: Number(metrics.total_likes || 0) + Number(metrics.total_wishlist || 0),
+            approvedRecipes: Number(metrics.approved_recipes_count || 0),
+            resolvedReports: Number(metrics.resolved_reports_count || 0)
         },
-        analytics,
-        recentRecipes: recipeRows.rows,
-        recentUsers: userRows.rows
+        auditTrail: auditTrailData.items,
+        auditPagination: auditTrailData.pagination
+    };
+}
+
+async function fetchAdminAuditTrail(page = 1, pageSize = 5) {
+    await ensureCommunityReportsSchema();
+
+    const safePageSize = Math.max(1, Number(pageSize) || 5);
+    const requestedPage = Math.max(1, Number(page) || 1);
+    const countResult = await pool.query(`
+        SELECT COUNT(*)::int AS total_count
+        FROM (
+            SELECT u.id, u.created_at AS event_time
+            FROM users u
+
+            UNION ALL
+
+            SELECT r.id, r.created_at AS event_time
+            FROM recipes r
+            WHERE r.created_by IS NOT NULL
+
+            UNION ALL
+
+            SELECT cr.id, cr.created_at AS event_time
+            FROM community_reports cr
+        ) audit_log
+    `);
+
+    const totalItems = Number(countResult.rows[0]?.total_count || 0);
+    const totalPages = Math.max(1, Math.ceil(totalItems / safePageSize));
+    const currentPage = Math.min(requestedPage, totalPages);
+    const offset = (currentPage - 1) * safePageSize;
+
+    const result = await pool.query(
+        `
+            SELECT *
+            FROM (
+                SELECT
+                    'new_user' AS event_type,
+                    u.created_at AS event_time,
+                    COALESCE(u.username, 'Unknown user') AS actor_name,
+                    u.role AS event_label,
+                    'Akun baru dibuat' AS event_title,
+                    COALESCE(u.email, '') AS event_meta
+                FROM users u
+
+                UNION ALL
+
+                SELECT
+                    'recipe_submission' AS event_type,
+                    r.created_at AS event_time,
+                    COALESCE(u.username, 'Community user') AS actor_name,
+                    COALESCE(r.category, 'Community') AS event_label,
+                    'Resep community masuk antrian' AS event_title,
+                    COALESCE(r.title, '') AS event_meta
+                FROM recipes r
+                LEFT JOIN users u ON u.id = r.created_by
+                WHERE r.created_by IS NOT NULL
+
+                UNION ALL
+
+                SELECT
+                    'report_opened' AS event_type,
+                    cr.created_at AS event_time,
+                    COALESCE(reporter.username, 'Unknown user') AS actor_name,
+                    cr.status AS event_label,
+                    'Laporan baru masuk' AS event_title,
+                    COALESCE(cr.reason, '') AS event_meta
+                FROM community_reports cr
+                LEFT JOIN users reporter ON reporter.id = cr.reporter_user_id
+            ) audit_log
+            ORDER BY event_time DESC
+            LIMIT $1
+            OFFSET $2
+        `,
+        [safePageSize, offset]
+    );
+
+    return {
+        items: result.rows || [],
+        pagination: {
+            page: currentPage,
+            pageSize: safePageSize,
+            totalItems,
+            totalPages,
+            hasPrev: currentPage > 1,
+            hasNext: currentPage < totalPages
+        }
     };
 }
 
@@ -841,7 +777,35 @@ async function fetchRecipesPageData(recipeId = '') {
     };
 }
 
-async function fetchUsersPageData(userId = '') {
+async function fetchUsersPageData(userId = '', page = 1, pageSize = 5, filters = {}) {
+    const safePageSize = Math.max(1, Number(pageSize) || 5);
+    const requestedPage = Math.max(1, Number(page) || 1);
+    const search = normalizeText(filters.search);
+    const role = ['user', 'admin'].includes(normalizeText(filters.role)) ? normalizeText(filters.role) : '';
+    const whereClauses = [];
+    const queryParams = [];
+
+    if (search) {
+        queryParams.push(`%${search}%`);
+        whereClauses.push(`(COALESCE(username, '') ILIKE $${queryParams.length} OR COALESCE(email, '') ILIKE $${queryParams.length})`);
+    }
+
+    if (role) {
+        queryParams.push(role);
+        whereClauses.push(`role = $${queryParams.length}`);
+    }
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    const totalUsersResult = await pool.query(`
+            SELECT COUNT(*)::int AS total_count
+            FROM users
+            ${whereSql}
+        `, queryParams);
+    const totalItems = Number(totalUsersResult.rows[0]?.total_count || 0);
+    const totalPages = Math.max(1, Math.ceil(totalItems / safePageSize));
+    const currentPage = Math.min(requestedPage, totalPages);
+    const offset = (currentPage - 1) * safePageSize;
+
     const [usersResult, selectedUserResult] = await Promise.all([
         pool.query(`
             SELECT
@@ -855,9 +819,11 @@ async function fetchUsersPageData(userId = '') {
                 total_recipes_cooked,
                 created_at
             FROM users
+            ${whereSql}
             ORDER BY created_at DESC
-            LIMIT 12
-        `),
+            LIMIT $${queryParams.length + 1}
+            OFFSET $${queryParams.length + 2}
+        `, [...queryParams, safePageSize, offset]),
         userId
             ? pool.query(
                   `
@@ -879,7 +845,19 @@ async function fetchUsersPageData(userId = '') {
 
     return {
         users: usersResult.rows,
-        selectedUser: selectedUserResult.rows[0] || null
+        selectedUser: selectedUserResult.rows[0] || null,
+        filters: {
+            search,
+            role
+        },
+        pagination: {
+            page: currentPage,
+            pageSize: safePageSize,
+            totalItems,
+            totalPages,
+            hasPrev: currentPage > 1,
+            hasNext: currentPage < totalPages
+        }
     };
 }
 
@@ -1004,7 +982,7 @@ router.get('/', (req, res) => {
 
 router.get('/dashboard', async (req, res) => {
     try {
-        const data = await fetchDashboardData();
+        const data = await fetchDashboardData(toInt(req.query.auditPage, 1), 5);
         renderDashboard(res, req, data);
     } catch (error) {
         console.error('Admin dashboard error:', error.message);
@@ -1018,7 +996,15 @@ router.get('/recipes', async (req, res) => {
 
 router.get('/users', async (req, res) => {
     try {
-        const data = await fetchUsersPageData(normalizeText(req.query.userId));
+        const data = await fetchUsersPageData(
+            normalizeText(req.query.userId),
+            toInt(req.query.page, 1),
+            5,
+            {
+                search: normalizeText(req.query.search),
+                role: normalizeText(req.query.role)
+            }
+        );
         renderUsersPage(res, req, data, {
             notice: normalizeText(req.query.notice),
             error: normalizeText(req.query.error)
@@ -1190,14 +1176,19 @@ router.post('/users', async (req, res) => {
     const email = normalizeText(req.body.email).toLowerCase();
     const password = normalizeText(req.body.password);
     const role = normalizeText(req.body.role) || 'user';
+    const page = toInt(req.body.page, 1);
+    const filters = {
+        search: normalizeText(req.body.search),
+        role: normalizeText(req.body.filter_role)
+    };
 
     try {
         if (!username || !email || !password) {
-            return res.redirect('/admin/users?error=Username,+email,+dan+password+wajib+diisi');
+            return res.redirect(buildUsersRedirect(page, '', '', 'Username, email, dan password wajib diisi', filters));
         }
 
         if (!['user', 'admin'].includes(role)) {
-            return res.redirect('/admin/users?error=Role+tidak+valid');
+            return res.redirect(buildUsersRedirect(page, '', '', 'Role tidak valid', filters));
         }
 
         const existingUser = await pool.query(
@@ -1206,7 +1197,7 @@ router.post('/users', async (req, res) => {
         );
 
         if (existingUser.rows.length) {
-            return res.redirect('/admin/users?error=Email+atau+username+sudah+dipakai');
+            return res.redirect(buildUsersRedirect(page, '', '', 'Email atau username sudah dipakai', filters));
         }
 
         const avatarUrl = optionalText(req.body.avatar_url) || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}`;
@@ -1221,10 +1212,10 @@ router.post('/users', async (req, res) => {
             [username, email, passwordHash, role, avatarUrl, bio]
         );
 
-        return res.redirect('/admin/users?notice=User+berhasil+ditambahkan');
+        return res.redirect(buildUsersRedirect(page, '', 'User berhasil ditambahkan', '', filters));
     } catch (error) {
         console.error('Create user error:', error.message);
-        return res.redirect('/admin/users?error=Gagal+menambah+user');
+        return res.redirect(buildUsersRedirect(page, '', '', 'Gagal menambah user', filters));
     }
 });
 
@@ -1234,14 +1225,19 @@ router.post('/users/:id', async (req, res) => {
     const email = normalizeText(req.body.email).toLowerCase();
     const role = normalizeText(req.body.role) || 'user';
     const password = normalizeText(req.body.password);
+    const page = toInt(req.body.page, 1);
+    const filters = {
+        search: normalizeText(req.body.search),
+        role: normalizeText(req.body.filter_role)
+    };
 
     try {
         if (!username || !email) {
-            return res.redirect(`/admin/users?userId=${encodeURIComponent(userId)}&error=Username+dan+email+wajib+diisi`);
+            return res.redirect(buildUsersRedirect(page, userId, '', 'Username dan email wajib diisi', filters));
         }
 
         if (!['user', 'admin'].includes(role)) {
-            return res.redirect(`/admin/users?userId=${encodeURIComponent(userId)}&error=Role+tidak+valid`);
+            return res.redirect(buildUsersRedirect(page, userId, '', 'Role tidak valid', filters));
         }
 
         const targetUserResult = await pool.query(
@@ -1251,7 +1247,7 @@ router.post('/users/:id', async (req, res) => {
         const targetUser = targetUserResult.rows[0];
 
         if (!targetUser) {
-            return res.redirect('/admin/users?error=User+tidak+ditemukan');
+            return res.redirect(buildUsersRedirect(page, '', '', 'User tidak ditemukan', filters));
         }
 
         const existingUser = await pool.query(
@@ -1260,7 +1256,7 @@ router.post('/users/:id', async (req, res) => {
         );
 
         if (existingUser.rows.length) {
-            return res.redirect(`/admin/users?userId=${encodeURIComponent(userId)}&error=Email+atau+username+sudah+dipakai`);
+            return res.redirect(buildUsersRedirect(page, userId, '', 'Email atau username sudah dipakai', filters));
         }
 
         if (targetUser.role === 'admin' && role !== 'admin') {
@@ -1268,7 +1264,7 @@ router.post('/users/:id', async (req, res) => {
             const adminCount = adminCountResult.rows[0]?.count || 0;
 
             if (adminCount <= 1) {
-                return res.redirect(`/admin/users?userId=${encodeURIComponent(userId)}&error=Minimal+harus+ada+satu+admin`);
+                return res.redirect(buildUsersRedirect(page, userId, '', 'Minimal harus ada satu admin', filters));
             }
         }
 
@@ -1296,19 +1292,24 @@ router.post('/users/:id', async (req, res) => {
             );
         }
 
-        return res.redirect('/admin/users?notice=User+berhasil+diupdate');
+        return res.redirect(buildUsersRedirect(page, '', 'User berhasil diupdate', '', filters));
     } catch (error) {
         console.error('Update user error:', error.message);
-        return res.redirect(`/admin/users?userId=${encodeURIComponent(userId)}&error=Gagal+update+user`);
+        return res.redirect(buildUsersRedirect(page, userId, '', 'Gagal update user', filters));
     }
 });
 
 router.post('/users/:id/delete', async (req, res) => {
     const userId = normalizeText(req.params.id);
+    const page = toInt(req.body.page, 1);
+    const filters = {
+        search: normalizeText(req.body.search),
+        role: normalizeText(req.body.filter_role)
+    };
 
     try {
         if (normalizeText(req.session.user.id) === userId) {
-            return res.redirect('/admin/users?error=Tidak+bisa+hapus+akun+sendiri');
+            return res.redirect(buildUsersRedirect(page, '', '', 'Tidak bisa hapus akun sendiri', filters));
         }
 
         const targetUserResult = await pool.query(
@@ -1318,7 +1319,7 @@ router.post('/users/:id/delete', async (req, res) => {
 
         const targetUser = targetUserResult.rows[0];
         if (!targetUser) {
-            return res.redirect('/admin/users?error=User+tidak+ditemukan');
+            return res.redirect(buildUsersRedirect(page, '', '', 'User tidak ditemukan', filters));
         }
 
         if (targetUser.role === 'admin') {
@@ -1326,15 +1327,15 @@ router.post('/users/:id/delete', async (req, res) => {
             const adminCount = adminCountResult.rows[0]?.count || 0;
 
             if (adminCount <= 1) {
-                return res.redirect('/admin/users?error=Minimal+harus+ada+satu+admin');
+                return res.redirect(buildUsersRedirect(page, '', '', 'Minimal harus ada satu admin', filters));
             }
         }
 
         await pool.query('DELETE FROM users WHERE id = $1', [userId]);
-        return res.redirect('/admin/users?notice=User+berhasil+dihapus');
+        return res.redirect(buildUsersRedirect(page, '', 'User berhasil dihapus', '', filters));
     } catch (error) {
         console.error('Delete user error:', error.message);
-        return res.redirect('/admin/users?error=Gagal+hapus+user');
+        return res.redirect(buildUsersRedirect(page, '', '', 'Gagal hapus user', filters));
     }
 });
 

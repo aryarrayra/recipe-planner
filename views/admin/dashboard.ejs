@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
@@ -14,14 +14,32 @@
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-  <% const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
-  <% const defaultAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}`; %>
-  <% const analyticsData = analytics || { today: { recipe_count: 0, active_users_count: 0, likes_count: 0, wishlist_count: 0 }, week: { recipe_count: 0, active_users_count: 0, likes_count: 0, wishlist_count: 0 }, month: { recipe_count: 0, active_users_count: 0, likes_count: 0, wishlist_count: 0 }, ranges: { daily: { labels: [], recipes: [], activeUsers: [], wishlist: [], likes: [] }, weekly: { labels: [], recipes: [], activeUsers: [], wishlist: [], likes: [] }, monthly: { labels: [], recipes: [], activeUsers: [], wishlist: [], likes: [] } }, engagementRecipes: [], summary: { likes: 0, wishlist: 0 }, defaultRange: 'daily' }; %>
-  <% const topCategoriesData = typeof topCategories !== 'undefined' && Array.isArray(topCategories) ? topCategories : []; %>
+  <% const dashboardMetrics = metrics || {}; %>
+  <% const moderationQueue = Array.isArray(approvalQueue) ? approvalQueue : []; %>
+  <% const reportsQueue = Array.isArray(reportQueue) ? reportQueue : []; %>
+  <% const insights = secondaryInsights || {}; %>
+  <% const auditItems = Array.isArray(auditTrail) ? auditTrail : []; %>
+  <% const auditPager = auditPagination || { page: 1, pageSize: 5, totalItems: auditItems.length, totalPages: 1, hasPrev: false, hasNext: false }; %>
+  <% const categoryItems = Array.isArray(topCategories) ? topCategories : []; %>
+  <% const buildAuditPageUrl = (targetPage) => `/admin/dashboard?auditPage=${targetPage}`; %>
+  <% const formatDateTime = (value) => value ? new Date(value).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; %>
+  <% const formatRelativeTime = (value) => {
+    if (!value) return 'baru saja';
+    const created = new Date(value);
+    if (Number.isNaN(created.getTime())) return 'baru saja';
+    const diff = Date.now() - created.getTime();
+    const minutes = Math.max(0, Math.floor(diff / 60000));
+    if (minutes < 1) return 'baru saja';
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d`;
+    return created.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+  }; %>
 
   <main class="user-dashboard admin-dashboard">
     <div class="user-dashboard-shell admin-shell">
@@ -31,7 +49,7 @@
         <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
           <div class="admin-topbar-copy">
             <p class="user-panel-kicker">Admin panel</p>
-            <h1>Ringkasan operasional</h1>
+            <h1>Dashboard operasional platform</h1>
           </div>
 
           <div class="user-topbar-actions">
@@ -45,364 +63,244 @@
         <section class="admin-hero-panel">
           <div class="user-panel-head">
             <div>
-              <p class="user-panel-kicker">Overview</p>
-              <h1>Kelola user, trending, recook harian, dan report dari satu dashboard.</h1>
+              <p class="user-panel-kicker">Fokus admin</p>
+              <h1>Moderasi resep community, tindak laporan, kelola user, dan pantau kesehatan operasional.</h1>
             </div>
             <div class="admin-hero-actions">
-              <a class="auth-button auth-button-secondary" href="/admin/users">Kelola user</a>
-              <a class="auth-button" href="/admin/trending">Challenge</a>
-              <a class="auth-button auth-button-secondary" href="/admin/reports">Report user</a>
+              <a class="auth-button auth-button-secondary" href="/admin/trending">Moderasi resep</a>
+              <a class="auth-button auth-button-secondary" href="/admin/reports">Tindak laporan</a>
+              <a class="auth-button" href="/admin/users">Kelola user</a>
             </div>
           </div>
 
           <p class="admin-hero-copy">
-            Dashboard ini menampilkan ringkasan user, kategori trending, daily recook, dan laporan user.
-            Pengelolaan resep ditunda sementara supaya fokus admin lebih rapi.
+            Baris pertama menunjukkan KPI yang butuh perhatian cepat. Baris kedua adalah dua antrean utama yang harus dikerjakan admin. Insight dan audit diletakkan di bawah sebagai konteks pendukung.
           </p>
-
-          <div class="admin-stat-grid">
-            <article class="admin-stat-card">
-              <span>Total user</span>
-              <strong><%= metrics.users_count || 0 %></strong>
-              <small><%= metrics.admin_count || 0 %> admin</small>
-            </article>
-            <article class="admin-stat-card">
-              <span>Kategori trending</span>
-              <strong><%= topCategoriesData.length %></strong>
-              <small>Top kategori dari konten yang ada</small>
-            </article>
-            <article class="admin-stat-card">
-              <span>Daily recook</span>
-              <strong><%= topCategoriesData[0] ? topCategoriesData[0].recipe_count : 0 %></strong>
-              <small><%= topCategoriesData[0] ? topCategoriesData[0].category : 'Belum ada data' %></small>
-            </article>
-            <article class="admin-stat-card">
-              <span>Report user</span>
-              <strong>0</strong>
-              <small>Menunggu tabel report</small>
-            </article>
-          </div>
         </section>
 
-        <section class="admin-analytics-panel user-panel">
-          <div class="user-panel-head">
-            <div>
-              <p class="user-panel-kicker">Trending kategori</p>
-              <h2>Kategori populer dan recook harian</h2>
+        <section class="admin-stat-grid admin-ops-stat-grid">
+          <article class="admin-stat-card">
+            <span>Pending recipes</span>
+            <strong><%= dashboardMetrics.pending_recipes_count || 0 %></strong>
+            <small>Resep community menunggu approval</small>
+          </article>
+          <article class="admin-stat-card">
+            <span>Open reports</span>
+            <strong><%= dashboardMetrics.open_reports_count || 0 %></strong>
+            <small>Laporan open dan reviewing</small>
+          </article>
+          <article class="admin-stat-card">
+            <span>Total users</span>
+            <strong><%= dashboardMetrics.users_count || 0 %></strong>
+            <small><%= dashboardMetrics.admin_count || 0 %> admin, <%= dashboardMetrics.user_count || 0 %> user</small>
+          </article>
+          <article class="admin-stat-card">
+            <span>New users</span>
+            <strong><%= dashboardMetrics.new_users_today || 0 %> / <%= dashboardMetrics.new_users_week || 0 %></strong>
+            <small>Hari ini / 7 hari terakhir</small>
+          </article>
+        </section>
+
+        <section class="admin-content-grid admin-ops-grid">
+          <article class="user-panel admin-panel">
+            <div class="user-panel-head">
+              <div>
+                <p class="user-panel-kicker">Approval queue</p>
+                <h2>Resep community yang menunggu moderasi</h2>
+              </div>
+              <a class="user-panel-link" href="/admin/trending">Lihat semua</a>
             </div>
-            <span class="user-panel-meta">Fokus admin sekarang ada di kategori dan laporan user</span>
-          </div>
 
-          <div class="admin-category-list">
-            <% if (topCategoriesData.length) { %>
-              <% topCategoriesData.slice(0, 6).forEach((item, index) => { %>
-                <article class="admin-category-card">
-                  <div class="admin-category-rank">#<%= index + 1 %></div>
-                  <div class="admin-category-copy">
-                    <h3><%= item.category %></h3>
-                    <p><%= item.recipe_count %> item <span>&middot;</span> <%= item.likes_count %> likes <span>&middot;</span> <%= item.views_count %> views</p>
-                  </div>
-                </article>
-              <% }) %>
-            <% } else { %>
-              <div class="admin-empty-state">
-                <h3>Belum ada kategori trending.</h3>
-                <p>Data akan muncul setelah konten terisi.</p>
-              </div>
-            <% } %>
-          </div>
-
-          <div class="admin-analytics-periods">
-            <article class="admin-analytics-card">
-              <span>Daily recook</span>
-              <strong><%= topCategoriesData[0] ? topCategoriesData[0].category : '-' %></strong>
-              <small><%= topCategoriesData[0] ? `${topCategoriesData[0].recipe_count} item` : 'Belum ada rekomendasi' %></small>
-            </article>
-            <article class="admin-analytics-card">
-              <span>Report user</span>
-              <strong>0 report</strong>
-              <small>Siapkan alur laporan dulu sebelum dipakai.</small>
-            </article>
-            <article class="admin-analytics-card">
-              <span>Menu utama</span>
-              <strong>User</strong>
-              <small>Trending kategori, daily recook, dan report user.</small>
-            </article>
-          </div>
-        </section>
-
-        <div class="admin-content-grid">
-          <section class="admin-column">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Daily recook</p>
-                  <h2>Prioritas kategori hari ini</h2>
-                </div>
-                <a class="user-panel-link" href="/admin/trending">Lihat detail</a>
-              </div>
-
-              <div class="admin-list">
-                <% if (topCategoriesData.length) { %>
-                  <% topCategoriesData.slice(0, 4).forEach((item, index) => { %>
-                    <article class="admin-list-card admin-media-card">
-                      <div class="admin-media-preview">
-                        <i class="fa-solid fa-layer-group"></i>
-                      </div>
-                      <div class="admin-list-copy">
-                        <div class="admin-list-topline">
-                          <h3><%= item.category %></h3>
-                          <span class="admin-status is-approved">#<%= index + 1 %></span>
-                        </div>
-                        <p><%= item.recipe_count %> item masuk kategori ini.</p>
-                        <div class="admin-meta-row">
-                          <span><i class="fa-solid fa-heart"></i> <%= item.likes_count %> likes</span>
-                          <span><i class="fa-solid fa-eye"></i> <%= item.views_count %> views</span>
-                        </div>
-                      </div>
-                    </article>
-                  <% }) %>
-                <% } else { %>
-                  <div class="admin-empty-state">
-                    <h3>Belum ada kategori trending.</h3>
-                    <p>Konten akan muncul setelah data kategori mulai terisi.</p>
-                  </div>
-                <% } %>
-              </div>
-            </article>
-          </section>
-
-          <aside class="admin-column">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Recent users</p>
-                  <h2>User terbaru</h2>
-                </div>
-                <a class="user-panel-link" href="/admin/users">Lihat semua</a>
-              </div>
-
-              <div class="admin-user-list">
-                <% recentUsers.forEach((item) => { %>
-                  <article class="admin-user-card">
-                    <img src="<%= item.avatar_url || defaultAvatar(item.username) %>" alt="<%= item.username %>" />
-                    <div class="admin-user-copy">
+            <div class="admin-list">
+              <% if (moderationQueue.length) { %>
+                <% moderationQueue.forEach((recipe) => { %>
+                  <article class="admin-list-card admin-media-card">
+                    <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                    <div class="admin-list-copy">
                       <div class="admin-list-topline">
-                        <h3><%= item.username %></h3>
-                        <span class="admin-status <%= item.role === 'admin' ? 'is-approved' : 'is-neutral' %>"><%= item.role %></span>
+                        <h3><%= recipe.title %></h3>
+                        <span class="admin-status is-pending">Pending</span>
                       </div>
-                      <p><%= item.email %></p>
+                      <p><%= recipe.description || 'Belum ada deskripsi.' %></p>
                       <div class="admin-meta-row">
-                        <span><i class="fa-solid fa-book-bookmark"></i> <%= item.total_saved_recipes || 0 %> saved</span>
-                        <span><i class="fa-solid fa-fire-burner"></i> <%= item.total_recipes_cooked || 0 %> cooked</span>
+                        <span><i class="fa-solid fa-user"></i> <%= recipe.creator_name || 'Community user' %></span>
+                        <span><i class="fa-solid fa-layer-group"></i> <%= recipe.category || 'Community' %></span>
+                        <span><i class="fa-regular fa-clock"></i> <%= formatRelativeTime(recipe.created_at) %></span>
                       </div>
-                      <small><i class="fa-regular fa-calendar"></i> <%= formatDate(item.created_at) %></small>
+                      <div class="admin-list-actions">
+                        <form action="/admin/trending/<%= encodeURIComponent(recipe.id) %>/approve" method="post">
+                          <button type="submit" class="auth-button">Approve</button>
+                        </form>
+                        <form action="/admin/trending/<%= encodeURIComponent(recipe.id) %>/reject" method="post">
+                          <button type="submit" class="auth-button auth-button-secondary">Reject</button>
+                        </form>
+                      </div>
                     </div>
                   </article>
                 <% }) %>
+              <% } else { %>
+                <div class="admin-empty-state">
+                  <h3>Approval queue kosong.</h3>
+                  <p>Tidak ada resep community yang menunggu moderasi saat ini.</p>
+                </div>
+              <% } %>
+            </div>
+          </article>
 
-                <% if (!recentUsers.length) { %>
-                  <div class="admin-empty-state">
-                    <h3>Belum ada user.</h3>
-                    <p>Data user akan muncul di sini setelah mulai digunakan.</p>
-                  </div>
-                <% } %>
+          <article class="user-panel admin-panel">
+            <div class="user-panel-head">
+              <div>
+                <p class="user-panel-kicker">Report queue</p>
+                <h2>Laporan yang harus ditindak</h2>
               </div>
-            </article>
-          </aside>
-        </div>
+              <a class="user-panel-link" href="/admin/reports">Lihat semua</a>
+            </div>
+
+            <div class="admin-list">
+              <% if (reportsQueue.length) { %>
+                <% reportsQueue.forEach((report) => { %>
+                  <article class="admin-user-card admin-report-card">
+                    <div class="admin-media-preview">
+                      <i class="fa-solid fa-flag"></i>
+                    </div>
+                    <div class="admin-user-copy">
+                      <div class="admin-list-topline">
+                        <h3><%= report.reason || 'Report' %></h3>
+                        <span class="admin-status <%= report.status === 'open' ? 'is-pending' : 'is-neutral' %>"><%= report.status %></span>
+                      </div>
+                      <p><%= report.details || report.target_title || 'Laporan belum memiliki detail tambahan.' %></p>
+                      <div class="admin-meta-row">
+                        <span><i class="fa-solid fa-user"></i> <%= report.reporter_name || 'Unknown user' %></span>
+                        <span><i class="fa-solid fa-crosshairs"></i> <%= report.target_type || 'target' %></span>
+                        <span><i class="fa-regular fa-clock"></i> <%= formatRelativeTime(report.created_at) %></span>
+                      </div>
+                      <% if (report.reported_name || report.target_title) { %>
+                        <small>
+                          <%= report.reported_name ? `Terlapor: ${report.reported_name}` : `Target: ${report.target_title}` %>
+                        </small>
+                      <% } %>
+                    </div>
+                  </article>
+                <% }) %>
+              <% } else { %>
+                <div class="admin-empty-state">
+                  <h3>Tidak ada laporan terbuka.</h3>
+                  <p>Queue laporan sedang bersih.</p>
+                </div>
+              <% } %>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-dashboard-stack">
+          <article class="user-panel">
+            <div class="user-panel-head">
+              <div>
+                <p class="user-panel-kicker">Platform insight</p>
+                <h2>Insight sekunder</h2>
+              </div>
+            </div>
+
+            <div class="admin-analytics-periods">
+              <article class="admin-analytics-card">
+                <span>Top category</span>
+                <strong><%= insights.topCategory ? insights.topCategory.category : '-' %></strong>
+                <small><%= insights.topCategory ? `${insights.topCategory.recipe_count} recipe • ${insights.topCategory.likes_count} likes` : 'Belum ada data kategori' %></small>
+              </article>
+              <article class="admin-analytics-card">
+                <span>Total engagement</span>
+                <strong><%= insights.totalEngagement || 0 %></strong>
+                <small>Gabungan likes dan wishlist</small>
+              </article>
+              <article class="admin-analytics-card">
+                <span>Resolved reports</span>
+                <strong><%= insights.resolvedReports || 0 %></strong>
+                <small>Kasus yang sudah ditutup</small>
+              </article>
+            </div>
+
+            <div class="admin-category-list">
+              <% if (categoryItems.length) { %>
+                <% categoryItems.slice(0, 4).forEach((item, index) => { %>
+                  <article class="admin-category-card">
+                    <div class="admin-category-rank">#<%= index + 1 %></div>
+                    <div class="admin-category-copy">
+                      <h3><%= item.category %></h3>
+                      <p><%= item.recipe_count %> recipe <span>&middot;</span> <%= item.likes_count %> likes <span>&middot;</span> <%= item.views_count %> views</p>
+                    </div>
+                  </article>
+                <% }) %>
+              <% } else { %>
+                <div class="admin-empty-state">
+                  <h3>Belum ada insight kategori.</h3>
+                  <p>Data kategori akan muncul setelah resep mulai aktif digunakan.</p>
+                </div>
+              <% } %>
+            </div>
+          </article>
+
+          <article class="user-panel">
+            <div class="user-panel-head">
+              <div>
+                <p class="user-panel-kicker">Audit activity</p>
+                <h2>Aktivitas penting terbaru</h2>
+              </div>
+              <span class="user-panel-meta"><%= auditPager.totalItems %> item</span>
+            </div>
+
+            <div class="admin-list admin-audit-list">
+              <% if (auditItems.length) { %>
+                <% auditItems.forEach((item) => { %>
+                  <article class="admin-audit-card">
+                    <div class="admin-audit-icon">
+                      <% if (item.event_type === 'new_user') { %>
+                        <i class="fa-solid fa-user-plus"></i>
+                      <% } else if (item.event_type === 'recipe_submission') { %>
+                        <i class="fa-solid fa-bowl-food"></i>
+                      <% } else { %>
+                        <i class="fa-solid fa-flag"></i>
+                      <% } %>
+                    </div>
+                    <div class="admin-audit-copy">
+                      <div class="admin-list-topline">
+                        <h3><%= item.event_title || 'Aktivitas' %></h3>
+                        <span class="admin-status is-neutral"><%= item.event_label || '-' %></span>
+                      </div>
+                      <p><strong><%= item.actor_name || 'System' %></strong> • <%= item.event_meta || '-' %></p>
+                      <small><i class="fa-regular fa-clock"></i> <%= formatDateTime(item.event_time) %></small>
+                    </div>
+                  </article>
+                <% }) %>
+              <% } else { %>
+                <div class="admin-empty-state">
+                  <h3>Belum ada audit activity.</h3>
+                  <p>Aktivitas penting akan muncul di sini.</p>
+                </div>
+              <% } %>
+            </div>
+
+            <% if (auditPager.totalPages > 1) { %>
+              <nav class="admin-pagination" aria-label="Pagination audit activity">
+                <a class="admin-pagination-link <%= !auditPager.hasPrev ? 'is-disabled' : '' %>" href="<%= auditPager.hasPrev ? buildAuditPageUrl(auditPager.page - 1) : '#' %>">
+                  <i class="fa-solid fa-chevron-left"></i>
+                  <span>Prev</span>
+                </a>
+
+                <div class="admin-pagination-summary">
+                  <strong>Halaman <%= auditPager.page %></strong>
+                  <span>dari <%= auditPager.totalPages %> | <%= auditPager.pageSize %> per halaman</span>
+                </div>
+
+                <a class="admin-pagination-link <%= !auditPager.hasNext ? 'is-disabled' : '' %>" href="<%= auditPager.hasNext ? buildAuditPageUrl(auditPager.page + 1) : '#' %>">
+                  <span>Next</span>
+                  <i class="fa-solid fa-chevron-right"></i>
+                </a>
+              </nav>
+            <% } %>
+          </article>
+        </section>
       </section>
     </div>
   </main>
-
-  <script>
-    (() => {
-      const analytics = <%- JSON.stringify(analyticsData) %>;
-
-      const trendCanvas = document.getElementById('adminTrendChart');
-      const engagementCanvas = document.getElementById('adminEngagementChart');
-      const trendRangeSelect = document.getElementById('adminTrendRange');
-      const recipeSelect = document.getElementById('adminRecipeSelect');
-      const recipeTitle = document.getElementById('adminRecipeTitle');
-      const recipeLikes = document.getElementById('adminRecipeLikes');
-      const recipeWishlist = document.getElementById('adminRecipeWishlist');
-
-      if (!window.Chart || !trendCanvas || !engagementCanvas) {
-        return;
-      }
-
-      const sharedGridColor = 'rgba(29, 29, 29, 0.08)';
-      const sharedLabelColor = '#6b7280';
-      const accent = '#389c9a';
-      const accentLight = '#bfe5e4';
-      const lime = '#7ac943';
-      const sand = '#f6e7a6';
-      const engagementRecipes = Array.isArray(analytics.engagementRecipes) ? analytics.engagementRecipes : [];
-      const selectedRecipeId = recipeSelect?.value || (engagementRecipes[0] && engagementRecipes[0].id) || '';
-
-      const trendChart = new Chart(trendCanvas, {
-        type: 'line',
-        data: {
-          labels: analytics.ranges[analytics.defaultRange || 'daily'].labels,
-          datasets: [
-            {
-              label: 'Resep baru',
-              data: analytics.ranges[analytics.defaultRange || 'daily'].recipes,
-              borderColor: accent,
-              backgroundColor: 'rgba(56, 156, 154, 0.12)',
-              tension: 0.35,
-              fill: true,
-              pointRadius: 3
-            },
-            {
-              label: 'User aktif',
-              data: analytics.ranges[analytics.defaultRange || 'daily'].activeUsers,
-              borderColor: lime,
-              backgroundColor: 'rgba(122, 201, 67, 0.12)',
-              tension: 0.35,
-              fill: true,
-              pointRadius: 3
-            },
-            {
-              label: 'Wishlist',
-              data: analytics.ranges[analytics.defaultRange || 'daily'].wishlist,
-              borderColor: '#e2a93b',
-              backgroundColor: 'rgba(226, 169, 59, 0.12)',
-              tension: 0.35,
-              fill: true,
-              pointRadius: 3
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              labels: {
-                color: sharedLabelColor,
-                usePointStyle: true,
-                pointStyle: 'circle'
-              }
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            }
-          },
-          scales: {
-            x: {
-              grid: { color: sharedGridColor },
-              ticks: { color: sharedLabelColor }
-            },
-            y: {
-              beginAtZero: true,
-              grid: { color: sharedGridColor },
-              ticks: { color: sharedLabelColor, precision: 0 }
-            }
-          }
-        }
-      });
-
-      const engagementChart = new Chart(engagementCanvas, {
-        type: 'doughnut',
-        data: {
-          labels: ['Likes', 'Wishlist'],
-          datasets: [
-            {
-              data: [0, 0],
-              backgroundColor: [accent, sand],
-              borderWidth: 0
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '66%',
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                color: sharedLabelColor,
-                usePointStyle: true,
-                pointStyle: 'circle'
-              }
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            }
-          },
-        }
-      });
-
-      const populateRecipeSelect = () => {
-        if (!recipeSelect) {
-          return;
-        }
-
-        recipeSelect.innerHTML = '';
-
-        engagementRecipes.forEach((recipe, index) => {
-          const option = document.createElement('option');
-          option.value = recipe.id;
-          option.textContent = recipe.title;
-          if (!recipeSelect.value && index === 0) {
-            option.selected = true;
-          }
-          recipeSelect.appendChild(option);
-        });
-
-        if (!recipeSelect.value && engagementRecipes[0]) {
-          recipeSelect.value = engagementRecipes[0].id;
-        }
-      };
-
-      const updateRecipeAnalytics = (recipeId) => {
-        const recipe = engagementRecipes.find((item) => String(item.id) === String(recipeId)) || engagementRecipes[0];
-
-        if (!recipe) {
-          engagementChart.data.datasets[0].data = [0, 0];
-          engagementChart.update();
-          if (recipeTitle) recipeTitle.textContent = '-';
-          if (recipeLikes) recipeLikes.textContent = '0';
-          if (recipeWishlist) recipeWishlist.textContent = '0';
-          return;
-        }
-
-        if (recipeTitle) recipeTitle.textContent = recipe.title || '-';
-        if (recipeLikes) recipeLikes.textContent = String(recipe.likes_count || 0);
-        if (recipeWishlist) recipeWishlist.textContent = String(recipe.wishlist_count || 0);
-
-        engagementChart.data.datasets[0].data = [Number(recipe.likes_count || 0), Number(recipe.wishlist_count || 0)];
-        engagementChart.update();
-      };
-
-      populateRecipeSelect();
-
-      const setChartRange = (rangeKey) => {
-        const range = analytics.ranges[rangeKey] || analytics.ranges.daily;
-
-        trendChart.data.labels = range.labels;
-        trendChart.data.datasets[0].data = range.recipes;
-        trendChart.data.datasets[1].data = range.activeUsers;
-        trendChart.data.datasets[2].data = range.wishlist;
-        trendChart.update();
-      };
-
-      trendRangeSelect?.addEventListener('change', (event) => {
-        setChartRange(event.target.value);
-      });
-
-      recipeSelect?.addEventListener('change', (event) => {
-        updateRecipeAnalytics(event.target.value);
-      });
-
-      setChartRange(trendRangeSelect?.value || analytics.defaultRange || 'daily');
-      updateRecipeAnalytics(selectedRecipeId || (recipeSelect && recipeSelect.value));
-    })();
-  </script>
 </body>
 </html>
-

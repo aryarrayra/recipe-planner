@@ -22,6 +22,16 @@
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
+  <% const pager = pagination || { page: 1, pageSize: 5, totalItems: users.length, totalPages: 1, hasPrev: false, hasNext: false }; %>
+  <% const activeFilters = filters || { search: '', role: '' }; %>
+  <% const buildUsersPageUrl = (targetPage, targetUserId = '') => {
+    const params = new URLSearchParams();
+    params.set('page', String(targetPage));
+    if (targetUserId) params.set('userId', targetUserId);
+    if (activeFilters.search) params.set('search', activeFilters.search);
+    if (activeFilters.role) params.set('role', activeFilters.role);
+    return `/admin/users?${params.toString()}`;
+  }; %>
   <main class="user-dashboard admin-dashboard">
     <div class="user-dashboard-shell admin-shell">
       <%- include('../partials/sidebar', { mode: 'admin', activePage, user }) %>
@@ -30,7 +40,7 @@
         <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
           <div class="admin-topbar-copy">
             <p class="user-panel-kicker">User management</p>
-            <h1>CRUD user terpisah</h1>
+            <h1>Kelola user</h1>
           </div>
 
           <div class="user-topbar-actions">
@@ -64,113 +74,158 @@
           </p>
         </section>
 
-        <div class="admin-content-grid">
-          <section class="admin-column">
-            <article class="user-panel admin-panel" id="user-form">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Form user</p>
-                  <h2><%= selectedUser ? 'Edit user' : 'Tambah user' %></h2>
-                </div>
-                <% if (selectedUser) { %>
-                  <a class="user-panel-link" href="/admin/users">Batal edit</a>
-                <% } %>
-              </div>
+        <article class="user-panel admin-panel" id="user-form">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">Form user</p>
+              <h2><%= selectedUser ? 'Edit user' : 'Tambah user' %></h2>
+            </div>
+            <% if (selectedUser) { %>
+              <a class="user-panel-link" href="<%= buildUsersPageUrl(pager.page) %>">Batal edit</a>
+            <% } %>
+          </div>
 
-              <form
-                class="admin-form"
-                action="<%= selectedUser ? `/admin/users/${selectedUser.id}` : '/admin/users' %>"
-                method="post"
-              >
-                <div class="admin-form-grid">
-                  <label class="admin-field">
-                    <span>Username</span>
-                    <input name="username" value="<%= selectedUserForm.username %>" placeholder="Username" required />
-                  </label>
-                  <label class="admin-field">
-                    <span>Email</span>
-                    <input type="email" name="email" value="<%= selectedUserForm.email %>" placeholder="email@domain.com" required />
-                  </label>
-                  <label class="admin-field">
-                    <span>Role</span>
-                    <select name="role">
-                      <option value="user" <%= selectedUserForm.role === 'user' ? 'selected' : '' %>>user</option>
-                      <option value="admin" <%= selectedUserForm.role === 'admin' ? 'selected' : '' %>>admin</option>
-                    </select>
-                  </label>
-                  <label class="admin-field admin-field-wide">
-                    <span>Password <%= selectedUser ? '(opsional)' : '' %></span>
-                    <input
-                      type="password"
-                      name="password"
-                      placeholder="<%= selectedUser ? 'Kosongkan jika tidak diubah' : 'Password baru' %>"
-                      <%= selectedUser ? '' : 'required' %>
-                    />
-                  </label>
-                  <label class="admin-field admin-field-wide">
-                    <span>Avatar URL</span>
-                    <input name="avatar_url" value="<%= selectedUserForm.avatar_url %>" placeholder="https://..." />
-                  </label>
-                  <label class="admin-field admin-field-wide">
-                    <span>Bio</span>
-                    <textarea name="bio" rows="4" placeholder="Bio singkat user"><%= selectedUserForm.bio %></textarea>
-                  </label>
-                </div>
+          <form
+            class="admin-form"
+            action="<%= selectedUser ? `/admin/users/${selectedUser.id}` : '/admin/users' %>"
+            method="post"
+          >
+            <input type="hidden" name="page" value="<%= pager.page %>" />
+            <input type="hidden" name="search" value="<%= activeFilters.search %>" />
+            <input type="hidden" name="filter_role" value="<%= activeFilters.role %>" />
+            <div class="admin-form-grid">
+              <label class="admin-field">
+                <span>Username</span>
+                <input name="username" value="<%= selectedUserForm.username %>" placeholder="Username" required />
+              </label>
+              <label class="admin-field">
+                <span>Email</span>
+                <input type="email" name="email" value="<%= selectedUserForm.email %>" placeholder="email@domain.com" required />
+              </label>
+              <label class="admin-field">
+                <span>Role</span>
+                <select name="role">
+                  <option value="user" <%= selectedUserForm.role === 'user' ? 'selected' : '' %>>user</option>
+                  <option value="admin" <%= selectedUserForm.role === 'admin' ? 'selected' : '' %>>admin</option>
+                </select>
+              </label>
+              <label class="admin-field admin-field-wide">
+                <span>Password <%= selectedUser ? '(opsional)' : '' %></span>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="<%= selectedUser ? 'Kosongkan jika tidak diubah' : 'Password baru' %>"
+                  <%= selectedUser ? '' : 'required' %>
+                />
+              </label>
+              <label class="admin-field admin-field-wide">
+                <span>Avatar URL</span>
+                <input name="avatar_url" value="<%= selectedUserForm.avatar_url %>" placeholder="https://..." />
+              </label>
+              <label class="admin-field admin-field-wide">
+                <span>Bio</span>
+                <textarea name="bio" rows="4" placeholder="Bio singkat user"><%= selectedUserForm.bio %></textarea>
+              </label>
+            </div>
 
-                <div class="admin-form-actions">
-                  <button type="submit" class="auth-button">
-                    <%= selectedUser ? 'Simpan perubahan' : 'Tambah user' %>
-                  </button>
-                </div>
-              </form>
-            </article>
-          </section>
+            <div class="admin-form-actions">
+              <button type="submit" class="auth-button">
+                <%= selectedUser ? 'Simpan perubahan' : 'Tambah user' %>
+              </button>
+            </div>
+          </form>
+        </article>
 
-          <aside class="admin-column">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">User list</p>
-                  <h2>Data user terbaru</h2>
-                </div>
-                <span class="user-panel-meta"><%= users.length %> item</span>
-              </div>
+        <article class="user-panel">
+          <div class="user-panel-head">
+            <div>
+              <p class="user-panel-kicker">User list</p>
+              <h2>Data user terbaru</h2>
+            </div>
+            <span class="user-panel-meta"><%= pager.totalItems %> item</span>
+          </div>
 
-              <div class="admin-user-list">
-                <% users.forEach((item) => { %>
-                  <article class="admin-user-card">
-                    <img src="<%= item.avatar_url || defaultAvatar(item.username) %>" alt="<%= item.username %>" />
-                    <div class="admin-user-copy">
-                      <div class="admin-list-topline">
-                        <h3><%= item.username %></h3>
-                        <span class="admin-status <%= item.role === 'admin' ? 'is-approved' : 'is-neutral' %>"><%= item.role %></span>
-                      </div>
-                      <p><%= item.email %></p>
-                      <div class="admin-meta-row">
-                        <span><i class="fa-solid fa-book-bookmark"></i> <%= item.total_saved_recipes || 0 %> saved</span>
-                        <span><i class="fa-solid fa-fire-burner"></i> <%= item.total_recipes_cooked || 0 %> cooked</span>
-                      </div>
-                      <small><i class="fa-regular fa-calendar"></i> <%= formatDate(item.created_at) %></small>
-                      <div class="admin-list-actions">
-                        <a class="admin-link" href="/admin/users?userId=<%= item.id %>">Edit</a>
-                        <form action="/admin/users/<%= item.id %>/delete" method="post" data-confirm-delete="Apakah yakin anda menghapus user ini?" data-confirm-title="Hapus user">
-                          <button type="submit" class="admin-link is-danger">Delete</button>
-                        </form>
-                      </div>
-                    </div>
-                  </article>
-                <% }) %>
+          <form class="admin-user-filter-form" method="get" action="/admin/users">
+            <input type="hidden" name="userId" value="<%= selectedUser ? selectedUser.id : '' %>" />
+            <label class="admin-user-filter-field admin-user-filter-search">
+              <span>Cari user</span>
+              <input
+                type="text"
+                name="search"
+                value="<%= activeFilters.search %>"
+                placeholder="Cari username atau email"
+              />
+            </label>
+            <label class="admin-user-filter-field">
+              <span>Filter role</span>
+              <select name="role">
+                <option value="" <%= !activeFilters.role ? 'selected' : '' %>>Semua role</option>
+                <option value="user" <%= activeFilters.role === 'user' ? 'selected' : '' %>>user</option>
+                <option value="admin" <%= activeFilters.role === 'admin' ? 'selected' : '' %>>admin</option>
+              </select>
+            </label>
+            <div class="admin-user-filter-actions">
+              <button type="submit" class="auth-button">Terapkan</button>
+              <a class="auth-button auth-button-secondary" href="<%= selectedUser ? `/admin/users?userId=${encodeURIComponent(selectedUser.id)}` : '/admin/users' %>">Reset</a>
+            </div>
+          </form>
 
-                <% if (!users.length) { %>
-                  <div class="admin-empty-state">
-                    <h3>Belum ada user.</h3>
-                    <p>Tambahkan user baru lewat form di sebelah kiri.</p>
+          <div class="admin-user-list">
+            <% users.forEach((item) => { %>
+              <article class="admin-user-card admin-user-card-compact">
+                <img src="<%= item.avatar_url || defaultAvatar(item.username) %>" alt="<%= item.username %>" />
+                <div class="admin-user-copy">
+                  <div class="admin-list-topline">
+                    <h3><%= item.username %></h3>
+                    <span class="admin-status <%= item.role === 'admin' ? 'is-approved' : 'is-neutral' %>"><%= item.role %></span>
                   </div>
-                <% } %>
+                  <p><%= item.email %></p>
+                  <div class="admin-meta-row">
+                    <span><i class="fa-solid fa-book-bookmark"></i> <%= item.total_saved_recipes || 0 %> saved</span>
+                    <span><i class="fa-solid fa-fire-burner"></i> <%= item.total_recipes_cooked || 0 %> cooked</span>
+                  </div>
+                  <small><i class="fa-regular fa-calendar"></i> <%= formatDate(item.created_at) %></small>
+                  <div class="admin-list-actions">
+                    <a class="admin-link" href="<%= buildUsersPageUrl(pager.page, item.id) %>">Edit</a>
+                    <form action="/admin/users/<%= item.id %>/delete" method="post" data-confirm-delete="Apakah yakin anda menghapus user ini?" data-confirm-title="Hapus user">
+                      <input type="hidden" name="page" value="<%= pager.page %>" />
+                      <input type="hidden" name="search" value="<%= activeFilters.search %>" />
+                      <input type="hidden" name="filter_role" value="<%= activeFilters.role %>" />
+                      <button type="submit" class="admin-link is-danger">Delete</button>
+                    </form>
+                  </div>
+                </div>
+              </article>
+            <% }) %>
+
+            <% if (!users.length) { %>
+              <div class="admin-empty-state">
+                <h3>Tidak ada user yang cocok.</h3>
+                <p>Coba ubah keyword pencarian atau filter role yang dipakai.</p>
               </div>
-            </article>
-          </aside>
-        </div>
+            <% } %>
+          </div>
+
+          <% if (pager.totalPages > 1) { %>
+            <nav class="admin-pagination" aria-label="Pagination user list">
+              <a class="admin-pagination-link <%= !pager.hasPrev ? 'is-disabled' : '' %>" href="<%= pager.hasPrev ? buildUsersPageUrl(pager.page - 1, selectedUser ? selectedUser.id : '') : '#' %>">
+                <i class="fa-solid fa-chevron-left"></i>
+                <span>Prev</span>
+              </a>
+
+              <div class="admin-pagination-summary">
+                <strong>Halaman <%= pager.page %></strong>
+                <span>dari <%= pager.totalPages %> | <%= pager.pageSize %> per halaman</span>
+              </div>
+
+              <a class="admin-pagination-link <%= !pager.hasNext ? 'is-disabled' : '' %>" href="<%= pager.hasNext ? buildUsersPageUrl(pager.page + 1, selectedUser ? selectedUser.id : '') : '#' %>">
+                <span>Next</span>
+                <i class="fa-solid fa-chevron-right"></i>
+              </a>
+            </nav>
+          <% } %>
+        </article>
+
       </section>
     </div>
   </main>

@@ -1673,6 +1673,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
+  padding: 12px 4px 18px;
 }
 
 .user-search {
@@ -1767,14 +1768,23 @@ a {
   align-items: start;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
+  padding: 6px 2px 2px;
+}
+
+.user-panel-head > div:first-child,
+.admin-topbar-copy,
+.chat-topbar-copy,
+.history-hero-copy,
+.community-post-page .community-post-topbar-copy {
+  padding-top: 4px;
 }
 
 .user-panel-head h1,
 .user-panel-head h2 {
-  margin: 6px 0 0;
+  margin: 14px 0 0;
   font-family: "Space Grotesk", sans-serif;
-  line-height: 1;
+  line-height: 1.16;
   letter-spacing: -0.04em;
 }
 
@@ -3705,7 +3715,7 @@ a {
 }
 
 .admin-topbar-copy h1 {
-  margin: 4px 0 0;
+  margin: 8px 0 0;
   font-family: "Space Grotesk", sans-serif;
   font-size: 1.5rem;
   line-height: 1;
@@ -3785,6 +3795,10 @@ a {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
+}
+
+.admin-ops-stat-grid {
+  align-items: stretch;
 }
 
 .admin-stat-card {
@@ -3962,6 +3976,19 @@ a {
   grid-template-columns: minmax(0, 1.25fr) minmax(330px, 0.95fr);
   gap: 20px;
   align-items: start;
+}
+
+.admin-ops-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-secondary-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+}
+
+.admin-dashboard-stack {
+  display: grid;
+  gap: 20px;
 }
 
 .admin-column {
@@ -4368,6 +4395,52 @@ a {
   object-fit: cover;
 }
 
+.admin-user-card-compact {
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  align-items: center;
+}
+
+.admin-user-card-compact img {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+}
+
+.admin-user-card-compact .admin-user-copy {
+  gap: 8px;
+}
+
+.admin-user-card-compact .admin-list-topline h3 {
+  font-size: 0.98rem;
+}
+
+.admin-user-card-compact .admin-user-copy p,
+.admin-user-card-compact .admin-user-copy small {
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.admin-user-card-compact .admin-meta-row {
+  gap: 8px;
+}
+
+.admin-user-card-compact .admin-meta-row span {
+  padding: 5px 9px;
+  font-size: 0.72rem;
+}
+
+.admin-user-card-compact .admin-list-actions {
+  gap: 8px;
+}
+
+.admin-user-card-compact .admin-link {
+  padding: 7px 12px;
+  font-size: 0.78rem;
+}
+
 .admin-media-preview {
   display: grid;
   place-items: center;
@@ -4460,6 +4533,135 @@ a {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.admin-list-actions form {
+  margin: 0;
+}
+
+.admin-user-filter-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(180px, 0.8fr) auto;
+  gap: 14px;
+  margin-bottom: 18px;
+  align-items: end;
+}
+
+.admin-user-filter-field {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-user-filter-field span {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.admin-user-filter-field input,
+.admin-user-filter-field select {
+  width: 100%;
+  min-height: 50px;
+  padding: 13px 15px;
+  border: 1px solid rgba(29, 29, 29, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+
+.admin-user-filter-field input:focus,
+.admin-user-filter-field select:focus {
+  border-color: rgba(56, 156, 154, 0.45);
+  box-shadow: 0 0 0 4px rgba(56, 156, 154, 0.12);
+}
+
+.admin-user-filter-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.admin-user-filter-actions .auth-button,
+.admin-user-filter-actions .auth-button-secondary {
+  min-height: 50px;
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(29, 29, 29, 0.08);
+}
+
+.admin-pagination-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(56, 156, 154, 0.12);
+  color: var(--accent-dark);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.admin-pagination-link.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.admin-pagination-summary {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.admin-pagination-summary strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.95rem;
+}
+
+.admin-pagination-summary span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.admin-audit-list {
+  gap: 12px;
+}
+
+.admin-audit-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+  border-radius: 20px;
+  background: #faf9f6;
+}
+
+.admin-audit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(56, 156, 154, 0.12);
+  color: var(--accent-dark);
+  font-size: 1rem;
+}
+
+.admin-audit-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
 }
 
 .admin-media-url {
@@ -9622,5 +9824,614 @@ body.history-page {
   .mobile-bottom-nav-logout .button {
     width: 100%;
     justify-content: center;
+  }
+
+  .admin-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-user-filter-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-user-filter-actions {
+    justify-content: stretch;
+  }
+
+  .admin-user-filter-actions .auth-button,
+  .admin-user-filter-actions .auth-button-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-pagination-link,
+  .admin-pagination-summary {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1180px) {
+  .user-dashboard-main,
+  .chat-dashboard .user-dashboard-main,
+  .history-dashboard .user-dashboard-main,
+  .community-page .user-dashboard-main,
+  .admin-dashboard .user-dashboard-main {
+    min-width: 0;
+    padding-inline: 16px;
+  }
+
+  .user-dashboard-content,
+  .user-dashboard-content-modern,
+  .user-feed-layout,
+  .user-fyp-layout,
+  .user-recipe-detail-layout,
+  .user-recipe-detail-grid,
+  .user-recipe-served-layout,
+  .user-recipe-served-hero,
+  .user-recipe-menu-layout,
+  .user-shopping-layout,
+  .user-recipe-generator-layout,
+  .community-layout,
+  .community-post-page .community-book-layout,
+  .history-layout,
+  .history-detail-grid,
+  .admin-content-grid,
+  .admin-ops-grid,
+  .admin-secondary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-feed-sidebar,
+  .user-fyp-sidebar,
+  .user-fyp-rail,
+  .user-recipe-detail-sidebar,
+  .user-recipe-detail-layout-no-rail .user-recipe-detail-sidebar,
+  .community-side-column,
+  .community-post-page .community-book-sidebar,
+  .history-sidebar {
+    position: static !important;
+    top: auto !important;
+    width: 100%;
+    max-width: none;
+  }
+
+  .user-dashboard-stats,
+  .user-card-grid,
+  .user-section-grid,
+  .user-category-row,
+  .user-recipe-menu-grid,
+  .user-recipe-menu-actions,
+  .user-feed-filters,
+  .user-fyp-filter-grid,
+  .community-stat-grid,
+  .community-feed-grid,
+  .community-challenge-grid,
+  .community-compose-meta-grid,
+  .history-activity-grid,
+  .history-related-grid,
+  .admin-stat-grid,
+  .admin-analytics-periods,
+  .admin-chart-grid,
+  .admin-approval-summary,
+  .admin-approval-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .user-recipe-filter-form,
+  .admin-user-filter-form,
+  .community-form-grid,
+  .community-compose-grid,
+  .community-step-card-grid,
+  .community-compose-page-header {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-panel-banner,
+  .user-feed-card,
+  .user-recipe-card,
+  .user-event-card,
+  .admin-list-card,
+  .admin-user-card,
+  .admin-report-card,
+  .community-feed-card,
+  .community-post-card,
+  .community-challenge-card,
+  .history-session-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-recipe-card img,
+  .user-event-card img,
+  .admin-list-card img,
+  .admin-user-card img,
+  .community-feed-card img {
+    width: 100%;
+    height: 220px;
+  }
+
+  .user-topbar-actions,
+  .admin-hero-actions,
+  .community-hero-actions,
+  .community-post-actions,
+  .community-feed-actions,
+  .community-compose-submit-row,
+  .history-session-bar {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 820px) {
+  .site-header,
+  .food-shell,
+  .chat-shell,
+  .history-shell,
+  .login-page,
+  .dashboard-shell,
+  .user-dashboard-shell,
+  .admin-shell,
+  .chat-dashboard-shell,
+  .history-dashboard-shell {
+    width: calc(100% - 16px);
+    margin-inline: auto;
+  }
+
+  .admin-dashboard .admin-shell,
+  .admin-shell,
+  .user-dashboard-shell {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .user-dashboard,
+  .community-page .user-dashboard-main,
+  .admin-dashboard .user-dashboard-main,
+  .chat-dashboard .user-dashboard-main,
+  .history-dashboard .user-dashboard-main {
+    padding: 12px;
+  }
+
+  .user-dashboard-shell,
+  .admin-shell,
+  .chat-dashboard-shell,
+  .history-dashboard-shell {
+    padding: 12px;
+    gap: 14px;
+    border-radius: 24px;
+  }
+
+  .user-sidebar,
+  .admin-sidebar,
+  .chat-dashboard .user-sidebar,
+  .history-dashboard .user-sidebar {
+    position: static;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .user-dashboard-topbar,
+  .admin-topbar-slim,
+  .chat-topbar,
+  .history-topbar,
+  .user-panel-head,
+  .admin-list-topline,
+  .community-post-page .community-post-topbar,
+  .community-step-builder-head,
+  .community-ingredient-card-head,
+  .community-step-card-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-topbar-actions,
+  .admin-hero-actions,
+  .admin-form-actions,
+  .admin-list-actions,
+  .user-ai-actions,
+  .community-form-actions,
+  .community-feed-actions,
+  .community-post-actions,
+  .community-hero-actions,
+  .community-compose-submit-row,
+  .history-topbar-actions,
+  .chat-topbar-actions {
+    width: 100%;
+    justify-content: stretch;
+    gap: 10px;
+  }
+
+  .user-topbar-actions {
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  .user-topbar-actions > *,
+  .admin-hero-actions > *,
+  .admin-form-actions > *,
+  .admin-list-actions > *,
+  .community-form-actions > *,
+  .community-feed-actions > *,
+  .community-post-actions > *,
+  .community-hero-actions > *,
+  .history-topbar-actions > *,
+    .chat-topbar-actions > * {
+    width: 100%;
+  }
+
+  .user-topbar-actions .user-profile-pill {
+    width: auto;
+    min-width: min(240px, 100%);
+    max-width: 100%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    justify-items: start;
+  }
+
+  .auth-button,
+  .auth-button-secondary,
+  .admin-link,
+  .community-feed-post-btn,
+  .community-tweet-action-button,
+  .send-button,
+  .attachment-chip {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-user-card.admin-user-card-compact {
+    grid-template-columns: 72px minmax(0, 1fr) !important;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .admin-user-card.admin-user-card-compact img {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-user-copy {
+    gap: 8px;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-user-copy p,
+  .admin-user-card.admin-user-card-compact .admin-user-copy small {
+    overflow-wrap: anywhere;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-list-actions {
+    flex-direction: row;
+    align-items: stretch;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-list-actions > * {
+    width: auto;
+    flex: 1 1 120px;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-link,
+  .admin-user-card.admin-user-card-compact .admin-list-actions .admin-link,
+  .admin-user-card.admin-user-card-compact .admin-list-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .user-dashboard-stats,
+  .user-card-grid,
+  .user-section-grid,
+  .user-category-row,
+  .user-recipe-menu-grid,
+  .user-recipe-menu-actions,
+  .user-feed-filters,
+  .user-fyp-filter-grid,
+  .community-stat-grid,
+  .community-feed-grid,
+  .community-challenge-grid,
+  .community-compose-meta-grid,
+  .history-activity-grid,
+  .history-related-grid,
+  .admin-stat-grid,
+  .admin-analytics-periods,
+  .admin-chart-grid,
+  .admin-approval-summary,
+  .admin-approval-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-search,
+  .admin-search,
+  .shopping-budget-bar,
+  .community-detail-layout,
+  .community-detail-comments-head,
+  .composer-body,
+  .attachment-preview {
+    grid-template-columns: 1fr !important;
+  }
+
+  .community-detail-post,
+  .community-detail-comment,
+  .community-post-page .community-thread-item,
+  .history-bubble-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .community-detail-avatar,
+  .community-detail-comment-avatar,
+  .community-post-page .community-thread-avatar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .community-detail-actions,
+  .community-tweet-actions,
+  .community-detail-reply-actions {
+    flex-wrap: wrap;
+  }
+
+  .food-hero,
+  .food-header,
+  .food-mini-strip,
+  .food-feature,
+  .food-footer,
+  .food-popular-head,
+  .dashboard-hero,
+  .dashboard-grid,
+  .dashboard-grid-metrics {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-dashboard-topbar,
+  .admin-topbar-slim,
+  .chat-topbar,
+  .history-topbar,
+  .community-page .user-dashboard-topbar {
+    padding: 14px 4px 20px;
+  }
+
+  .user-panel-head {
+    margin-bottom: 24px;
+    padding-top: 8px;
+  }
+
+  .user-panel-head h1,
+  .user-panel-head h2,
+  .admin-topbar-copy h1,
+  .admin-hero-panel h1,
+  .community-page .community-post-topbar-copy h1,
+  .chat-topbar-copy h1,
+  .history-hero h1 {
+    margin-top: 16px;
+    line-height: 1.18;
+  }
+
+  .admin-dashboard .admin-topbar-copy h1,
+  .admin-community-page .admin-topbar-copy h1 {
+    font-size: clamp(1.5rem, 3.8vw, 1.85rem);
+    line-height: 1.15;
+  }
+
+  .user-dashboard-topbar {
+    gap: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-header,
+  .food-shell,
+  .chat-shell,
+  .history-shell,
+  .login-page,
+  .dashboard-shell,
+  .user-dashboard-shell,
+  .admin-shell,
+  .chat-dashboard-shell,
+  .history-dashboard-shell {
+    width: calc(100% - 12px);
+  }
+
+  .user-dashboard-main,
+  .chat-dashboard .user-dashboard-main,
+  .history-dashboard .user-dashboard-main,
+  .community-page .user-dashboard-main,
+  .admin-dashboard .user-dashboard-main {
+    padding-inline: 10px;
+  }
+
+  .admin-dashboard .admin-shell,
+  .admin-shell,
+  .user-dashboard-shell {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .user-panel,
+  .admin-hero-panel,
+  .admin-banner,
+  .form-card,
+  .food-shell,
+  .community-page .user-panel,
+  .community-page .community-book-cover-panel,
+  .community-page .community-book-section,
+  .community-page .community-book-sidecard,
+  .history-panel,
+  .chat-feed,
+  .chat-composer {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .user-panel-head h1 {
+    font-size: 1.45rem;
+  }
+
+  .user-panel-head h2,
+  .admin-topbar-copy h1,
+  .admin-hero-panel h1,
+  .community-page .community-post-topbar-copy h1,
+  .chat-topbar-copy h1,
+  .history-hero h1 {
+    font-size: 1.15rem;
+  }
+
+  .admin-dashboard .admin-topbar-copy h1,
+  .admin-community-page .admin-topbar-copy h1 {
+    font-size: clamp(1.32rem, 5.4vw, 1.56rem);
+    line-height: 1.16;
+  }
+
+  .user-topbar-actions {
+    width: auto;
+  }
+
+  .user-topbar-actions .user-profile-pill {
+    min-width: 0;
+    width: auto;
+    max-width: 100%;
+    padding: 8px 12px;
+    border-radius: 14px;
+  }
+
+  .user-profile-pill strong {
+    font-size: 0.88rem;
+  }
+
+  .user-profile-pill span {
+    font-size: 0.74rem;
+  }
+
+  .user-sidebar-nav,
+  .mobile-bottom-nav-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .user-recipe-card img,
+  .user-event-card img,
+  .admin-list-card img,
+  .admin-user-card img,
+  .community-feed-card img,
+  .community-page .community-recipe-card-hero img {
+    height: 180px;
+  }
+
+  .admin-user-card.admin-user-card-compact {
+    grid-template-columns: 46px minmax(0, 1fr) !important;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    align-items: start;
+  }
+
+  .admin-user-card.admin-user-card-compact img {
+    width: 46px !important;
+    min-width: 46px;
+    max-width: 46px;
+    height: 46px !important;
+    min-height: 46px;
+    max-height: 46px;
+    border-radius: 12px;
+    align-self: start;
+    justify-self: start;
+    object-fit: cover;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-user-copy {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-list-topline {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-list-topline h3 {
+    font-size: 0.9rem;
+    line-height: 1.2;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-user-copy p,
+  .admin-user-card.admin-user-card-compact .admin-user-copy small {
+    font-size: 0.74rem;
+    line-height: 1.35;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-user-copy p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-meta-row span {
+    padding: 3px 7px;
+    font-size: 0.68rem;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-list-actions > * {
+    width: auto;
+    flex: initial;
+  }
+
+  .admin-user-card.admin-user-card-compact .admin-link,
+  .admin-user-card.admin-user-card-compact .admin-list-actions button {
+    width: auto !important;
+    min-width: 72px;
+    min-height: 30px;
+    padding: 5px 10px;
+    font-size: 0.72rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chat-window-shell {
+    min-height: calc(100vh - 132px);
+  }
+
+  .chat-message .chat-bubble,
+  .history-bubble {
+    max-width: 100%;
+  }
+
+  .user-dashboard-topbar,
+  .admin-topbar-slim,
+  .chat-topbar,
+  .history-topbar,
+  .community-page .user-dashboard-topbar {
+    padding: 16px 4px 22px;
+  }
+
+  .user-panel-head {
+    margin-bottom: 22px;
+    padding-top: 8px;
+  }
+
+  .user-panel-head h1,
+  .user-panel-head h2,
+  .admin-topbar-copy h1,
+  .admin-hero-panel h1,
+  .community-page .community-post-topbar-copy h1,
+  .chat-topbar-copy h1,
+  .history-hero h1 {
+    margin-top: 18px;
   }
 }
