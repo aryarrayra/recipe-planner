@@ -22,20 +22,6 @@
       <%- include('../partials/sidebar', { mode: 'user', activePage: 'dashboard', user }) %>
 
       <section class="user-dashboard-main">
-        <header class="user-dashboard-topbar">
-          <div class="user-search">
-            <i class="fa-solid fa-magnifying-glass user-search-icon" aria-hidden="true"></i>
-            <input type="text" placeholder="<%= dashboardData.searchPlaceholder %>" />
-            <span>Search</span>
-          </div>
-
-          <div class="user-topbar-actions">
-            <a class="user-icon-button" href="/chat-ai" aria-label="Buka AI Chat">
-              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
-            </a>
-          </div>
-        </header>
-
         <div class="user-dashboard-content user-dashboard-content-modern">
           <section class="user-dashboard-left">
             <article class="user-panel user-panel-banner">
@@ -74,13 +60,17 @@
                 </div>
               </div>
 
-              <div class="user-category-row user-category-grid-modern">
-                <% dashboardData.categories.forEach((category) => { %>
-                  <a class="user-category-chip" href="/recipes?feed=<%= encodeURIComponent(category.feedKey || 'random') %>">
-                    <img src="<%= category.image %>" alt="<%= category.label %>" />
-                    <span><%= category.label %></span>
-                  </a>
-                <% }) %>
+              <div class="user-category-carousel" data-category-carousel>
+                <div class="user-category-carousel-viewport" data-category-carousel-viewport>
+                  <div class="user-category-carousel-track">
+                    <% dashboardData.categories.forEach((category) => { %>
+                      <a class="user-category-chip" href="/recipes?feed=<%= encodeURIComponent(category.feedKey || 'random') %>">
+                        <img src="<%= category.image %>" alt="<%= category.label %>" />
+                        <span><%= category.label %></span>
+                      </a>
+                    <% }) %>
+                  </div>
+                </div>
               </div>
             </article>
 
@@ -264,56 +254,39 @@
               </div>
             </article>
 
-            <article class="user-panel user-event-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Status akun</p>
-                  <h2>Profile ringkas user</h2>
-                </div>
-              </div>
-
-              <div class="user-stat-list">
-                <div class="user-stat-card">
-                  <i class="fa-regular fa-id-badge" aria-hidden="true"></i>
-                  <strong><%= user.username %></strong>
-                  <span>Nama akun aktif</span>
-                </div>
-                <div class="user-stat-card">
-                  <i class="fa-regular fa-envelope" aria-hidden="true"></i>
-                  <strong><%= user.email %></strong>
-                  <span>Email terdaftar</span>
-                </div>
-                <div class="user-stat-card">
-                  <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
-                  <strong><%= user.role %></strong>
-                  <span>Tipe akses saat ini</span>
-                </div>
-                <div class="user-stat-card">
-                  <i class="fa-solid fa-shield-heart" aria-hidden="true"></i>
-                  <strong><%= dashboardData.preferences && dashboardData.preferences.length ? dashboardData.preferences.map((item) => {
-                    const labels = {
-                      nuts: 'Kacang',
-                      seafood: 'Seafood',
-                      milk: 'Susu',
-                      egg: 'Telur',
-                      gluten: 'Gluten',
-                      spicy: 'Pedas',
-                      shrimp: 'Udang'
-                    };
-                    return labels[item] || item;
-                  }).join(', ') : 'Belum ada' %></strong>
-                  <span>Food preference aktif</span>
-                </div>
-              </div>
-
-              <div class="user-ai-actions">
-                <a class="auth-button auth-button-secondary" href="/profile">Atur preference</a>
-              </div>
-            </article>
           </aside>
         </div>
       </section>
     </div>
   </main>
+  <script>
+    (function () {
+      const carousel = document.querySelector('[data-category-carousel]');
+      if (!carousel) {
+        return;
+      }
+
+      const viewport = carousel.querySelector('[data-category-carousel-viewport]');
+      if (!viewport) {
+        return;
+      }
+
+      function updateState() {
+        const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth - 1);
+        carousel.classList.toggle('is-scrollable', maxScrollLeft > 0);
+      }
+
+      viewport.addEventListener('scroll', updateState, { passive: true });
+      window.addEventListener('resize', updateState);
+      window.addEventListener('load', updateState, { once: true });
+
+      if (window.ResizeObserver) {
+        const observer = new ResizeObserver(updateState);
+        observer.observe(viewport);
+      }
+
+      requestAnimationFrame(updateState);
+    })();
+  </script>
 </body>
 </html>

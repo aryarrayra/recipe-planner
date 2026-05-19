@@ -96,6 +96,12 @@
                   <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportUserButton" aria-label="Report user" title="Report user">
                     <span class="community-action-icon"><i class="fa-solid fa-user-slash"></i></span>
                   </button>
+                  <% if (String(post.creatorUserId || '') === String(user && user.id ? user.id : '')) { %>
+                    <button type="button" class="community-tweet-action-button community-tweet-action-button-danger" id="deletePostButton" aria-label="Hapus postingan" title="Hapus postingan">
+                      <span class="community-action-icon"><i class="fa-regular fa-trash-can"></i></span>
+                      <span>Hapus</span>
+                    </button>
+                  <% } %>
                 </div>
               </div>
             </article>
@@ -309,6 +315,7 @@
       const reportToast = document.getElementById('communityReportToast');
       const reportContentButton = document.getElementById('reportContentButton');
       const reportUserButton = document.getElementById('reportUserButton');
+      const deletePostButton = document.getElementById('deletePostButton');
 
       function escapeHtml(value) {
         return String(value || '')
@@ -432,6 +439,18 @@
         return data;
       }
 
+      async function deletePost() {
+        const response = await fetch(`/community/posts/${encodeURIComponent(postId)}/delete`, {
+          method: 'POST',
+          headers: { Accept: 'application/json' }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Gagal menghapus postingan');
+        }
+        return data;
+      }
+
       likeButton?.addEventListener('click', async () => {
         if (!postId) return;
         try {
@@ -510,6 +529,22 @@
         targetUserId: postCreatorUserId,
         title: 'Report user'
       }));
+
+      deletePostButton?.addEventListener('click', async () => {
+        const confirmed = window.confirm('Hapus postingan ini? Aksi ini tidak bisa dibatalkan.');
+        if (!confirmed) {
+          return;
+        }
+
+        deletePostButton.disabled = true;
+        try {
+          await deletePost();
+          window.location.href = '/community?notice=Postingan+berhasil+dihapus';
+        } catch (error) {
+          deletePostButton.disabled = false;
+          window.alert(error.message || 'Gagal menghapus postingan');
+        }
+      });
 
       commentsList?.addEventListener('click', (event) => {
         const reportCommentButton = event.target.closest('[data-action="report-comment"]');

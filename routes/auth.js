@@ -1,5 +1,6 @@
 ﻿const express = require('express');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const multer = require('multer');
 const pool = require('../config/db');
 const { preventBack } = require('../middleware/auth');
@@ -39,7 +40,399 @@ const ALLERGY_OPTIONS = [
 let preferenceSchemaReady;
 let communityPostLikesSchemaReady;
 let communityReportsSchemaReady;
+let authOtpSchemaReady;
+let mailerTransport = null;
+let nodemailerModule = null;
 
+function getAppBaseUrl(req) {
+    const configuredBaseUrl = normalizeText(
+        process.env.APP_BASE_URL ||
+        process.env.PUBLIC_BASE_URL ||
+        process.env.SITE_URL
+    ).replace(/\/+$/, '');
+
+    if (configuredBaseUrl) {
+        return configuredBaseUrl;
+    }
+
+    const forwardedProto = normalizeText(req.headers['x-forwarded-proto']);
+    const protocol = forwardedProto || req.protocol || 'http';
+    const host = normalizeText(req.get('host'));
+    return host ? `${protocol}://${host}` : '';
+}
+
+function getGoogleOAuthConfig(req) {
+    const clientId = normalizeText(process.env.GOOGLE_CLIENT_ID);
+    const clientSecret = normalizeText(process.env.GOOGLE_CLIENT_SECRET);
+    const redirectUri = normalizeText(process.env.GOOGLE_REDIRECT_URI) ||
+        `${getAppBaseUrl(req)}/auth/google/callback`;
+
+    return {
+        clientId,
+        clientSecret,
+        redirectUri
+    };
+}
+
+function normalizeUsernameBase(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .replace(/-{2,}/g, '-')
+        .slice(0, 30) || 'user';
+}
+
+function buildGoogleAvatar(profile = {}) {
+    const picture = normalizeText(profile.picture);
+    if (picture) {
+        return picture;
+    }
+
+    const name = normalizeText(profile.name || profile.email || 'User');
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
+}
+
+async function createUniqueUsername(baseValue, email) {
+    const base = normalizeUsernameBase(baseValue || String(email || '').split('@')[0] || 'user');
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+        const suffix = attempt === 0 ? '' : `-${attempt + 1}`;
+        const candidate = `${base}${suffix}`.slice(0, 50);
+        const existing = await pool.query(
+            'SELECT id FROM users WHERE username = $1 LIMIT 1',
+            [candidate]
+        );
+
+        if (!existing.rows.length) {
+            return candidate;
+        }
+    }
+
+    return `${base}-${Date.now().toString(36).slice(-6)}`.slice(0, 50);
+}
+
+function getMailerTransport() {
+    if (mailerTransport !== null) {
+        return mailerTransport;
+    }
+
+    if (!nodemailerModule) {
+        try {
+            nodemailerModule = require('nodemailer');
+        } catch (error) {
+            nodemailerModule = null;
+        }
+    }
+
+    const host = normalizeText(process.env.SMTP_HOST);
+    const port = Number(process.env.SMTP_PORT || 587);
+    const user = normalizeText(process.env.SMTP_USER);
+    const pass = normalizeText(process.env.SMTP_PASS);
+
+    if (!nodemailerModule || !host || !user || !pass) {
+        mailerTransport = null;
+        return null;
+    }
+
+    mailerTransport = nodemailerModule.createTransport({
+        host,
+        port,
+        secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true' || port === 465,
+        auth: {
+            user,
+            pass
+        }
+    });
+
+    return mailerTransport;
+}
+
+function getOtpSubject(purpose = '') {
+    if (purpose === 'register') {
+        return 'Kode verifikasi akun ResepKu';
+    }
+
+    if (purpose === 'reset_password') {
+        return 'Kode reset password ResepKu';
+    }
+
+    return 'Kode verifikasi ResepKu';
+}
+
+function getOtpMessage(purpose = '', code = '') {
+    if (purpose === 'register') {
+        return `Kode verifikasi akun ResepKu kamu adalah ${code}. Kode ini berlaku 10 menit.`;
+    }
+
+    if (purpose === 'reset_password') {
+        return `Kode reset password ResepKu kamu adalah ${code}. Kode ini berlaku 10 menit.`;
+    }
+
+    return `Kode verifikasi ResepKu kamu adalah ${code}. Kode ini berlaku 10 menit.`;
+}
+
+function maskEmailAddress(email = '') {
+    const [localPart = '', domainPart = ''] = String(email || '').split('@');
+    if (!domainPart) {
+        return email;
+    }
+
+    const visible = localPart.slice(0, 2);
+    return `${visible}${visible ? '***' : '***'}@${domainPart}`;
+}
+
+async function ensureAuthOtpSchema() {
+    if (!authOtpSchemaReady) {
+        authOtpSchemaReady = (async () => {
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS auth_otp_codes (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    email TEXT NOT NULL,
+                    purpose TEXT NOT NULL CHECK (purpose IN ('register', 'reset_password')),
+                    token_hash TEXT NOT NULL,
+                    attempts INT NOT NULL DEFAULT 0,
+                    expires_at TIMESTAMP NOT NULL,
+                    verified_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+        })().catch((error) => {
+            authOtpSchemaReady = null;
+            throw error;
+        });
+    }
+
+    return authOtpSchemaReady;
+}
+
+async function createAuthOtpRecord(email, purpose) {
+    await ensureAuthOtpSchema();
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const tokenHash = await bcrypt.hash(code, 10);
+    const expiresAt = new Date(Date.now() + (10 * 60 * 1000));
+
+    await pool.query(
+        `
+            INSERT INTO auth_otp_codes (email, purpose, token_hash, expires_at)
+            VALUES ($1, $2, $3, $4)
+        `,
+        [normalizeEmail(email), purpose, tokenHash, expiresAt]
+    );
+
+    return code;
+}
+
+async function verifyAuthOtpCode(email, purpose, code) {
+    await ensureAuthOtpSchema();
+    const result = await pool.query(
+        `
+            SELECT id, token_hash, attempts, expires_at, verified_at
+            FROM auth_otp_codes
+            WHERE email = $1
+              AND purpose = $2
+            ORDER BY created_at DESC
+            LIMIT 1
+        `,
+        [normalizeEmail(email), purpose]
+    );
+
+    const record = result.rows[0];
+    if (!record) {
+        return { ok: false, message: 'Kode OTP tidak ditemukan.' };
+    }
+
+    if (record.verified_at) {
+        return { ok: false, message: 'Kode OTP sudah dipakai.' };
+    }
+
+    if (new Date(record.expires_at).getTime() < Date.now()) {
+        return { ok: false, message: 'Kode OTP sudah kedaluwarsa.' };
+    }
+
+    const matches = await bcrypt.compare(String(code || ''), record.token_hash);
+    if (!matches) {
+        await pool.query(
+            'UPDATE auth_otp_codes SET attempts = attempts + 1 WHERE id = $1',
+            [record.id]
+        );
+        return { ok: false, message: 'Kode OTP salah.' };
+    }
+
+    await pool.query(
+        'UPDATE auth_otp_codes SET verified_at = CURRENT_TIMESTAMP WHERE id = $1',
+        [record.id]
+    );
+
+    return { ok: true };
+}
+
+async function sendAuthOtpEmail({ to, code, purpose }) {
+    const transport = getMailerTransport();
+    const subject = getOtpSubject(purpose);
+    const text = getOtpMessage(purpose, code);
+
+    if (!transport) {
+        console.log(`[AUTH OTP DEV] to=${to} purpose=${purpose} code=${code}`);
+        return { devMode: true };
+    }
+
+    const senderEmail = normalizeText(process.env.SMTP_FROM) || normalizeText(process.env.SMTP_USER) || 'no-reply@example.com';
+    const senderName = normalizeText(process.env.SMTP_FROM_NAME) || 'ResepKu';
+
+    await transport.sendMail({
+        from: `${senderName} <${senderEmail}>`,
+        to,
+        subject,
+        text,
+        html: `<p>${text}</p><p>Masukkan kode ini di halaman verifikasi.</p>`
+    });
+
+    return { devMode: false };
+}
+
+async function saveSessionUser(req, user) {
+    const preferences = await fetchUserPreferences(user.id);
+    req.session.user = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role || 'user',
+        avatar_url: user.avatar_url || null,
+        preferences
+    };
+
+    return new Promise((resolve, reject) => {
+        req.session.save((error) => {
+            if (error) {
+                return reject(error);
+            }
+
+            return resolve(req.session.user);
+        });
+    });
+}
+
+async function getOrCreateGoogleUser(profile = {}) {
+    const email = normalizeEmail(profile.email);
+    if (!email) {
+        throw new Error('Akun Google tidak menyediakan email.');
+    }
+
+    const existing = await pool.query(
+        `
+            SELECT id, username, email, role, avatar_url
+            FROM users
+            WHERE email = $1
+            LIMIT 1
+        `,
+        [email]
+    );
+
+    if (existing.rows.length) {
+        const user = existing.rows[0];
+        const nextAvatarUrl = buildGoogleAvatar(profile);
+
+        if (nextAvatarUrl && !normalizeText(user.avatar_url)) {
+            await pool.query(
+                `
+                    UPDATE users
+                    SET avatar_url = COALESCE(NULLIF($1, ''), avatar_url),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $2
+                `,
+                [nextAvatarUrl, user.id]
+            );
+        }
+
+        return {
+            ...user,
+            avatar_url: user.avatar_url || nextAvatarUrl
+        };
+    }
+
+    const usernameBase = normalizeText(profile.name) || normalizeText(profile.given_name) || email.split('@')[0];
+    const username = await createUniqueUsername(usernameBase, email);
+    const avatarUrl = buildGoogleAvatar(profile);
+    const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+
+    const created = await pool.query(
+        `
+            INSERT INTO users (username, email, password_hash, avatar_url)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, username, email, role, avatar_url
+        `,
+        [username, email, passwordHash, avatarUrl]
+    );
+
+    return created.rows[0];
+}
+
+async function fetchGoogleProfile(accessToken) {
+    const response = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+        headers: {
+            Authorization: `Bearer ${accessToken}`
+        }
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload.error_description || payload.error || 'Gagal mengambil profil Google.');
+    }
+
+    return payload;
+}
+
+async function exchangeGoogleCode(req, code) {
+    const { clientId, clientSecret, redirectUri } = getGoogleOAuthConfig(req);
+
+    if (!clientId || !clientSecret || !redirectUri) {
+        throw new Error('Google login belum dikonfigurasi.');
+    }
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            code,
+            client_id: clientId,
+            client_secret: clientSecret,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code'
+        }).toString()
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload.error_description || payload.error || 'Gagal menukar kode Google.');
+    }
+
+    return payload;
+}
+
+function buildGoogleAuthUrl(req, state) {
+    const { clientId, redirectUri } = getGoogleOAuthConfig(req);
+
+    if (!clientId || !redirectUri) {
+        throw new Error('Google login belum dikonfigurasi.');
+    }
+
+    const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'openid email profile',
+        access_type: 'offline',
+        prompt: 'select_account',
+        include_granted_scopes: 'true',
+        state
+    });
+
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
 function ensurePreferenceSchema() {
     if (!preferenceSchemaReady) {
         preferenceSchemaReady = (async () => {
@@ -676,6 +1069,11 @@ function filterRecipesByPreferences(recipes, preferences = []) {
     }
 
     return recipes.filter((recipe) => getRecipeConflicts(getRecipeFoodInfo(recipe), preferences).length === 0);
+}
+
+function filterRecipesForDisplay(recipes, preferences = []) {
+    const filteredRecipes = filterRecipesByPreferences(recipes, preferences);
+    return filteredRecipes.length ? filteredRecipes : recipes;
 }
 
 function uniqueRecipesById(items = []) {
@@ -1653,7 +2051,408 @@ function getFallbackRecipeCatalog(region = '') {
     ];
 }
 
-router.get('/login', (req, res) => {
+router.get('/auth/google', (req, res) => {
+    if (req.session.user) {
+        return res.redirect(req.session.user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+    }
+
+    const source = String(req.query.source || 'login').toLowerCase() === 'register' ? 'register' : 'login';
+    const state = crypto.randomBytes(24).toString('hex');
+
+    try {
+        const { clientId, redirectUri } = getGoogleOAuthConfig(req);
+        if (!clientId || !redirectUri) {
+            return res.status(400).render(source, {
+                title: source === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+                error: 'Google login belum dikonfigurasi. Tambahkan GOOGLE_CLIENT_ID dan GOOGLE_REDIRECT_URI.',
+                values: {},
+                allergyOptions: ALLERGY_OPTIONS
+            });
+        }
+
+        req.session.oauthState = state;
+        req.session.oauthSource = source;
+        req.session.save((saveError) => {
+            if (saveError) {
+                console.error('Google auth session error:', saveError.message);
+                return res.status(500).render(source, {
+                    title: source === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+                    error: 'Gagal memulai login Google. Coba lagi.',
+                    values: {},
+                    allergyOptions: ALLERGY_OPTIONS
+                });
+            }
+
+            return res.redirect(buildGoogleAuthUrl(req, state));
+        });
+    } catch (error) {
+        console.error('Google auth start error:', error.message);
+        return res.status(500).render(source, {
+            title: source === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+            error: 'Gagal memulai login Google. Coba lagi.',
+            values: {},
+            allergyOptions: ALLERGY_OPTIONS
+        });
+    }
+});
+
+router.get('/auth/google/callback', async (req, res) => {
+    const source = req.session.oauthSource === 'register' ? 'register' : 'login';
+    const errorView = source === 'register' ? 'register' : 'login';
+
+    try {
+        const code = String(req.query.code || '').trim();
+        const state = String(req.query.state || '').trim();
+
+        if (!code || !state || !req.session.oauthState || state !== req.session.oauthState) {
+            return res.status(400).render(errorView, {
+                title: errorView === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+                error: 'Sesi login Google tidak valid. Coba lagi.',
+                values: {},
+                allergyOptions: ALLERGY_OPTIONS
+            });
+        }
+
+        const tokenPayload = await exchangeGoogleCode(req, code);
+        const profile = await fetchGoogleProfile(tokenPayload.access_token);
+
+        if (profile.email_verified === false) {
+            return res.status(400).render(errorView, {
+                title: errorView === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+                error: 'Akun Google harus punya email yang terverifikasi.',
+                values: {},
+                allergyOptions: ALLERGY_OPTIONS
+            });
+        }
+
+        const user = await getOrCreateGoogleUser(profile);
+        await saveSessionUser(req, user);
+        req.session.oauthState = null;
+        req.session.oauthSource = null;
+
+        return res.redirect(req.session.user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+    } catch (error) {
+        console.error('Google auth callback error:', error.message);
+        return res.status(400).render(errorView, {
+            title: errorView === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+            error: 'Gagal masuk dengan Google. Coba lagi.',
+            values: {},
+            allergyOptions: ALLERGY_OPTIONS
+        });
+    }
+});
+
+router.post('/register', (req, res) => {
+    return res.redirect(307, '/register/start');
+});
+
+router.post('/register/start', async (req, res) => {
+    const username = String(req.body.username || '').trim();
+    const email = normalizeEmail(req.body.email);
+    const password = String(req.body.password || '');
+    const confirmPassword = String(req.body.confirmPassword || '');
+    const preferences = normalizePreferenceList(req.body.preferences);
+
+    if (!username || !email || !password || !confirmPassword) {
+        return renderAuthError(res, 'register', 'Semua field wajib diisi.', { username, email, preferences });
+    }
+
+    if (password !== confirmPassword) {
+        return renderAuthError(res, 'register', 'Password dan konfirmasi password tidak sama.', { username, email, preferences });
+    }
+
+    if (password.length < 6) {
+        return renderAuthError(res, 'register', 'Password minimal 6 karakter.', { username, email, preferences });
+    }
+
+    try {
+        const existing = await pool.query(
+            'SELECT id FROM users WHERE email = $1 OR username = $2 LIMIT 1',
+            [email, username]
+        );
+
+        if (existing.rows.length) {
+            return renderAuthError(res, 'register', 'Email atau username sudah terdaftar.', { username, email, preferences });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
+        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}`;
+        const code = await createAuthOtpRecord(email, 'register');
+
+        req.session.pendingRegistration = {
+            username,
+            email,
+            passwordHash,
+            avatarUrl,
+            preferences
+        };
+        req.session.pendingRegistrationEmail = email;
+
+        req.session.save(async (saveError) => {
+            if (saveError) {
+                console.error('Register OTP session error:', saveError.message);
+                return renderAuthError(res, 'register', 'Gagal memulai verifikasi OTP. Coba lagi.', { username, email, preferences });
+            }
+
+            try {
+                await sendAuthOtpEmail({ to: email, code, purpose: 'register' });
+                return res.redirect('/register/verify');
+            } catch (emailError) {
+                console.error('Register OTP email error:', emailError.message);
+                return renderAuthError(res, 'register', 'Gagal mengirim OTP. Coba lagi.', { username, email, preferences });
+            }
+        });
+    } catch (error) {
+        console.error('Register start error:', error.message);
+        return renderAuthError(res, 'register', 'Gagal membuat akun. Coba lagi.', { username, email, preferences });
+    }
+});
+
+router.get('/register/verify', (req, res) => {
+    if (req.session.user) {
+        return res.redirect('/dashboard');
+    }
+
+    const pending = req.session.pendingRegistration;
+    if (!pending) {
+        return res.redirect('/register');
+    }
+
+    preventBack(req, res, () => {});
+
+    return res.render('register-verify', {
+        title: 'Verifikasi OTP - AI Recipe Planner',
+        error: null,
+        notice: null,
+        email: pending.email,
+        maskedEmail: maskEmailAddress(pending.email),
+        values: {}
+    });
+});
+
+router.post('/register/verify', async (req, res) => {
+    const pending = req.session.pendingRegistration;
+    const code = String(req.body.code || '').trim();
+
+    if (!pending) {
+        return res.redirect('/register');
+    }
+
+    if (!code) {
+        return res.status(400).render('register-verify', {
+            title: 'Verifikasi OTP - AI Recipe Planner',
+            error: 'Kode OTP wajib diisi.',
+            notice: null,
+            email: pending.email,
+            maskedEmail: maskEmailAddress(pending.email),
+            values: { code }
+        });
+    }
+
+    try {
+        const verification = await verifyAuthOtpCode(pending.email, 'register', code);
+        if (!verification.ok) {
+            return res.status(400).render('register-verify', {
+                title: 'Verifikasi OTP - AI Recipe Planner',
+                error: verification.message || 'Kode OTP salah.',
+                notice: null,
+                email: pending.email,
+                maskedEmail: maskEmailAddress(pending.email),
+                values: { code }
+            });
+        }
+
+        const result = await pool.query(
+            `
+                INSERT INTO users (username, email, password_hash, avatar_url)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id, username, email, role, avatar_url
+            `,
+            [pending.username, pending.email, pending.passwordHash, pending.avatarUrl]
+        );
+
+        await saveUserPreferences(result.rows[0].id, pending.preferences || []);
+        req.session.pendingRegistration = null;
+        req.session.pendingRegistrationEmail = null;
+        req.session.oauthState = null;
+        req.session.oauthSource = null;
+        await saveSessionUser(req, result.rows[0]);
+
+        return res.redirect('/dashboard');
+    } catch (error) {
+        console.error('Register verify error:', error.message);
+        return res.status(500).render('register-verify', {
+            title: 'Verifikasi OTP - AI Recipe Planner',
+            error: 'Gagal memverifikasi OTP. Coba lagi.',
+            notice: null,
+            email: pending.email,
+            maskedEmail: maskEmailAddress(pending.email),
+            values: { code }
+        });
+    }
+});
+
+router.get('/forgot-password', (req, res) => {
+    if (req.session.user) {
+        return res.redirect('/dashboard');
+    }
+
+    preventBack(req, res, () => {});
+
+    return res.render('forgot-password', {
+        title: 'Forgot Password - AI Recipe Planner',
+        error: null,
+        notice: null,
+        values: {}
+    });
+});
+
+router.post('/forgot-password', async (req, res) => {
+    const email = normalizeEmail(req.body.email);
+
+    if (!email) {
+        return res.status(400).render('forgot-password', {
+            title: 'Forgot Password - AI Recipe Planner',
+            error: 'Email wajib diisi.',
+            notice: null,
+            values: { email }
+        });
+    }
+
+    try {
+        const userResult = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [email]);
+        if (userResult.rows.length) {
+            const code = await createAuthOtpRecord(email, 'reset_password');
+            req.session.pendingPasswordResetEmail = email;
+            await new Promise((resolve, reject) => {
+                req.session.save((saveError) => {
+                    if (saveError) {
+                        return reject(saveError);
+                    }
+                    return resolve();
+                });
+            });
+            await sendAuthOtpEmail({ to: email, code, purpose: 'reset_password' });
+        }
+
+        return res.render('forgot-password', {
+            title: 'Forgot Password - AI Recipe Planner',
+            error: null,
+            notice: 'Jika email terdaftar, kode OTP reset password sudah dikirim.',
+            values: { email }
+        });
+    } catch (error) {
+        console.error('Forgot password error:', error.message);
+        return res.status(500).render('forgot-password', {
+            title: 'Forgot Password - AI Recipe Planner',
+            error: 'Gagal memproses permintaan reset password.',
+            notice: null,
+            values: { email }
+        });
+    }
+});
+
+router.get('/reset-password', (req, res) => {
+    if (req.session.user) {
+        return res.redirect('/dashboard');
+    }
+
+    const email = req.session.pendingPasswordResetEmail || '';
+    if (!email) {
+        return res.redirect('/forgot-password');
+    }
+
+    preventBack(req, res, () => {});
+
+    return res.render('reset-password', {
+        title: 'Reset Password - AI Recipe Planner',
+        error: null,
+        notice: null,
+        email,
+        maskedEmail: maskEmailAddress(email),
+        values: { email }
+    });
+});
+
+router.post('/reset-password', async (req, res) => {
+    const email = normalizeEmail(req.body.email || req.session.pendingPasswordResetEmail);
+    const code = String(req.body.code || '').trim();
+    const password = String(req.body.password || '');
+    const confirmPassword = String(req.body.confirmPassword || '');
+
+    if (!email) {
+        return res.redirect('/forgot-password');
+    }
+
+    if (!code || !password || !confirmPassword) {
+        return res.status(400).render('reset-password', {
+            title: 'Reset Password - AI Recipe Planner',
+            error: 'Semua field wajib diisi.',
+            notice: null,
+            email,
+            maskedEmail: maskEmailAddress(email),
+            values: { email, code }
+        });
+    }
+
+    if (password !== confirmPassword) {
+        return res.status(400).render('reset-password', {
+            title: 'Reset Password - AI Recipe Planner',
+            error: 'Password dan konfirmasi password tidak sama.',
+            notice: null,
+            email,
+            maskedEmail: maskEmailAddress(email),
+            values: { email, code }
+        });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).render('reset-password', {
+            title: 'Reset Password - AI Recipe Planner',
+            error: 'Password minimal 6 karakter.',
+            notice: null,
+            email,
+            maskedEmail: maskEmailAddress(email),
+            values: { email, code }
+        });
+    }
+
+    try {
+        const verification = await verifyAuthOtpCode(email, 'reset_password', code);
+        if (!verification.ok) {
+            return res.status(400).render('reset-password', {
+                title: 'Reset Password - AI Recipe Planner',
+                error: verification.message || 'Kode OTP salah.',
+                notice: null,
+                email,
+                maskedEmail: maskEmailAddress(email),
+                values: { email, code }
+            });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
+        await pool.query(
+            'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE email = $2',
+            [passwordHash, email]
+        );
+
+        req.session.pendingPasswordResetEmail = null;
+        req.session.oauthState = null;
+        req.session.oauthSource = null;
+
+        return res.redirect('/login?reset=success');
+    } catch (error) {
+        console.error('Reset password error:', error.message);
+        return res.status(500).render('reset-password', {
+            title: 'Reset Password - AI Recipe Planner',
+            error: 'Gagal mereset password. Coba lagi.',
+            notice: null,
+            email,
+            maskedEmail: maskEmailAddress(email),
+            values: { email, code }
+        });
+    }
+});router.get('/login', (req, res) => {
     if (req.session.user) {
         return res.redirect(req.session.user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
     }
@@ -1663,6 +2462,7 @@ router.get('/login', (req, res) => {
     res.render('login', {
         title: 'Login - AI Recipe Planner',
         error: null,
+        notice: String(req.query.reset || '').toLowerCase() === 'success' ? 'Password berhasil direset. Silakan login.' : null,
         values: {}
     });
 });
@@ -1677,7 +2477,8 @@ router.get('/register', (req, res) => {
     res.render('register', {
         title: 'Register - AI Recipe Planner',
         error: null,
-        values: {},
+        notice: String(req.query.reset || '').toLowerCase() === 'success' ? 'Password berhasil direset. Silakan login.' : null,
+        values: {} ,
         allergyOptions: ALLERGY_OPTIONS
     });
 });
@@ -2404,6 +3205,53 @@ router.post('/community/posts/:postId/comments', async (req, res) => {
     }
 });
 
+router.post('/community/posts/:postId/delete', async (req, res) => {
+    if (!req.session.user) {
+        if (req.xhr || String(req.get('accept') || '').toLowerCase().includes('application/json')) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+        return res.redirect('/login');
+    }
+
+    try {
+        const post = await getCommunityPostById(req.params.postId, req.session.user.id);
+        if (!post) {
+            if (req.xhr || String(req.get('accept') || '').toLowerCase().includes('application/json')) {
+                return res.status(404).json({ success: false, error: 'Postingan tidak ditemukan' });
+            }
+            return res.redirect('/community?error=Postingan+tidak+ditemukan');
+        }
+
+        if (String(post.creator_user_id || post.user_id || '').trim() !== String(req.session.user.id)) {
+            if (req.xhr || String(req.get('accept') || '').toLowerCase().includes('application/json')) {
+                return res.status(403).json({ success: false, error: 'Kamu hanya bisa menghapus postingan milik sendiri' });
+            }
+            return res.redirect('/community?error=Kamu+hanya+bisa+menghapus+postingan+sendiri');
+        }
+
+        await pool.query(
+            `
+                DELETE FROM community_posts
+                WHERE id = $1
+                  AND user_id = $2
+            `,
+            [post.id, req.session.user.id]
+        );
+
+        if (req.xhr || String(req.get('accept') || '').toLowerCase().includes('application/json')) {
+            return res.json({ success: true });
+        }
+
+        return res.redirect('/community?notice=Postingan+berhasil+dihapus');
+    } catch (error) {
+        console.error('Community delete post error:', error.message);
+        if (req.xhr || String(req.get('accept') || '').toLowerCase().includes('application/json')) {
+            return res.status(500).json({ success: false, error: 'Gagal menghapus postingan' });
+        }
+        return res.redirect('/community?error=Gagal+menghapus+postingan');
+    }
+});
+
 router.post('/community/posts/:postId/report', async (req, res) => {
     if (!req.session.user) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -2625,15 +3473,9 @@ router.get('/shopping-list', async (req, res) => {
 
     try {
         const userId = req.session.user.id;
-        const budgetTargetRaw = String(req.query.budget || '').replace(/[^\d]/g, '');
-        const budgetTarget = budgetTargetRaw ? Number(budgetTargetRaw) : null;
         const summary = await shoppingListService.getShoppingList(userId);
         const selectedRecipes = summary.recipes || [];
         const estimatedBudget = Number(summary.totalEstimatedPrice || 0);
-        const budgetDelta =
-            budgetTarget === null
-                ? null
-                : Number(budgetTarget) - Number(estimatedBudget);
 
         res.render('user/shopping-list', {
             title: 'Shopping List - AI Recipe Planner',
@@ -2644,9 +3486,7 @@ router.get('/shopping-list', async (req, res) => {
                 sections: summary.sections,
                 estimatedBudget,
                 totalRecipes: Number(summary.totalRecipes || 0),
-                totalIngredients: Number(summary.totalItems || 0),
-                budgetTarget,
-                budgetDelta
+                totalIngredients: Number(summary.totalItems || 0)
             }
         });
     } catch (error) {
@@ -2701,6 +3541,10 @@ function normalizeVideoUrl(url) {
     } catch (error) {
         return { kind: 'direct', src: value };
     }
+}
+
+function hasUsableVideo(recipe = {}) {
+    return Boolean(normalizeVideoUrl(recipe.video_url).kind);
 }
 
 function buildFeedPreset(feed) {
@@ -2941,7 +3785,7 @@ router.get('/recipe-menu', async (req, res) => {
             recipeList = getFallbackRecipeCatalog(selectedRegion);
         }
 
-        const filteredRecipes = filterRecipesByPreferences(recipeList, preferences)
+        const filteredRecipes = filterRecipesForDisplay(recipeList, preferences)
             .filter((recipe) => matchesRecipeRegion(recipe, selectedRegion))
             .filter((recipe) => matchesRecipeIngredient(recipe, selectedIngredient))
             .map((recipe) => ({
@@ -3053,6 +3897,10 @@ router.get('/recipe-detail', async (req, res) => {
             }))
             : [];
 
+        const fallbackRecipe = Array.isArray(recipePool)
+            ? recipePool.find((recipe) => hasUsableVideo(recipe)) || recipePool[0] || null
+            : null;
+
         const activeRecipeData = activeExternalRecipe
             ? {
                 ...mapRecipeDetail(activeExternalRecipe, '/images/1.png', normalizeVideoUrl(activeExternalRecipe.video_url), preferences),
@@ -3080,13 +3928,26 @@ router.get('/recipe-detail', async (req, res) => {
                         sourceId: String(recipePool[0].sourceId || recipePool[0].id || ''),
                         recipeId: recipePool[0].source === COMMUNITY_RECIPE_SOURCE ? String(recipePool[0].id) : null,
                         creatorName: recipePool[0].creator_name || 'Community user',
-                        sourceLabel: recipePool[0].source === COMMUNITY_RECIPE_SOURCE ? 'Community' : 'Recipe',
-                        favoriteKey: recipePool[0].source === COMMUNITY_RECIPE_SOURCE ? `${COMMUNITY_RECIPE_SOURCE}:${recipePool[0].id}` : String(recipePool[0].id),
-                        isFavorite: recipePool[0].source === COMMUNITY_RECIPE_SOURCE
+                    sourceLabel: recipePool[0].source === COMMUNITY_RECIPE_SOURCE ? 'Community' : 'Recipe',
+                    favoriteKey: recipePool[0].source === COMMUNITY_RECIPE_SOURCE ? `${COMMUNITY_RECIPE_SOURCE}:${recipePool[0].id}` : String(recipePool[0].id),
+                    isFavorite: recipePool[0].source === COMMUNITY_RECIPE_SOURCE
                             ? favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${recipePool[0].id}`)
                             : favoriteIds.has(String(recipePool[0].id))
                     }
-                    : null;
+                    : fallbackRecipe
+                        ? {
+                            ...mapRecipeDetail(fallbackRecipe, fallbackRecipe.image_url || '/images/1.png', normalizeVideoUrl(fallbackRecipe.video_url), preferences),
+                            source: fallbackRecipe.source || 'themealdb',
+                            sourceId: String(fallbackRecipe.sourceId || fallbackRecipe.id || ''),
+                            recipeId: fallbackRecipe.source === COMMUNITY_RECIPE_SOURCE ? String(fallbackRecipe.id) : null,
+                            creatorName: fallbackRecipe.creator_name || 'Community user',
+                            sourceLabel: fallbackRecipe.source === COMMUNITY_RECIPE_SOURCE ? 'Community' : 'Recipe',
+                            favoriteKey: fallbackRecipe.source === COMMUNITY_RECIPE_SOURCE ? `${COMMUNITY_RECIPE_SOURCE}:${fallbackRecipe.id}` : String(fallbackRecipe.id),
+                            isFavorite: fallbackRecipe.source === COMMUNITY_RECIPE_SOURCE
+                                ? favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${fallbackRecipe.id}`)
+                                : favoriteIds.has(String(fallbackRecipe.id))
+                        }
+                        : null;
         const activeRecipeRecookStats = activeRecipeData
             ? await getRecookCountForRecipe(req.session.user.id, activeRecipeData)
             : { recook_count: 0, latest_recooked_at: null };
@@ -3182,17 +4043,26 @@ router.get('/recipes', async (req, res) => {
         req.session.user.preferences = preferences;
         const feedPreset = buildFeedPreset(feed);
         const favoriteIds = await mealFavorites.getFavoriteIdSet(req.session.user.id);
-        const feedMeals = selectedRecipeId
-            ? await mealdb.getFeedMeals(feed, 12)
-            : await mealdb.getFeedMeals(feed, 12);
+        let feedMeals = [];
+        try {
+            feedMeals = await mealdb.getFeedMeals(feed, 12);
+        } catch (error) {
+            console.error('FYP feed fallback error:', error.message);
+            feedMeals = [];
+        }
+
+        if (!Array.isArray(feedMeals) || !feedMeals.length) {
+            feedMeals = getFallbackRecipeCatalog(feed).slice(0, 12);
+        }
+
         const selectedMeal = selectedRecipeId
-            ? await mealdb.lookupMealById(selectedRecipeId)
+            ? await mealdb.lookupMealById(selectedRecipeId).catch(() => null)
             : null;
         const recipePool = selectedMeal
             ? uniqueRecipesById([selectedMeal, ...feedMeals])
             : feedMeals;
 
-        const recipes = filterRecipesByPreferences(recipePool, preferences).map((recipe) => {
+        const recipes = filterRecipesForDisplay(recipePool, preferences).map((recipe) => {
             const directVideoSource = normalizeVideoUrl(recipe.video_url);
             const foodInfo = getRecipeFoodInfo(recipe);
             const conflicts = getRecipeConflicts(foodInfo, preferences);
@@ -3227,7 +4097,7 @@ router.get('/recipes', async (req, res) => {
         })();
 
         const selectedRecipeIdResolved = activeRecipe ? String(activeRecipe.id) : '';
-        const selectedRecipeCard = recipes.find((recipe) => String(recipe.id) === selectedRecipeIdResolved) || recipes[0] || null;
+        const selectedRecipeCard = recipes.find((recipe) => String(recipe.id) === selectedRecipeIdResolved) || recipes.find((recipe) => hasUsableVideo(recipe)) || recipes[0] || null;
         const selectedRecipeIndex = Math.max(0, recipes.findIndex((recipe) => String(recipe.id) === selectedRecipeIdResolved));
         const hasTikTokEmbed = recipes.some((recipe) => recipe.videoSource && recipe.videoSource.kind === 'tiktok');
         const activityData = activeRecipe

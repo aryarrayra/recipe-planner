@@ -202,6 +202,47 @@ router.patch('/shopping-list/items/:itemKey', async (req, res) => {
     }
 });
 
+router.post('/shopping-list/manual-items', async (req, res) => {
+    try {
+        if (!ensureUserSession(req, res)) {
+            return;
+        }
+
+        const summary = await shoppingListService.addManualItem(req.session.user.id, req.body || {});
+
+        res.json({
+            success: true,
+            message: 'Item manual ditambahkan ke shopping list.',
+            data: summary
+        });
+    } catch (error) {
+        console.error('Manual shopping item add error:', error.message);
+        res.status(500).json({ success: false, error: error.message || 'Gagal menambahkan item manual.' });
+    }
+});
+
+router.delete('/shopping-list/manual-items/:itemKey', async (req, res) => {
+    try {
+        if (!ensureUserSession(req, res)) {
+            return;
+        }
+
+        const summary = await shoppingListService.removeManualItem(
+            req.session.user.id,
+            req.params.itemKey
+        );
+
+        res.json({
+            success: true,
+            message: 'Item manual dihapus dari shopping list.',
+            data: summary
+        });
+    } catch (error) {
+        console.error('Manual shopping item remove error:', error.message);
+        res.status(500).json({ success: false, error: error.message || 'Gagal menghapus item manual.' });
+    }
+});
+
 router.get('/:id', async (req, res) => {
     try {
         const recipe = await mealdb.lookupMealById(req.params.id);

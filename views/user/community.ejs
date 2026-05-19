@@ -19,6 +19,7 @@
 <body>
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
   <% const communitySearch = String(search || '').trim(); %>
+  <% const currentUserId = String(user && user.id ? user.id : ''); %>
   <% const statsData = stats || { pending: 0, approved: 0, total: 0 }; %>
   <% const shouldOpenComposer = String(openComposer || '').trim() === '1' || String(openComposer || '').trim().toLowerCase() === 'true'; %>
   <% const communityComments = []; %>
@@ -49,7 +50,6 @@
         }))
       : []
   })); %>
-  <% const formatChallengeLabel = (recipe) => recipe ? `${recipe.category || 'Recipe'} - ${recipe.originPlace || recipe.cuisine || 'Community'}` : 'Belum tersedia'; %>
   <% const formatRelativeTime = (value) => {
     if (!value) return 'baru saja';
     const created = new Date(value);
@@ -95,54 +95,10 @@
 
         <div class="community-layout">
           <section class="community-main-column">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Auto challenge</p>
-                  <h2>Daily & weekly challenge</h2>
-                </div>
-              </div>
-
-              <div class="community-challenge-grid">
-                <article class="community-challenge-card">
-                  <div class="community-challenge-label">Daily challenge</div>
-                  <% if (dailyChallenge) { %>
-                    <h3><%= dailyChallenge.title %></h3>
-                    <p><%= formatChallengeLabel(dailyChallenge) %></p>
-                    <div class="community-mini-meta">
-                      <span><i class="fa-regular fa-clock"></i> <%= dailyChallenge.cooking_time || 0 %> min</span>
-                      <span><i class="fa-solid fa-fire"></i> <%= dailyChallenge.difficulty || 'easy' %></span>
-                    </div>
-                    <a class="auth-button auth-button-secondary" href="/recipe-detail?recipeId=<%= encodeURIComponent(dailyChallenge.id) %>">
-                      Lihat challenge
-                    </a>
-                  <% } else { %>
-                    <p>Challenge harian akan muncul otomatis dari API.</p>
-                  <% } %>
-                </article>
-
-                <article class="community-challenge-card">
-                  <div class="community-challenge-label">Weekly challenge</div>
-                  <% if (weeklyChallenge) { %>
-                    <h3><%= weeklyChallenge.title %></h3>
-                    <p><%= formatChallengeLabel(weeklyChallenge) %></p>
-                    <div class="community-mini-meta">
-                      <span><i class="fa-regular fa-clock"></i> <%= weeklyChallenge.cooking_time || 0 %> min</span>
-                      <span><i class="fa-solid fa-fire"></i> <%= weeklyChallenge.difficulty || 'medium' %></span>
-                    </div>
-                    <a class="auth-button auth-button-secondary" href="/recipe-detail?recipeId=<%= encodeURIComponent(weeklyChallenge.id) %>">
-                      Lihat challenge
-                    </a>
-                  <% } else { %>
-                    <p>Challenge mingguan juga dipilih otomatis dari koleksi API.</p>
-                  <% } %>
-                </article>
-              </div>
-            </article>
-
             <% if (approvedRecipes.length) { %>
               <div class="community-feed-grid" id="community-feed">
                 <% approvedRecipes.forEach((recipe) => { %>
+                  <% const canDeletePost = String(recipe.creatorUserId || '') === currentUserId && String(recipe.communityPostId || recipe.id || '').trim(); %>
                   <article
                     class="community-tweet-card community-recipe-card"
                     data-post-id="<%= recipe.communityPostId || recipe.id %>"
@@ -163,9 +119,27 @@
                         </div>
                       </div>
                       <h3 class="community-recipe-card-title"><%= recipe.title %></h3>
+                      <% if (canDeletePost) { %>
+                        <div class="community-recipe-card-actions">
+                          <button
+                            type="button"
+                            class="community-recipe-card-report community-recipe-card-delete"
+                            data-action="delete-post"
+                            data-post-id="<%= recipe.communityPostId || recipe.id %>"
+                          >
+                            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                            <span>Hapus</span>
+                          </button>
+                        </div>
+                      <% } %>
                     </div>
                   </article>
                 <% }) %>
+              </div>
+            <% } else { %>
+              <div class="community-feed-empty">
+                <strong>Belum ada postingan community</strong>
+                <p>Kalau belum ada resep yang disetujui, area ini akan tampil kosong. Coba posting resep baru atau cek lagi setelah ada approval.</p>
               </div>
             <% } %>
           </section>
@@ -495,6 +469,18 @@
         return data.comment;
       }
 
+      async function deletePost(postId) {
+        const response = await fetch(`/community/posts/${encodeURIComponent(postId)}/delete`, {
+          method: 'POST',
+          headers: { Accept: 'application/json' }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Gagal menghapus postingan');
+        }
+        return data;
+      }
+
       const openComposer = () => {
         window.location.href = '/community/new';
       };
@@ -567,6 +553,7 @@
 
       feed?.addEventListener('click', async (event) => {
         const likeButton = event.target.closest('[data-action="like"]');
+        const deleteButton = event.target.closest('[data-action="delete-post"]');
         const card = event.target.closest('.community-recipe-card') || event.target.closest('.community-tweet-card');
 
         if (!card) {
@@ -608,6 +595,31 @@
             }
           } catch (error) {
             window.alert(error.message || 'Gagal menyukai postingan');
+          }
+          return;
+        }
+
+        if (deleteButton) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const targetPostId = deleteButton.getAttribute('data-post-id') || postId;
+          if (!targetPostId) {
+            return;
+          }
+
+          const confirmed = window.confirm('Hapus postingan ini? Aksi ini tidak bisa dibatalkan.');
+          if (!confirmed) {
+            return;
+          }
+
+          deleteButton.disabled = true;
+          try {
+            await deletePost(targetPostId);
+            window.location.href = '/community?notice=Postingan+berhasil+dihapus';
+          } catch (error) {
+            deleteButton.disabled = false;
+            window.alert(error.message || 'Gagal menghapus postingan');
           }
           return;
         }

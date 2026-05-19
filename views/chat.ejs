@@ -531,6 +531,81 @@
         grid-template-columns: 1fr;
       }
     }
+
+    @media (max-width: 560px) {
+      .chat-dashboard .user-dashboard-main {
+        padding: 12px;
+        gap: 14px;
+      }
+
+      .chat-dashboard-topbar {
+        padding: 18px 16px;
+        gap: 14px;
+      }
+
+      .chat-topbar-copy h1 {
+        font-size: clamp(1.5rem, 8vw, 2rem);
+      }
+
+      .chat-topbar-note {
+        line-height: 1.55;
+      }
+
+      .chat-quick-actions {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .chat-quick-chip {
+        width: 100%;
+        justify-content: flex-start;
+        padding-inline: 16px;
+      }
+
+      .chat-window-shell {
+        border-radius: 22px;
+      }
+
+      .chat-topbar {
+        padding: 12px 14px;
+      }
+
+      .chat-feed,
+      .chat-composer {
+        padding: 12px;
+      }
+
+      .chat-bubble {
+        max-width: 100%;
+        padding: 11px 12px 10px;
+        border-radius: 18px;
+      }
+
+      .composer-input {
+        min-height: 50px;
+        padding: 12px 14px;
+        border-radius: 16px;
+      }
+
+      .attachment-chip,
+      .send-button {
+        min-height: 46px;
+      }
+
+      .attachment-preview {
+        padding: 10px;
+        gap: 10px;
+      }
+
+      .attachment-preview-thumb {
+        width: 48px;
+        height: 48px;
+      }
+
+      .chat-dashboard .button {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body class="chat-page">

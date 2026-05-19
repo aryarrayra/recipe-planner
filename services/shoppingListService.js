@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const mealdb = require('./mealdb');
+const { estimateIngredientPrice } = require('./priceEstimator');
 
 const COMMUNITY_SOURCE = 'community';
 let schemaReady;
@@ -21,6 +22,22 @@ function normalizeText(value = '') {
 
 function buildMergeKey(name = '', unit = '') {
     return `${normalizeText(name)}::${normalizeText(unit)}`;
+}
+
+function buildManualItemLabel(quantity = '', unit = '') {
+    const qty = String(quantity || '').trim();
+    const unitText = String(unit || '').trim();
+    const parts = [];
+
+    if (qty) {
+        parts.push(qty);
+    }
+
+    if (unitText) {
+        parts.push(unitText);
+    }
+
+    return parts.join(' ').trim();
 }
 
 function parseFractionToken(value = '') {
@@ -297,6 +314,21 @@ async function ensureSchema() {
             `);
 
             await pool.query(`
+                CREATE TABLE IF NOT EXISTS shopping_list_manual_items (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    item_name VARCHAR(200) NOT NULL,
+                    quantity VARCHAR(50) DEFAULT '',
+                    unit VARCHAR(100) DEFAULT '',
+                    category VARCHAR(50) DEFAULT 'lainnya',
+                    estimated_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+                    checked BOOLEAN NOT NULL DEFAULT false,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+
+            await pool.query(`
                 CREATE INDEX IF NOT EXISTS idx_shopping_list_recipes_user
                     ON shopping_list_recipes(user_id, updated_at DESC)
             `);
@@ -304,6 +336,11 @@ async function ensureSchema() {
             await pool.query(`
                 CREATE INDEX IF NOT EXISTS idx_shopping_list_item_states_user
                     ON shopping_list_item_states(user_id, updated_at DESC)
+            `);
+
+            await pool.query(`
+                CREATE INDEX IF NOT EXISTS idx_shopping_list_manual_items_user
+                    ON shopping_list_manual_items(user_id, updated_at DESC)
             `);
         })().catch((error) => {
             schemaReady = null;
@@ -327,7 +364,47 @@ async function getItemStateMap(userId) {
     return new Map(result.rows.map((row) => [String(row.item_key), Boolean(row.checked)]));
 }
 
-function aggregateShoppingItems(recipeEntries = [], checkedMap = new Map()) {
+function buildManualItems(rows = []) {
+    return rows.map((row) => {
+        const name = String(row.item_name || 'Item belanja').trim() || 'Item belanja';
+        const quantity = String(row.quantity || '').trim();
+        const unit = String(row.unit || '').trim();
+        const category = String(row.category || 'lainnya').trim() || 'lainnya';
+        const storedEstimatedPrice = Number(row.estimated_price || 0);
+        const estimatedPrice = roundQuantity(
+            storedEstimatedPrice > 0
+                ? storedEstimatedPrice
+                : estimateIngredientPrice(
+                    {
+                        name,
+                        amount: quantity,
+                        unit
+                    },
+                    {
+                        category,
+                        title: name
+                    }
+                )
+        );
+        const displayQuantity = buildManualItemLabel(quantity, unit) || 'Secukupnya';
+
+        return {
+            key: `manual:${row.id}`,
+            manualId: row.id,
+            name,
+            unit,
+            category,
+            quantityText: quantity,
+            displayQuantity,
+            checked: Boolean(row.checked),
+            recipes: ['Manual'],
+            source: 'manual',
+            estimatedPrice
+        };
+    });
+}
+
+function aggregateShoppingItems(recipeEntries = [], manualEntries = [], checkedMap = new Map()) {
     const merged = new Map();
 
     recipeEntries.forEach((recipe) => {
@@ -343,7 +420,8 @@ function aggregateShoppingItems(recipeEntries = [], checkedMap = new Map()) {
                 quantityText: '',
                 displayQuantity: '',
                 checked: checkedMap.get(key) || false,
-                recipes: []
+                recipes: [],
+                source: 'recipe'
             };
 
             if (item.scaledQuantity !== null && Number.isFinite(Number(item.scaledQuantity))) {
@@ -364,7 +442,25 @@ function aggregateShoppingItems(recipeEntries = [], checkedMap = new Map()) {
         });
     });
 
-    const items = Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name, 'id'));
+    manualEntries.forEach((item) => {
+        const key = String(item.key || `manual:${item.manualId || buildMergeKey(item.name, item.unit || item.category)}`);
+        merged.set(key, {
+            ...item,
+            checked: Boolean(item.checked),
+            recipes: Array.isArray(item.recipes) ? item.recipes : ['Manual'],
+            source: 'manual',
+            displayQuantity: item.displayQuantity || 'Secukupnya'
+        });
+    });
+
+    const items = Array.from(merged.values()).sort((a, b) => {
+        const sourceOrder = (a.source === 'manual' ? 1 : 0) - (b.source === 'manual' ? 1 : 0);
+        if (sourceOrder !== 0) {
+            return sourceOrder;
+        }
+
+        return String(a.name || '').localeCompare(String(b.name || ''), 'id');
+    });
     const sections = {
         sayur: [],
         protein: [],
@@ -390,7 +486,7 @@ function aggregateShoppingItems(recipeEntries = [], checkedMap = new Map()) {
 async function getShoppingList(userId) {
     await ensureSchema();
 
-    const [recipesResult, checkedMap] = await Promise.all([
+    const [recipesResult, checkedMap, manualItemsResult] = await Promise.all([
         pool.query(
             `
                 SELECT *
@@ -400,7 +496,16 @@ async function getShoppingList(userId) {
             `,
             [userId]
         ),
-        getItemStateMap(userId)
+        getItemStateMap(userId),
+        pool.query(
+            `
+                SELECT *
+                FROM shopping_list_manual_items
+                WHERE user_id = $1
+                ORDER BY updated_at DESC, created_at DESC
+            `,
+            [userId]
+        )
     ]);
 
     const recipes = recipesResult.rows.map((row) => ({
@@ -418,8 +523,10 @@ async function getShoppingList(userId) {
         recipeSnapshot: row.recipe_snapshot || {}
     }));
 
-    const { items, sections } = aggregateShoppingItems(recipes, checkedMap);
-    const totalEstimatedPrice = recipes.reduce((sum, recipe) => sum + Number(recipe.estimatedPrice || 0), 0);
+    const manualItems = buildManualItems(manualItemsResult.rows);
+    const { items, sections } = aggregateShoppingItems(recipes, manualItems, checkedMap);
+    const totalEstimatedPrice = recipes.reduce((sum, recipe) => sum + Number(recipe.estimatedPrice || 0), 0) +
+        manualItems.reduce((sum, item) => sum + Number(item.estimatedPrice || 0), 0);
 
     return {
         recipes,
@@ -427,7 +534,8 @@ async function getShoppingList(userId) {
         sections,
         totalEstimatedPrice: roundQuantity(totalEstimatedPrice),
         totalRecipes: recipes.length,
-        totalItems: items.length
+        totalItems: items.length,
+        manualItems
     };
 }
 
@@ -516,6 +624,34 @@ async function removeRecipeSelection(userId, recipeKey) {
 async function updateItemCheckedState(userId, itemKey, checked, payload = {}) {
     await ensureSchema();
 
+    const normalizedKey = String(itemKey || '').trim();
+    if (normalizedKey.startsWith('manual:')) {
+        const manualId = normalizedKey.slice('manual:'.length);
+        const itemName = String(payload.itemName || 'Item belanja').trim() || 'Item belanja';
+        const quantity = String(payload.quantity || '').trim();
+        const unit = String(payload.unit || '').trim();
+        const category = String(payload.category || 'lainnya').trim() || 'lainnya';
+        const estimatedPrice = Number(payload.estimatedPrice || 0);
+
+        await pool.query(
+            `
+                UPDATE shopping_list_manual_items
+                SET item_name = $3,
+                    quantity = $4,
+                    unit = $5,
+                    category = $6,
+                    estimated_price = $7,
+                    checked = $8,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = $1
+                  AND id = $2
+            `,
+            [userId, manualId, itemName, quantity, unit, category, Number.isFinite(estimatedPrice) ? estimatedPrice : 0, Boolean(checked)]
+        );
+
+        return getShoppingList(userId);
+    }
+
     const itemName = String(payload.itemName || 'Item belanja').trim() || 'Item belanja';
     const unit = String(payload.unit || '').trim();
     const category = String(payload.category || 'lainnya').trim() || 'lainnya';
@@ -547,11 +683,89 @@ async function updateItemCheckedState(userId, itemKey, checked, payload = {}) {
     return getShoppingList(userId);
 }
 
+async function addManualItem(userId, payload = {}) {
+    await ensureSchema();
+
+    const itemName = String(payload.itemName || payload.name || '').trim();
+    if (!itemName) {
+        throw new Error('Nama item wajib diisi.');
+    }
+
+    const quantity = String(payload.quantity || '').trim();
+    const category = String(payload.category || 'lainnya').trim() || 'lainnya';
+    const manualEstimatedPrice = String(payload.estimatedPrice || '').replace(/[^\d]/g, '');
+    const estimatedPrice = manualEstimatedPrice
+        ? Number(manualEstimatedPrice)
+        : estimateIngredientPrice(
+            {
+                name: itemName,
+                amount: quantity,
+                unit: String(payload.unit || '').trim()
+            },
+            {
+                category,
+                title: itemName
+            }
+        );
+    const checked = Boolean(payload.checked);
+
+    await pool.query(
+        `
+            INSERT INTO shopping_list_manual_items (
+                user_id,
+                item_name,
+                quantity,
+                unit,
+                category,
+                estimated_price,
+                checked,
+                created_at,
+                updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `,
+        [
+            userId,
+            itemName,
+            quantity,
+            String(payload.unit || '').trim(),
+            category,
+            Number.isFinite(estimatedPrice) ? estimatedPrice : 0,
+            checked
+        ]
+    );
+
+    return getShoppingList(userId);
+}
+
+async function removeManualItem(userId, itemKey) {
+    await ensureSchema();
+
+    const normalizedKey = String(itemKey || '').trim();
+    if (!normalizedKey.startsWith('manual:')) {
+        throw new Error('Item manual tidak valid.');
+    }
+
+    const manualId = normalizedKey.slice('manual:'.length);
+    await pool.query(
+        `
+            DELETE FROM shopping_list_manual_items
+            WHERE user_id = $1
+              AND id = $2
+        `,
+        [userId, manualId]
+    );
+
+    return getShoppingList(userId);
+}
+
 module.exports = {
     ensureSchema,
     scaleRecipeIngredients,
     getShoppingList,
     upsertRecipeSelection,
     removeRecipeSelection,
-    updateItemCheckedState
+    updateItemCheckedState,
+    addManualItem,
+    removeManualItem
 };

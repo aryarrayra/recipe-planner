@@ -147,3 +147,36 @@
     </form>
   </aside>
 </div>
+
+<% if (mode !== 'admin') { %>
+  <div class="page-load-overlay" aria-hidden="true">
+    <div class="page-load-card">
+      <div class="page-load-spinner" aria-hidden="true"></div>
+      <strong>Memuat halaman</strong>
+      <span>Mengambil konten terbaru...</span>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const root = document.documentElement;
+      let revealTimer = window.setTimeout(() => {
+        root.classList.add('page-is-loading');
+      }, 220);
+
+      const finish = () => {
+        if (revealTimer) {
+          window.clearTimeout(revealTimer);
+          revealTimer = null;
+        }
+        root.classList.remove('page-is-loading');
+      };
+
+      if (document.readyState === 'complete') {
+        finish();
+      } else {
+        window.addEventListener('load', finish, { once: true });
+        window.addEventListener('pageshow', finish, { once: true });
+      }
+    })();
+  </script>
+<% } %>

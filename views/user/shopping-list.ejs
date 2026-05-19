@@ -20,8 +20,7 @@
 </head>
 <body>
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
-  <% const data = shoppingListData || { favoriteRecipes: [], ingredients: [], sections: { sayur: [], protein: [], bumbu: [], dairy: [], karbohidrat: [], saus: [], alat: [], lainnya: [] }, estimatedBudget: 0, totalRecipes: 0, totalIngredients: 0, budgetTarget: null, budgetDelta: null }; %>
-  <% const budgetInput = data.budgetTarget !== null ? Number(data.budgetTarget).toLocaleString('id-ID') : ''; %>
+  <% const data = shoppingListData || { favoriteRecipes: [], ingredients: [], sections: { sayur: [], protein: [], bumbu: [], dairy: [], karbohidrat: [], saus: [], alat: [], lainnya: [] }, estimatedBudget: 0, totalRecipes: 0, totalIngredients: 0 }; %>
 
   <main class="user-dashboard user-shopping-page">
     <div class="user-dashboard-shell">
@@ -50,20 +49,11 @@
             </div>
           </div>
 
-          <form class="shopping-budget-bar" action="/shopping-list" method="get">
-              <label class="shopping-budget-field">
-                <span>Budget belanja</span>
-                <input
-                  type="text"
-                  name="budget"
-                  inputmode="numeric"
-                  value="<%= budgetInput %>"
-                  placeholder="Contoh: 50000"
-                />
-              <small>Isi nominal budget untuk membandingkan estimasi belanja.</small>
-              </label>
-              <button type="submit" class="auth-button">Simpan budget</button>
-            </form>
+          <div class="shopping-budget-display">
+            <p class="shopping-budget-label">Budget belanja otomatis</p>
+            <strong class="shopping-budget-value">Rp <%= formatPrice(data.estimatedBudget) %></strong>
+            <span class="shopping-budget-copy">Total dihitung dari semua item di shopping list, termasuk item manual.</span>
+          </div>
 
           <div class="user-dashboard-stats">
             <article class="user-stat-card">
@@ -76,27 +66,68 @@
               <strong><%= data.totalIngredients %> item unik</strong>
               <span>Daftar bahan, bumbu, alat, dan item lain yang perlu dicek</span>
             </article>
-            <article class="user-stat-card">
-              <i class="fa-solid fa-coins" aria-hidden="true"></i>
-              <strong>Rp <%= formatPrice(data.estimatedBudget) %></strong>
-              <span>Perkiraan belanja dari resep yang masuk ke shopping list</span>
-            </article>
           </div>
 
-          <% if (data.budgetTarget !== null) { %>
-            <div class="shopping-budget-result <%= data.budgetDelta >= 0 ? 'is-safe' : 'is-over' %>">
-              <strong>
-                <% if (data.budgetDelta >= 0) { %>
-                  Sisa budget Rp <%= formatPrice(data.budgetDelta) %>
-                <% } else { %>
-                  Over budget Rp <%= formatPrice(Math.abs(data.budgetDelta)) %>
-                <% } %>
-              </strong>
-              <span>
-                Budget kamu: Rp <%= formatPrice(data.budgetTarget) %> &middot; Perkiraan belanja: Rp <%= formatPrice(data.estimatedBudget) %>
+          <article class="shopping-manual-panel" id="shoppingManualPanel">
+            <button
+              type="button"
+              class="shopping-manual-toggle"
+              id="shoppingManualToggle"
+              aria-expanded="false"
+              aria-controls="shoppingManualBody"
+            >
+              <div class="shopping-manual-toggle-copy">
+                <p class="user-panel-kicker">Tambah manual</p>
+                <h3>Masukkan bahan, alat, atau item lain tanpa buka resep</h3>
+              </div>
+              <span class="shopping-manual-toggle-icon" aria-hidden="true">
+                <i class="fa-solid fa-chevron-down"></i>
               </span>
+            </button>
+
+            <div class="shopping-manual-body" id="shoppingManualBody">
+              <div class="shopping-manual-inner">
+                <form class="shopping-manual-form" id="shoppingManualForm">
+                  <label class="shopping-manual-field shopping-manual-field-wide">
+                    <span>Nama item</span>
+                    <input type="text" name="itemName" placeholder="Contoh: Minyak goreng" required />
+                  </label>
+
+                  <label class="shopping-manual-field">
+                    <span>Kategori</span>
+                    <select name="category">
+                      <option value="sayur">Sayur</option>
+                      <option value="protein">Protein</option>
+                      <option value="bumbu">Bumbu</option>
+                      <option value="dairy">Dairy</option>
+                      <option value="karbohidrat">Karbohidrat</option>
+                      <option value="saus">Saus & pelengkap</option>
+                      <option value="alat">Alat</option>
+                      <option value="lainnya" selected>Lainnya</option>
+                    </select>
+                  </label>
+
+                  <label class="shopping-manual-field">
+                    <span>Kuantitas / satuan</span>
+                    <input type="text" name="quantity" placeholder="Contoh: 2 bungkus / 500 g / 1 liter" />
+                    <small>Isi dalam satu kolom saja. Kalau hanya angka, sistem anggap satuannya umum.</small>
+                  </label>
+
+                  <label class="shopping-manual-field">
+                    <span>Estimasi harga</span>
+                    <input type="text" name="estimatedPrice" inputmode="numeric" placeholder="Kosongkan untuk auto-estimate" />
+                  </label>
+
+                  <button type="submit" class="auth-button shopping-manual-submit">
+                    Tambah item
+                  </button>
+                </form>
+                <p class="shopping-manual-note">
+                  Kalau harga dikosongkan, sistem akan mengestimasi otomatis dari nama item, kuantitas, dan kategori.
+                </p>
+              </div>
             </div>
-          <% } %>
+          </article>
         </section>
 
         <div class="user-feed-layout user-shopping-layout">
@@ -134,21 +165,59 @@
                       <% if ((shoppingSections[group.key] || []).length) { %>
                         <div class="shopping-list-grid">
                           <% (shoppingSections[group.key] || []).forEach((item) => { %>
-                            <label class="shopping-item shopping-item-<%= group.key %> <%= item.checked ? 'is-checked' : '' %>">
-                              <input
-                                type="checkbox"
-                                data-item-key="<%= item.key %>"
-                                data-item-name="<%= item.name %>"
-                                data-item-unit="<%= item.unit || '' %>"
-                                data-item-category="<%= item.category || group.key %>"
-                                <%= item.checked ? 'checked' : '' %>
-                              />
-                              <span class="shopping-item-copy">
-                                <strong><%= item.displayQuantity ? `${item.displayQuantity}${item.unit ? ` ${item.unit}` : ''}` : 'Secukupnya' %></strong>
-                                <span><%= item.name %></span>
-                                <small><%= item.recipes.length %> resep • <%= item.recipes.join(', ') %></small>
-                              </span>
-                            </label>
+                            <% const itemQuantityText = item.displayQuantity || item.quantityText || 'Secukupnya'; %>
+
+                            <% if (item.source === 'manual') { %>
+                              <div class="shopping-item shopping-item-<%= group.key %> shopping-item-manual <%= item.checked ? 'is-checked' : '' %>">
+                                <input
+                                  type="checkbox"
+                                  data-item-key="<%= item.key %>"
+                                  data-item-name="<%= item.name %>"
+                                  data-item-unit="<%= item.unit || '' %>"
+                                  data-item-category="<%= item.category || group.key %>"
+                                  data-item-source="manual"
+                                  data-item-quantity="<%= item.quantityText || '' %>"
+                                  data-item-estimated-price="<%= item.estimatedPrice || 0 %>"
+                                  <%= item.checked ? 'checked' : '' %>
+                                />
+                                <span class="shopping-item-copy">
+                                  <strong><%= itemQuantityText %></strong>
+                                  <span><%= item.name %></span>
+                                  <small>
+                                    Item manual
+                                    <% if (item.estimatedPrice) { %>
+                                      • Rp <%= formatPrice(item.estimatedPrice) %>
+                                    <% } %>
+                                  </small>
+                                </span>
+                                <button
+                                  type="button"
+                                  class="shopping-item-remove shopping-item-remove-manual"
+                                  data-manual-item-key="<%= item.key %>"
+                                  aria-label="Hapus <%= item.name %>"
+                                >
+                                  Hapus
+                                </button>
+                              </div>
+                            <% } else { %>
+                              <label class="shopping-item shopping-item-<%= group.key %> <%= item.checked ? 'is-checked' : '' %>">
+                                <input
+                                  type="checkbox"
+                                  data-item-key="<%= item.key %>"
+                                  data-item-name="<%= item.name %>"
+                                  data-item-unit="<%= item.unit || '' %>"
+                                  data-item-category="<%= item.category || group.key %>"
+                                  data-item-source="recipe"
+                                  data-item-estimated-price="<%= item.estimatedPrice || 0 %>"
+                                  <%= item.checked ? 'checked' : '' %>
+                                />
+                                <span class="shopping-item-copy">
+                                  <strong><%= itemQuantityText %></strong>
+                                  <span><%= item.name %></span>
+                                  <small><%= item.recipes.length %> resep • <%= item.recipes.join(', ') %></small>
+                                </span>
+                              </label>
+                            <% } %>
                           <% }) %>
                         </div>
                       <% } else { %>
@@ -160,7 +229,7 @@
               <% } else { %>
                 <div class="user-empty-state">
                   <i class="fa-regular fa-list-check"></i>
-                  <p>Belum ada resep di shopping list. Tambahkan dulu dari halaman detail resep.</p>
+                  <p>Belum ada item di shopping list. Tambahkan dari detail resep atau isi form manual di atas.</p>
                 </div>
               <% } %>
             </article>
@@ -230,6 +299,42 @@
         }
       };
 
+      const manualPanel = document.getElementById('shoppingManualPanel');
+      const manualToggle = document.getElementById('shoppingManualToggle');
+      const manualForm = document.getElementById('shoppingManualForm');
+
+      if (manualPanel && manualToggle) {
+        manualToggle.addEventListener('click', () => {
+          const isOpen = manualPanel.classList.toggle('is-open');
+          manualToggle.setAttribute('aria-expanded', String(isOpen));
+        });
+      }
+
+      const submitManualItem = async (form) => {
+        const formData = new FormData(form);
+        const payload = {
+          itemName: String(formData.get('itemName') || '').trim(),
+          category: String(formData.get('category') || 'lainnya').trim() || 'lainnya',
+          quantity: String(formData.get('quantity') || '').trim(),
+          estimatedPrice: String(formData.get('estimatedPrice') || '').replace(/[^\d]/g, '')
+        };
+
+        const response = await fetch('/api/recipes/shopping-list/manual-items', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Gagal menambahkan item manual.');
+        }
+
+        window.location.reload();
+      };
+
       document.querySelectorAll('.shopping-item input[type="checkbox"]').forEach((checkbox) => {
         syncCheckedStyle(checkbox);
         checkbox.addEventListener('change', async () => {
@@ -243,7 +348,9 @@
                 checked: checkbox.checked,
                 itemName: checkbox.dataset.itemName,
                 unit: checkbox.dataset.itemUnit,
-                category: checkbox.dataset.itemCategory
+                category: checkbox.dataset.itemCategory,
+                quantity: checkbox.dataset.itemQuantity,
+                estimatedPrice: checkbox.dataset.itemEstimatedPrice
               })
             });
 
@@ -258,6 +365,63 @@
             checkbox.checked = !checkbox.checked;
             syncCheckedStyle(checkbox);
             alert(error.message || 'Gagal memperbarui checklist.');
+          }
+        });
+      });
+
+      if (manualForm) {
+        manualForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          const submitButton = manualForm.querySelector('button[type="submit"]');
+          try {
+            submitButton.disabled = true;
+            await submitManualItem(manualForm);
+          } catch (error) {
+            console.error(error);
+            alert(error.message || 'Gagal menambahkan item manual.');
+          } finally {
+            submitButton.disabled = false;
+          }
+        });
+      }
+
+      document.querySelectorAll('.shopping-item-remove-manual').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const itemKey = button.dataset.manualItemKey;
+          if (!itemKey) {
+            return;
+          }
+
+          const itemName = button.closest('.shopping-item')?.querySelector('.shopping-item-copy span')?.textContent || 'item ini';
+          const confirmed = await window.confirmDanger(
+            `Apakah yakin anda menghapus "${itemName}" dari shopping list?`,
+            {
+              title: 'Hapus item manual',
+              confirmButtonText: 'Ya, hapus'
+            }
+          );
+
+          if (!confirmed) {
+            return;
+          }
+
+          try {
+            button.disabled = true;
+            const response = await fetch(`/api/recipes/shopping-list/manual-items/${encodeURIComponent(itemKey)}`, {
+              method: 'DELETE'
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || 'Gagal menghapus item manual.');
+            }
+
+            window.location.reload();
+          } catch (error) {
+            console.error(error);
+            alert(error.message || 'Gagal menghapus item manual.');
+            button.disabled = false;
           }
         });
       });

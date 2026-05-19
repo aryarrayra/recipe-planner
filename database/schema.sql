@@ -147,6 +147,20 @@ CREATE TABLE IF NOT EXISTS shopping_list_item_states (
     UNIQUE(user_id, item_key)
 );
 
+-- 6d. Tabel Shopping List Manual Items
+CREATE TABLE IF NOT EXISTS shopping_list_manual_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    item_name VARCHAR(200) NOT NULL,
+    quantity VARCHAR(50) DEFAULT '',
+    unit VARCHAR(100) DEFAULT '',
+    category VARCHAR(50) DEFAULT 'lainnya',
+    estimated_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+    checked BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 7. Tabel Community Reports
 CREATE TABLE IF NOT EXISTS community_reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -286,6 +300,7 @@ CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_cooking_history_user ON cooking_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_shopping_list_recipes_user ON shopping_list_recipes(user_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_shopping_list_item_states_user ON shopping_list_item_states(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_shopping_list_manual_items_user ON shopping_list_manual_items(user_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_community_post_likes_user_post ON community_post_likes(user_id, post_id);
 CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_session ON ai_chat_sessions(session_id);
 CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_session_created ON ai_chat_messages(session_id, created_at);

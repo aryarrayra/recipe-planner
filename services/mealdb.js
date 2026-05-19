@@ -3,6 +3,11 @@ const indonesiaFoodApi = require('./indonesiaFoodApi');
 const { estimateRecipePrice } = require('./priceEstimator');
 
 const BASE_URL = process.env.MEALDB_API_URL || 'https://www.themealdb.com/api/json/v1/1';
+const REQUEST_TIMEOUT_MS = Number(process.env.MEALDB_TIMEOUT_MS || 10000);
+const REQUEST_RETRY_COUNT = Number(process.env.MEALDB_RETRY_COUNT || 2);
+const REQUEST_RETRY_DELAY_MS = Number(process.env.MEALDB_RETRY_DELAY_MS || 350);
+const RANDOM_MEAL_CONCURRENCY = Math.max(1, Number(process.env.MEALDB_RANDOM_CONCURRENCY || 4));
+const REQUEST_CACHE_TTL_MS = Number(process.env.MEALDB_CACHE_TTL_MS || 10 * 60 * 1000);
 const ALLOWED_CUISINE_KEYS = new Set([
     'indonesia',
     'china',
@@ -53,6 +58,7 @@ const INDONESIA_TERMS = [
     'sumatra',
     'indonesian'
 ];
+const requestCache = new Map();
 
 function uniqueById(items) {
     const seen = new Set();
@@ -165,6 +171,35 @@ function numberSeed(value) {
         .reduce((sum, char) => sum + char.charCodeAt(0), 0);
 }
 
+function sleep(ms = 0) {
+    return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
+}
+
+function getCacheKey(path, params = {}) {
+    return `${path}::${JSON.stringify(params || {})}`;
+}
+
+function getCachedResponse(cacheKey) {
+    const entry = requestCache.get(cacheKey);
+    if (!entry) {
+        return null;
+    }
+
+    if (Date.now() - entry.storedAt > REQUEST_CACHE_TTL_MS) {
+        requestCache.delete(cacheKey);
+        return null;
+    }
+
+    return entry.data;
+}
+
+function setCachedResponse(cacheKey, data) {
+    requestCache.set(cacheKey, {
+        storedAt: Date.now(),
+        data
+    });
+}
+
 function mapMealToRecipe(meal = {}) {
     const ingredients = extractIngredients(meal);
     const steps = splitInstructions(meal.strInstructions || '');
@@ -222,13 +257,39 @@ function mapMealToRecipe(meal = {}) {
     };
 }
 
-async function request(path, params = {}) {
-    const response = await axios.get(`${BASE_URL}${path}`, {
-        params,
-        timeout: 12000
-    });
+async function request(path, params = {}, options = {}) {
+    const cacheKey = getCacheKey(path, params);
+    const cachedResponse = getCachedResponse(cacheKey);
+    const retryCount = Math.max(0, Number(options.retries ?? REQUEST_RETRY_COUNT) || 0);
+    const timeout = Math.max(1000, Number(options.timeout ?? REQUEST_TIMEOUT_MS) || REQUEST_TIMEOUT_MS);
+    let lastError = null;
 
-    return response.data;
+    if (cachedResponse) {
+        return cachedResponse;
+    }
+
+    for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+        try {
+            const response = await axios.get(`${BASE_URL}${path}`, {
+                params,
+                timeout
+            });
+            const data = response.data;
+            setCachedResponse(cacheKey, data);
+            return data;
+        } catch (error) {
+            lastError = error;
+            if (attempt < retryCount) {
+                await sleep(REQUEST_RETRY_DELAY_MS * (attempt + 1));
+            }
+        }
+    }
+
+    if (cachedResponse) {
+        return cachedResponse;
+    }
+
+    throw lastError;
 }
 
 async function lookupMealById(id) {
@@ -253,13 +314,20 @@ async function getRandomMeals(count = 12) {
     const batchSize = Math.max(count * 3, 18);
 
     for (let attempt = 0; attempt < 4 && collected.length < count; attempt += 1) {
-        const tasks = Array.from({ length: batchSize }, () => request('/random.php'));
-        const results = await Promise.all(tasks);
-        const meals = filterAllowedRecipes(
-            results
-                .map((result) => (result.meals && result.meals[0] ? mapMealToRecipe(result.meals[0]) : null))
-                .filter(Boolean)
-        );
+        const meals = [];
+        for (let index = 0; index < batchSize; index += RANDOM_MEAL_CONCURRENCY) {
+            const tasks = Array.from(
+                { length: Math.min(RANDOM_MEAL_CONCURRENCY, batchSize - index) },
+                () => request('/random.php').catch(() => null)
+            );
+            const results = await Promise.all(tasks);
+            results.forEach((result) => {
+                const meal = result && result.meals && result.meals[0] ? mapMealToRecipe(result.meals[0]) : null;
+                if (meal) {
+                    meals.push(meal);
+                }
+            });
+        }
 
         meals.forEach((meal) => {
             const key = String(meal.id || '');
@@ -377,7 +445,8 @@ async function getFeedMeals(feed = 'random', count = 12) {
         return terms.some((term) => haystack.includes(term));
     });
 
-    return filterAllowedRecipes(filtered.length >= count ? filtered : randomMeals).slice(0, count);
+    const fallbackMeals = filtered.length >= count ? filtered : randomMeals;
+    return uniqueById(fallbackMeals).slice(0, count);
 }
 
 async function getCatalogMeals(count = 18) {
