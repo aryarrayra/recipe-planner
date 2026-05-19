@@ -272,14 +272,21 @@ async function sendAuthOtpEmail({ to, code, purpose }) {
     const transport = getMailerTransport();
     const subject = getOtpSubject(purpose);
     const text = getOtpMessage(purpose, code);
+    const smtpHost = normalizeText(process.env.SMTP_HOST).toLowerCase();
 
     if (!transport) {
         console.log(`[AUTH OTP DEV] to=${to} purpose=${purpose} code=${code}`);
         return { devMode: true };
     }
 
-    const senderEmail = normalizeText(process.env.SMTP_FROM) || normalizeText(process.env.SMTP_USER) || 'no-reply@example.com';
+    const smtpUser = normalizeText(process.env.SMTP_USER);
+    const configuredSenderEmail = normalizeText(process.env.SMTP_FROM);
+    const senderEmail = configuredSenderEmail || smtpUser || 'no-reply@example.com';
     const senderName = normalizeText(process.env.SMTP_FROM_NAME) || 'ResepKu';
+    
+    if (smtpHost.includes('gmail.com') && configuredSenderEmail && smtpUser && configuredSenderEmail.toLowerCase() !== smtpUser.toLowerCase()) {
+        console.warn('[AUTH OTP] Gmail SMTP digunakan dengan SMTP_FROM yang berbeda dari SMTP_USER. Pastikan alias sender sudah diverifikasi.');
+    }
 
     await transport.sendMail({
         from: `${senderName} <${senderEmail}>`,
@@ -702,6 +709,21 @@ function fileToPublicUrl(file = null) {
     return `/uploads/${encodeURIComponent(file.filename)}`;
 }
 
+function fileToInlineImageUrl(file = null) {
+    if (!file || !file.mimetype || !String(file.mimetype).startsWith('image/')) {
+        return '';
+    }
+
+    try {
+        const filePath = file.path || path.join(uploadDir, file.filename || '');
+        const fileBuffer = fs.readFileSync(filePath);
+        const mimeType = String(file.mimetype || 'image/png').trim() || 'image/png';
+        return `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+    } catch (error) {
+        return fileToPublicUrl(file);
+    }
+}
+
 function getUploadedFile(files = {}, fieldName = '') {
     if (!files || !fieldName) {
         return null;
@@ -741,7 +763,7 @@ function parseRecipeFormList(value) {
 }
 
 function parseCommunityRecipePayload(body = {}, files = {}) {
-    const uploadedImage = fileToPublicUrl(getUploadedFile(files, 'image_file'));
+    const uploadedImage = fileToInlineImageUrl(getUploadedFile(files, 'image_file'));
     const stepImageFiles = [
         ...getUploadedFiles(files, 'step_images'),
         ...getUploadedFiles(files, 'steps_image_file')
@@ -753,7 +775,7 @@ function parseCommunityRecipePayload(body = {}, files = {}) {
     const legacySteps = parseRecipeFormList(body.steps);
     const steps = (stepTexts.length ? stepTexts : legacySteps).map((item, index) => {
         const normalized = normalizeStepItem(item, index);
-        const uploadedStepImage = fileToPublicUrl(stepImageFiles[index] || null);
+        const uploadedStepImage = fileToInlineImageUrl(stepImageFiles[index] || null);
         if (uploadedStepImage) {
             normalized.sectionImageUrl = uploadedStepImage;
         }
@@ -2320,6 +2342,8 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     try {
+        req.session.pendingPasswordResetEmail = null;
+        req.session.pendingPasswordResetVerified = false;
         const userResult = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [email]);
         if (userResult.rows.length) {
             const code = await createAuthOtpRecord(email, 'reset_password');
@@ -2335,12 +2359,7 @@ router.post('/forgot-password', async (req, res) => {
             await sendAuthOtpEmail({ to: email, code, purpose: 'reset_password' });
         }
 
-        return res.render('forgot-password', {
-            title: 'Forgot Password - AI Recipe Planner',
-            error: null,
-            notice: 'Jika email terdaftar, kode OTP reset password sudah dikirim.',
-            values: { email }
-        });
+        return res.redirect('/forgot-password/verify?sent=1');
     } catch (error) {
         console.error('Forgot password error:', error.message);
         return res.status(500).render('forgot-password', {
@@ -2352,7 +2371,7 @@ router.post('/forgot-password', async (req, res) => {
     }
 });
 
-router.get('/reset-password', (req, res) => {
+router.get('/forgot-password/verify', (req, res) => {
     if (req.session.user) {
         return res.redirect('/dashboard');
     }
@@ -2364,34 +2383,111 @@ router.get('/reset-password', (req, res) => {
 
     preventBack(req, res, () => {});
 
-    return res.render('reset-password', {
-        title: 'Reset Password - AI Recipe Planner',
+    return res.render('forgot-password-verify', {
+        title: 'Verifikasi Reset Password - AI Recipe Planner',
         error: null,
-        notice: null,
+        notice: String(req.query.sent || '').toLowerCase() === '1' ? 'Kode OTP reset password sudah dikirim ke email kamu.' : null,
         email,
         maskedEmail: maskEmailAddress(email),
-        values: { email }
+        values: {}
     });
 });
 
-router.post('/reset-password', async (req, res) => {
-    const email = normalizeEmail(req.body.email || req.session.pendingPasswordResetEmail);
+router.post('/forgot-password/verify', async (req, res) => {
+    const email = normalizeEmail(req.session.pendingPasswordResetEmail);
     const code = String(req.body.code || '').trim();
-    const password = String(req.body.password || '');
-    const confirmPassword = String(req.body.confirmPassword || '');
 
     if (!email) {
         return res.redirect('/forgot-password');
     }
 
-    if (!code || !password || !confirmPassword) {
+    if (!code) {
+        return res.status(400).render('forgot-password-verify', {
+            title: 'Verifikasi Reset Password - AI Recipe Planner',
+            error: 'Kode OTP wajib diisi.',
+            notice: null,
+            email,
+            maskedEmail: maskEmailAddress(email),
+            values: { code }
+        });
+    }
+
+    try {
+        const verification = await verifyAuthOtpCode(email, 'reset_password', code);
+        if (!verification.ok) {
+            return res.status(400).render('forgot-password-verify', {
+                title: 'Verifikasi Reset Password - AI Recipe Planner',
+                error: verification.message || 'Kode OTP salah.',
+                notice: null,
+                email,
+                maskedEmail: maskEmailAddress(email),
+                values: { code }
+            });
+        }
+
+        req.session.pendingPasswordResetVerified = true;
+        await new Promise((resolve, reject) => {
+            req.session.save((saveError) => {
+                if (saveError) {
+                    return reject(saveError);
+                }
+                return resolve();
+            });
+        });
+
+        return res.redirect('/reset-password?verified=1');
+    } catch (error) {
+        console.error('Reset password verify error:', error.message);
+        return res.status(500).render('forgot-password-verify', {
+            title: 'Verifikasi Reset Password - AI Recipe Planner',
+            error: 'Gagal memverifikasi OTP. Coba lagi.',
+            notice: null,
+            email,
+            maskedEmail: maskEmailAddress(email),
+            values: { code }
+        });
+    }
+});
+
+router.get('/reset-password', (req, res) => {
+    if (req.session.user) {
+        return res.redirect('/dashboard');
+    }
+
+    const email = req.session.pendingPasswordResetEmail || '';
+    if (!email || !req.session.pendingPasswordResetVerified) {
+        return res.redirect('/forgot-password/verify');
+    }
+
+    preventBack(req, res, () => {});
+
+    return res.render('reset-password', {
+        title: 'Reset Password - AI Recipe Planner',
+        error: null,
+        notice: String(req.query.verified || '').toLowerCase() === '1' ? 'OTP berhasil diverifikasi. Sekarang buat password baru.' : null,
+        email,
+        maskedEmail: maskEmailAddress(email),
+        values: {}
+    });
+});
+
+router.post('/reset-password', async (req, res) => {
+    const email = normalizeEmail(req.session.pendingPasswordResetEmail);
+    const password = String(req.body.password || '');
+    const confirmPassword = String(req.body.confirmPassword || '');
+
+    if (!email || !req.session.pendingPasswordResetVerified) {
+        return res.redirect('/forgot-password/verify');
+    }
+
+    if (!password || !confirmPassword) {
         return res.status(400).render('reset-password', {
             title: 'Reset Password - AI Recipe Planner',
             error: 'Semua field wajib diisi.',
             notice: null,
             email,
             maskedEmail: maskEmailAddress(email),
-            values: { email, code }
+            values: {}
         });
     }
 
@@ -2402,7 +2498,7 @@ router.post('/reset-password', async (req, res) => {
             notice: null,
             email,
             maskedEmail: maskEmailAddress(email),
-            values: { email, code }
+            values: {}
         });
     }
 
@@ -2413,23 +2509,11 @@ router.post('/reset-password', async (req, res) => {
             notice: null,
             email,
             maskedEmail: maskEmailAddress(email),
-            values: { email, code }
+            values: {}
         });
     }
 
     try {
-        const verification = await verifyAuthOtpCode(email, 'reset_password', code);
-        if (!verification.ok) {
-            return res.status(400).render('reset-password', {
-                title: 'Reset Password - AI Recipe Planner',
-                error: verification.message || 'Kode OTP salah.',
-                notice: null,
-                email,
-                maskedEmail: maskEmailAddress(email),
-                values: { email, code }
-            });
-        }
-
         const passwordHash = await bcrypt.hash(password, 10);
         await pool.query(
             'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE email = $2',
@@ -2437,6 +2521,7 @@ router.post('/reset-password', async (req, res) => {
         );
 
         req.session.pendingPasswordResetEmail = null;
+        req.session.pendingPasswordResetVerified = null;
         req.session.oauthState = null;
         req.session.oauthSource = null;
 
@@ -2449,10 +2534,12 @@ router.post('/reset-password', async (req, res) => {
             notice: null,
             email,
             maskedEmail: maskEmailAddress(email),
-            values: { email, code }
+            values: {}
         });
     }
-});router.get('/login', (req, res) => {
+});
+
+router.get('/login', (req, res) => {
     if (req.session.user) {
         return res.redirect(req.session.user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
     }

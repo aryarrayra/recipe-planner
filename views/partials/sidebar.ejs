@@ -16,19 +16,10 @@
       ];
 
   const mobileDrawerLinks = isAdmin
-    ? [
-        { href: '/admin/dashboard', iconClass: 'fa-solid fa-house', label: 'Dashboard', active: 'dashboard' },
-        { href: '/admin/users', iconClass: 'fa-solid fa-users', label: 'User', active: 'users' },
-        { href: '/admin/trending', iconClass: 'fa-solid fa-people-group', label: 'Community', active: 'community' },
-        { href: '/admin/reports', iconClass: 'fa-solid fa-flag', label: 'Reports', active: 'reports' }
-      ]
+    ? []
     : [
-        { href: '/dashboard', iconClass: 'fa-solid fa-house', label: 'Dashboard', active: 'dashboard' },
-        { href: '/recipes', iconClass: 'fa-solid fa-compass', label: 'FYP', active: 'fyp' },
         { href: '/recipe-menu', iconClass: 'fa-solid fa-bowl-food', label: 'Resep', active: 'recipes' },
         { href: '/shopping-list', iconClass: 'fa-solid fa-cart-shopping', label: 'Shopping List', active: 'shopping-list' },
-        { href: '/chat-ai', iconClass: 'fa-solid fa-wand-magic-sparkles', label: 'AI Chat', active: 'chat' },
-        { href: '/community', iconClass: 'fa-solid fa-users', label: 'Community', active: 'community' },
         { href: '/profile', iconClass: 'fa-solid fa-user', label: 'Profile', active: 'profile' }
       ];
 %>
@@ -98,7 +89,7 @@
   </aside>
 </div>
 
-<div class="mobile-bottom-nav-shell" aria-label="Navigasi mobile">
+  <div class="mobile-bottom-nav-shell" aria-label="Navigasi mobile">
   <input type="checkbox" class="mobile-bottom-nav-toggle" id="<%= mobileNavId %>" />
 
   <nav class="mobile-bottom-nav" aria-label="Navigasi cepat">
@@ -115,29 +106,33 @@
     </label>
   </nav>
 
-  <label class="mobile-bottom-nav-backdrop" for="<%= mobileNavId %>" aria-hidden="true"></label>
-
   <aside class="mobile-bottom-nav-drawer" aria-label="Menu halaman">
     <div class="mobile-bottom-nav-drawer-head">
       <div>
-        <p>Menu cepat</p>
-        <strong>Pilih halaman</strong>
+        <p>Menu tambahan</p>
+        <strong><%= mobileDrawerLinks.length ? 'Pilih halaman' : 'Tidak ada menu tambahan' %></strong>
       </div>
       <label class="mobile-bottom-nav-close" for="<%= mobileNavId %>" aria-label="Tutup menu">
         <i class="fa-solid fa-xmark"></i>
       </label>
     </div>
 
-    <div class="mobile-bottom-nav-grid">
-      <% mobileDrawerLinks.forEach((item) => { %>
-        <a class="mobile-bottom-nav-card <%= activePage === item.active ? 'is-active' : '' %>" href="<%= item.href %>">
-          <span class="mobile-bottom-nav-icon"><i class="<%= item.iconClass %>"></i></span>
-          <div>
-            <strong><%= item.label %></strong>
-          </div>
-        </a>
-      <% }) %>
-    </div>
+    <% if (mobileDrawerLinks.length) { %>
+      <div class="mobile-bottom-nav-grid">
+        <% mobileDrawerLinks.forEach((item) => { %>
+          <a class="mobile-bottom-nav-card <%= activePage === item.active ? 'is-active' : '' %>" href="<%= item.href %>">
+            <span class="mobile-bottom-nav-icon"><i class="<%= item.iconClass %>"></i></span>
+            <div>
+              <strong><%= item.label %></strong>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div class="mobile-bottom-nav-empty">
+        Menu utama sudah ada di bottom navbar.
+      </div>
+    <% } %>
 
     <form action="/logout" method="post" class="mobile-bottom-nav-logout">
       <button type="submit" class="button button-secondary">
@@ -146,6 +141,7 @@
       </button>
     </form>
   </aside>
+  <label class="mobile-bottom-nav-backdrop" for="<%= mobileNavId %>" aria-hidden="true"></label>
 </div>
 
 <% if (mode !== 'admin') { %>
