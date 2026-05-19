@@ -191,6 +191,8 @@ CREATE TABLE IF NOT EXISTS community_posts (
     comments_count INT DEFAULT 0,
     shares_count INT DEFAULT 0,
     is_trending BOOLEAN DEFAULT false,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

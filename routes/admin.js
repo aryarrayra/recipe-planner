@@ -56,6 +56,7 @@ function buildUsersRedirect(page, userId = '', notice = '', error = '', filters 
 }
 
 let communityReportsSchemaReady = null;
+let communityPostsSchemaReady = null;
 
 function ensureCommunityReportsSchema() {
     if (!communityReportsSchemaReady) {
@@ -189,6 +190,7 @@ function buildRecookQueue(recipes = []) {
 }
 
 function mapCommunityModerationRecipe(recipe = {}) {
+    const isDeleted = Boolean(recipe.post_is_deleted ?? recipe.is_deleted ?? recipe.deleted_at);
     return {
         ...recipe,
         id: String(recipe.id || '').trim(),
@@ -206,21 +208,53 @@ function mapCommunityModerationRecipe(recipe = {}) {
         views_count: Number(recipe.views_count || 0),
         creator_name: normalizeText(recipe.creator_name) || 'Community user',
         source_label: 'Community',
-        approval_status: recipe.is_approved ? 'approved' : 'pending',
+        approval_status: isDeleted ? 'deleted' : (recipe.is_approved ? 'approved' : 'pending'),
+        is_deleted: isDeleted,
+        deleted_at: recipe.post_deleted_at || recipe.deleted_at || null,
         created_at: recipe.created_at,
         updated_at: recipe.updated_at
     };
 }
 
+function ensureCommunityPostsSchema() {
+    if (!communityPostsSchemaReady) {
+        communityPostsSchemaReady = (async () => {
+            await pool.query(`
+                ALTER TABLE community_posts
+                ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT false
+            `);
+
+            await pool.query(`
+                ALTER TABLE community_posts
+                ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP
+            `);
+
+            await pool.query(`
+                CREATE INDEX IF NOT EXISTS idx_community_posts_is_deleted
+                ON community_posts (is_deleted)
+            `);
+        })().catch((error) => {
+            communityPostsSchemaReady = null;
+            throw error;
+        });
+    }
+
+    return communityPostsSchemaReady;
+}
+
 async function fetchCommunityModerationPageData() {
+    await ensureCommunityPostsSchema();
     const [autoChallenges, pendingRecipesResult, approvedRecipesResult, statsResult] = await Promise.all([
         challengeService.getAutoChallenges().catch(() => ({ dailyChallenge: null, weeklyChallenge: null })),
         pool.query(
             `
                 SELECT
                     r.*,
+                    p.is_deleted AS post_is_deleted,
+                    p.deleted_at AS post_deleted_at,
                     COALESCE(u.username, 'Community user') AS creator_name
                 FROM recipes r
+                INNER JOIN community_posts p ON p.recipe_id = r.id
                 LEFT JOIN users u ON u.id = r.created_by
                 WHERE r.created_by IS NOT NULL
                   AND r.is_approved = false
@@ -232,8 +266,11 @@ async function fetchCommunityModerationPageData() {
             `
                 SELECT
                     r.*,
+                    p.is_deleted AS post_is_deleted,
+                    p.deleted_at AS post_deleted_at,
                     COALESCE(u.username, 'Community user') AS creator_name
                 FROM recipes r
+                INNER JOIN community_posts p ON p.recipe_id = r.id
                 LEFT JOIN users u ON u.id = r.created_by
                 WHERE r.created_by IS NOT NULL
                   AND r.is_approved = true
@@ -558,8 +595,7 @@ async function fetchDashboardData(auditPage = 1, auditPageSize = 5) {
             FROM recipes r
             LEFT JOIN users u ON u.id = r.created_by
             WHERE r.created_by IS NOT NULL
-              AND r.is_approved = false
-            ORDER BY r.created_at ASC
+            ORDER BY r.created_at DESC
             LIMIT 6
         `),
         pool.query(`

@@ -19,7 +19,6 @@
 <body>
   <% const moderationStatsData = moderationStats || { pending: 0, approved: 0, total: 0 }; %>
   <% const approvedCommunityRecipesData = approvedCommunityRecipes || []; %>
-  <% const pendingRecipesData = pendingRecipes || []; %>
   <% const formatChallengeDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; %>
 
   <main class="user-dashboard admin-dashboard admin-community-page">
@@ -29,8 +28,8 @@
       <section class="user-dashboard-main admin-main">
         <header class="user-dashboard-topbar admin-topbar admin-topbar-slim">
           <div class="admin-topbar-copy">
-            <p class="user-panel-kicker">Community moderation</p>
-            <h1>Approval resep user + challenge otomatis</h1>
+            <p class="user-panel-kicker">Community overview</p>
+            <h1>Resep community langsung tampil ke feed</h1>
           </div>
 
           <div class="user-topbar-actions">
@@ -52,25 +51,15 @@
           <div class="user-panel-head">
             <div>
               <p class="user-panel-kicker">Ringkasan</p>
-              <h2>Daily dan weekly challenge berjalan otomatis dari API. Admin hanya moderasi resep community.</h2>
+              <h2>Daily dan weekly challenge berjalan otomatis dari API. Admin cukup memantau community feed.</h2>
             </div>
           </div>
 
-          <p class="admin-approval-note">
-            Resep user yang pending ditampilkan di bawah. Approve akan memunculkan resep di feed community,
-            sedangkan reject menghapusnya dari antrian.
-          </p>
-
           <div class="admin-approval-summary">
             <article class="admin-stat-card">
-              <span>Pending approval</span>
-              <strong><%= moderationStatsData.pending || 0 %></strong>
-              <small>Resep community menunggu</small>
-            </article>
-            <article class="admin-stat-card">
-              <span>Approved community</span>
+              <span>Published community</span>
               <strong><%= moderationStatsData.approved || 0 %></strong>
-              <small>Sudah tampil publik</small>
+              <small>Sudah tampil di feed</small>
             </article>
             <article class="admin-stat-card">
               <span>Total community</span>
@@ -146,23 +135,26 @@
         </div>
 
         <section class="user-panel">
-          <div class="user-panel-head">
-            <div>
-              <p class="user-panel-kicker">Approval queue</p>
-              <h2>Resep community yang menunggu approval</h2>
+            <div class="user-panel-head">
+              <div>
+                <p class="user-panel-kicker">Community posts</p>
+                <h2>Resep community terbaru</h2>
+              </div>
+              <span class="user-panel-meta"><%= approvedCommunityRecipesData.length %> item</span>
             </div>
-            <span class="user-panel-meta"><%= pendingRecipesData.length %> item</span>
-          </div>
 
-          <div class="admin-approval-grid">
-            <% if (pendingRecipesData.length) { %>
-              <% pendingRecipesData.forEach((recipe) => { %>
-                <article class="admin-approval-card">
+            <div class="admin-approval-grid">
+            <% if (approvedCommunityRecipesData.length) { %>
+              <% approvedCommunityRecipesData.forEach((recipe) => { %>
+                <% const isDeletedRecipe = Boolean(recipe.is_deleted || recipe.post_is_deleted); %>
+                <article class="admin-approval-card <%= isDeletedRecipe ? 'is-deleted' : '' %>">
                   <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
                   <div class="admin-list-copy">
                     <div class="admin-list-topline">
                       <h3><%= recipe.title %></h3>
-                      <span class="admin-status is-pending">Pending</span>
+                      <% if (isDeletedRecipe) { %>
+                        <span class="community-status is-deleted">DELETED</span>
+                      <% } %>
                     </div>
                     <p><%= recipe.category || 'Community' %> &bull; <%= recipe.cuisine || 'Community' %></p>
                     <div class="admin-approval-meta">
@@ -174,41 +166,34 @@
                     <p class="admin-approval-note">
                       <%= recipe.description || 'Belum ada deskripsi.' %>
                     </p>
-                    <div class="admin-approval-actions">
-                      <form action="/admin/trending/<%= encodeURIComponent(recipe.id) %>/approve" method="post">
-                        <button type="submit" class="auth-button">Approve</button>
-                      </form>
-                      <form action="/admin/trending/<%= encodeURIComponent(recipe.id) %>/reject" method="post">
-                        <button type="submit" class="auth-button auth-button-secondary">Reject</button>
-                      </form>
-                    </div>
                   </div>
                 </article>
               <% }) %>
             <% } else { %>
               <div class="community-empty-state">
-                <h3>Belum ada resep pending.</h3>
-                <p>Semua resep community sudah ditinjau atau belum ada posting baru.</p>
+                <h3>Belum ada resep community.</h3>
+                <p>Posting yang dibuat user akan langsung muncul di sini.</p>
               </div>
             <% } %>
           </div>
         </section>
 
         <section class="user-panel">
-          <div class="user-panel-head">
-            <div>
-              <p class="user-panel-kicker">Recent approved</p>
-              <h2>Resep community yang baru disetujui</h2>
-            </div>
+            <div class="user-panel-head">
+              <div>
+                <p class="user-panel-kicker">Feed</p>
+                <h2>Resep community terbaru yang tampil di publik</h2>
+              </div>
           </div>
 
           <div class="admin-approval-grid">
             <% if (approvedCommunityRecipesData.length) { %>
               <% approvedCommunityRecipesData.forEach((recipe) => { %>
-                <article class="community-post-card">
+                <% const isDeletedRecipe = Boolean(recipe.is_deleted || recipe.post_is_deleted); %>
+                <article class="community-post-card <%= isDeletedRecipe ? 'is-deleted' : '' %>">
                   <div class="community-post-head">
                     <h3><%= recipe.title %></h3>
-                    <span class="community-status is-approved">Approved</span>
+                    <span class="community-status <%= isDeletedRecipe ? 'is-deleted' : 'is-approved' %>"><%= isDeletedRecipe ? 'DELETED' : 'Live' %></span>
                   </div>
                   <p><%= recipe.creator_name || 'Community user' %></p>
                   <div class="admin-approval-meta">

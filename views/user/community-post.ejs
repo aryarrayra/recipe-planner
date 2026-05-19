@@ -14,6 +14,7 @@
   <% const recipeIngredients = Array.isArray(post.ingredients) ? post.ingredients : []; %>
   <% const recipeSteps = Array.isArray(post.steps) ? post.steps : []; %>
   <% const recipeTags = Array.isArray(post.tags) ? post.tags : []; %>
+  <% const postIsDeleted = Boolean(post.isDeleted || post.is_deleted); %>
   <% const formatRelativeTime = (value) => {
     if (!value) return 'baru saja';
     const created = new Date(value);
@@ -45,9 +46,9 @@
           </a>
         </header>
 
-        <article class="community-post-layout">
+        <article class="community-post-layout <%= postIsDeleted ? 'is-deleted' : '' %>">
           <section class="community-post-main">
-            <article class="community-book-cover-panel">
+            <article class="community-book-cover-panel <%= postIsDeleted ? 'is-deleted' : '' %>">
               <div class="community-book-cover">
                 <img src="<%= post.imageUrl || '/images/1.png' %>" alt="<%= post.title %>" />
               </div>
@@ -64,6 +65,13 @@
                   </div>
                 </div>
 
+                <% if (postIsDeleted) { %>
+                  <div class="community-post-status-pill is-deleted">
+                    <i class="fa-solid fa-trash"></i>
+                    <span>DELETED</span>
+                  </div>
+                <% } %>
+
                 <p class="community-book-kicker"><%= post.cuisine || post.originPlace || 'Community' %> &bull; <%= post.category || 'recipe' %></p>
                 <h2 class="community-book-title"><%= post.title %></h2>
                 <p class="community-book-description"><%= post.content || post.title %></p>
@@ -78,25 +86,25 @@
                 </div>
 
                 <div class="community-detail-actions">
-                  <button type="button" class="community-tweet-action-button <%= post.likedByMe ? 'is-liked' : '' %>" id="detailLikeButton" <%= post.likedByMe ? 'disabled' : '' %>>
+                  <button type="button" class="community-tweet-action-button <%= post.likedByMe ? 'is-liked' : '' %>" id="detailLikeButton" <%= postIsDeleted || post.likedByMe ? 'disabled' : '' %>>
                     <span class="community-action-icon"><i class="fa-regular fa-heart"></i></span>
                     <span><%= post.likedByMe ? 'Sudah disukai' : 'Suka resep' %></span>
                   </button>
-                  <a class="community-tweet-action-button" href="#comments">
+                  <a class="community-tweet-action-button <%= postIsDeleted ? 'is-disabled' : '' %>" href="#comments" <%= postIsDeleted ? 'aria-disabled="true" tabindex="-1"' : '' %>>
                     <span class="community-action-icon"><i class="fa-regular fa-comment"></i></span>
                     <span><%= post.commentsCount || comments.length || 0 %> komentar</span>
                   </a>
-                  <a class="community-tweet-action-button" href="#bahan">
+                  <a class="community-tweet-action-button <%= postIsDeleted ? 'is-disabled' : '' %>" href="#bahan" <%= postIsDeleted ? 'aria-disabled="true" tabindex="-1"' : '' %>>
                     <span class="community-action-icon"><i class="fa-solid fa-list-check"></i></span>
                     <span>Lihat bahan</span>
                   </a>
-                  <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportContentButton" aria-label="Report content" title="Report content">
+                  <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportContentButton" aria-label="Report content" title="Report content" <%= postIsDeleted ? 'disabled' : '' %>>
                     <span class="community-action-icon"><i class="fa-regular fa-flag"></i></span>
                   </button>
-                  <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportUserButton" aria-label="Report user" title="Report user">
+                  <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportUserButton" aria-label="Report user" title="Report user" <%= postIsDeleted ? 'disabled' : '' %>>
                     <span class="community-action-icon"><i class="fa-solid fa-user-slash"></i></span>
                   </button>
-                  <% if (String(post.creatorUserId || '') === String(user && user.id ? user.id : '')) { %>
+                  <% if (!postIsDeleted && String(post.creatorUserId || '') === String(user && user.id ? user.id : '')) { %>
                     <button type="button" class="community-tweet-action-button community-tweet-action-button-danger" id="deletePostButton" aria-label="Hapus postingan" title="Hapus postingan">
                       <span class="community-action-icon"><i class="fa-regular fa-trash-can"></i></span>
                       <span>Hapus</span>
@@ -161,7 +169,7 @@
               </article>
             </div>
 
-            <section class="community-detail-comments" id="comments">
+            <section class="community-detail-comments <%= postIsDeleted ? 'is-deleted' : '' %>" id="comments">
               <div class="community-detail-comments-head">
                 <div>
                   <p class="community-detail-thread-kicker">Replies</p>
@@ -196,11 +204,11 @@
                 <% } %>
               </div>
 
-              <form class="community-detail-reply-form" id="replyForm">
-                <textarea id="replyInput" rows="3" placeholder="Tulis komentar..." required></textarea>
+              <form class="community-detail-reply-form <%= postIsDeleted ? 'is-disabled' : '' %>" id="replyForm">
+                <textarea id="replyInput" rows="3" placeholder="<%= postIsDeleted ? 'Postingan sudah dihapus' : 'Tulis komentar...' %>" required <%= postIsDeleted ? 'disabled' : '' %>></textarea>
                 <div class="community-detail-reply-actions">
                   <span class="community-detail-reply-hint">Enter untuk kirim, Shift+Enter untuk baris baru.</span>
-                  <button type="submit" class="auth-button" id="replySubmit">Reply</button>
+                  <button type="submit" class="auth-button" id="replySubmit" <%= postIsDeleted ? 'disabled' : '' %>>Reply</button>
                 </div>
               </form>
             </section>
@@ -298,6 +306,7 @@
     (() => {
       const postId = <%- JSON.stringify(post.id) %>;
       const postCreatorUserId = <%- JSON.stringify(post.creatorUserId || '') %>;
+      const postIsDeleted = <%- JSON.stringify(Boolean(postIsDeleted)) %>;
       const likeButton = document.getElementById('detailLikeButton');
       const likeCount = document.getElementById('detailLikeCount');
       const replyForm = document.getElementById('replyForm');
@@ -452,7 +461,7 @@
       }
 
       likeButton?.addEventListener('click', async () => {
-        if (!postId) return;
+        if (!postId || postIsDeleted) return;
         try {
           likeButton.classList.remove('is-pop');
           void likeButton.offsetWidth;
@@ -481,6 +490,9 @@
 
       replyForm?.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (postIsDeleted) {
+          return;
+        }
         const content = String(replyInput.value || '').trim();
         if (!content) return;
 
@@ -517,20 +529,29 @@
           setReportVisible(false);
         }
       });
-      reportContentButton?.addEventListener('click', () => openReportModal({
-        targetType: 'post',
-        targetId: postId,
-        targetUserId: postCreatorUserId,
-        title: 'Report content'
-      }));
-      reportUserButton?.addEventListener('click', () => openReportModal({
-        targetType: 'user',
-        targetId: postCreatorUserId,
-        targetUserId: postCreatorUserId,
-        title: 'Report user'
-      }));
+      reportContentButton?.addEventListener('click', () => {
+        if (postIsDeleted) return;
+        openReportModal({
+          targetType: 'post',
+          targetId: postId,
+          targetUserId: postCreatorUserId,
+          title: 'Report content'
+        });
+      });
+      reportUserButton?.addEventListener('click', () => {
+        if (postIsDeleted) return;
+        openReportModal({
+          targetType: 'user',
+          targetId: postCreatorUserId,
+          targetUserId: postCreatorUserId,
+          title: 'Report user'
+        });
+      });
 
       deletePostButton?.addEventListener('click', async () => {
+        if (postIsDeleted) {
+          return;
+        }
         const confirmed = window.confirm('Hapus postingan ini? Aksi ini tidak bisa dibatalkan.');
         if (!confirmed) {
           return;

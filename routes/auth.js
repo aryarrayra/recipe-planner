@@ -39,6 +39,7 @@ const ALLERGY_OPTIONS = [
 ];
 let preferenceSchemaReady;
 let communityPostLikesSchemaReady;
+let communityPostsSchemaReady;
 let communityReportsSchemaReady;
 let authOtpSchemaReady;
 let mailerTransport = null;
@@ -485,6 +486,32 @@ function ensureCommunityPostLikesSchema() {
     return communityPostLikesSchemaReady;
 }
 
+function ensureCommunityPostsSchema() {
+    if (!communityPostsSchemaReady) {
+        communityPostsSchemaReady = (async () => {
+            await pool.query(`
+                ALTER TABLE community_posts
+                ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT false
+            `);
+
+            await pool.query(`
+                ALTER TABLE community_posts
+                ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP
+            `);
+
+            await pool.query(`
+                CREATE INDEX IF NOT EXISTS idx_community_posts_is_deleted
+                ON community_posts (is_deleted)
+            `);
+        })().catch((error) => {
+            communityPostsSchemaReady = null;
+            throw error;
+        });
+    }
+
+    return communityPostsSchemaReady;
+}
+
 function normalizeText(value) {
     return String(value || '').trim();
 }
@@ -803,6 +830,7 @@ function parseCommunityRecipePayload(body = {}, files = {}) {
 
 function mapCommunityRecipeCard(recipe = {}, favoriteIds = new Set()) {
     const mapped = mapRecipeCard(recipe, recipe.image_url || '/images/1.png');
+    const isDeleted = Boolean(recipe.post_is_deleted ?? recipe.is_deleted ?? recipe.deleted_at);
     return {
         ...mapped,
         source: COMMUNITY_RECIPE_SOURCE,
@@ -810,7 +838,7 @@ function mapCommunityRecipeCard(recipe = {}, favoriteIds = new Set()) {
         creatorName: recipe.creator_name || recipe.username || 'Community user',
         creatorAvatarUrl: recipe.creator_avatar_url || recipe.avatar_url || '',
         createdAt: recipe.created_at,
-        statusLabel: recipe.is_approved ? 'Published' : 'Draft',
+        statusLabel: isDeleted ? 'DELETED' : (recipe.is_approved ? 'Published' : 'Draft'),
         communityPostId: recipe.community_post_id || recipe.post_id || recipe.communityPostId || null,
         likesCount: Number(recipe.post_likes_count ?? recipe.likes_count ?? mapped.likesCount ?? 0),
         commentsCount: Number(recipe.post_comments_count ?? recipe.comments_count ?? 0),
@@ -818,6 +846,8 @@ function mapCommunityRecipeCard(recipe = {}, favoriteIds = new Set()) {
         creatorUserId: recipe.creator_user_id || recipe.created_by || null,
         favoriteKey: `${COMMUNITY_RECIPE_SOURCE}:${recipe.id}`,
         isFavorite: favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${recipe.id}`),
+        isDeleted,
+        deletedAt: recipe.post_deleted_at || recipe.deleted_at || null,
         servings: Number(recipe.servings || 1),
         priceRating: recipe.price_rating || 'standard',
         ingredients: parseRecipeItems(recipe.ingredients).map(normalizeIngredientItem),
@@ -1581,6 +1611,7 @@ function buildShoppingSummary(recipes = []) {
 }
 
 async function fetchCommunityPageData(userId, search = '') {
+    await ensureCommunityPostsSchema();
     await ensureCommunityPostLikesSchema();
     const searchClause = buildCommunitySearchClause('r', search, 2);
     const myRecipesSearchClause = buildCommunitySearchClause('r', search, 2);
@@ -1591,6 +1622,8 @@ async function fetchCommunityPageData(userId, search = '') {
                 SELECT
                     r.*,
                     p.id AS community_post_id,
+                    p.is_deleted AS post_is_deleted,
+                    p.deleted_at AS post_deleted_at,
                     COALESCE(p.likes_count, r.likes_count, 0)::int AS post_likes_count,
                     COALESCE(p.comments_count, r.comments_count, 0)::int AS post_comments_count,
                     EXISTS (
@@ -1618,6 +1651,8 @@ async function fetchCommunityPageData(userId, search = '') {
                 SELECT
                     r.*,
                     p.id AS community_post_id,
+                    p.is_deleted AS post_is_deleted,
+                    p.deleted_at AS post_deleted_at,
                     COALESCE(p.likes_count, r.likes_count, 0)::int AS post_likes_count,
                     COALESCE(p.comments_count, r.comments_count, 0)::int AS post_comments_count,
                     EXISTS (
@@ -1726,6 +1761,7 @@ async function fetchCommunityCommentsByPostIds(postIds = []) {
 }
 
 async function getCommunityPostById(postId, userId = null) {
+    await ensureCommunityPostsSchema();
     await ensureCommunityPostLikesSchema();
     const id = normalizeText(postId);
     if (!id) {
@@ -1797,6 +1833,9 @@ async function fetchCommunityPostDetailData(postId, userId) {
             createdAt: post.created_at || recipeCard?.createdAt || null,
             recipeId: post.recipe_id,
             likedByMe: Boolean(post.liked_by_me),
+            isDeleted: Boolean(post.is_deleted),
+            deletedAt: post.deleted_at || null,
+            statusLabel: post.is_deleted ? 'DELETED' : 'Live',
             category: recipeCard?.category || post.category || 'community',
             cuisine: recipeCard?.originPlace || post.cuisine || 'Community',
             originPlace: recipeCard?.originPlace || post.cuisine || 'Community',
@@ -1819,6 +1858,7 @@ async function fetchCommunityPostDetailData(postId, userId) {
 }
 
 async function fetchProfileCommunityFeed(userId, limit = 8) {
+    await ensureCommunityPostsSchema();
     await ensureCommunityPostLikesSchema();
     const [postsResult, commentsResult, favoriteIds] = await Promise.all([
         pool.query(
@@ -1826,6 +1866,8 @@ async function fetchProfileCommunityFeed(userId, limit = 8) {
                 SELECT
                     r.*,
                     p.id AS community_post_id,
+                    p.is_deleted AS post_is_deleted,
+                    p.deleted_at AS post_deleted_at,
                     COALESCE(p.likes_count, r.likes_count, 0)::int AS post_likes_count,
                     COALESCE(p.comments_count, r.comments_count, 0)::int AS post_comments_count,
                     EXISTS (
@@ -3169,6 +3211,9 @@ router.post('/community/posts/:postId/like', async (req, res) => {
         if (!post) {
             return res.status(404).json({ success: false, error: 'Postingan tidak ditemukan' });
         }
+        if (post.is_deleted) {
+            return res.status(410).json({ success: false, error: 'Postingan ini sudah dihapus' });
+        }
 
         const client = await pool.connect();
         let likesCount = Number(post.likes_count || 0);
@@ -3248,6 +3293,9 @@ router.post('/community/posts/:postId/comments', async (req, res) => {
         if (!post) {
             return res.status(404).json({ success: false, error: 'Postingan tidak ditemukan' });
         }
+        if (post.is_deleted) {
+            return res.status(410).json({ success: false, error: 'Postingan ini sudah dihapus' });
+        }
 
         const insertResult = await pool.query(
             `
@@ -3318,7 +3366,10 @@ router.post('/community/posts/:postId/delete', async (req, res) => {
 
         await pool.query(
             `
-                DELETE FROM community_posts
+                UPDATE community_posts
+                SET is_deleted = true,
+                    deleted_at = COALESCE(deleted_at, CURRENT_TIMESTAMP),
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE id = $1
                   AND user_id = $2
             `,

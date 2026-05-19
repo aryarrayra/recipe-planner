@@ -39,6 +39,8 @@
     cuisine: recipe.originPlace || recipe.cuisine || 'Community',
     creatorName: recipe.creatorName || 'Community user',
     createdAt: recipe.createdAt || null,
+    isDeleted: Boolean(recipe.isDeleted || recipe.is_deleted || recipe.postIsDeleted),
+    deletedAt: recipe.deletedAt || recipe.postDeletedAt || null,
     commentCount: Array.isArray(recipe.comments) ? recipe.comments.length : 0,
     comments: Array.isArray(recipe.comments)
       ? recipe.comments.map((comment) => ({
@@ -95,15 +97,20 @@
             <% if (approvedRecipes.length) { %>
               <div class="community-feed-grid" id="community-feed">
                 <% approvedRecipes.forEach((recipe) => { %>
-                  <% const canDeletePost = String(recipe.creatorUserId || '') === currentUserId && String(recipe.communityPostId || recipe.id || '').trim(); %>
+                  <% const isDeletedPost = Boolean(recipe.isDeleted || recipe.is_deleted || recipe.postIsDeleted); %>
+                  <% const canDeletePost = !isDeletedPost && String(recipe.creatorUserId || '') === currentUserId && String(recipe.communityPostId || recipe.id || '').trim(); %>
                   <article
-                    class="community-tweet-card community-recipe-card"
+                    class="community-tweet-card community-recipe-card <%= isDeletedPost ? 'is-deleted' : '' %>"
                     data-post-id="<%= recipe.communityPostId || recipe.id %>"
                     data-post-url="/community/posts/<%= encodeURIComponent(recipe.communityPostId || recipe.id) %>"
                     data-creator-user-id="<%= recipe.creatorUserId || '' %>"
+                    data-post-deleted="<%= isDeletedPost ? 'true' : 'false' %>"
                   >
                     <div class="community-recipe-card-hero">
                       <img src="<%= recipe.imageUrl || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                      <% if (isDeletedPost) { %>
+                        <span class="community-recipe-card-badge is-deleted">DELETED</span>
+                      <% } %>
                     </div>
                     <div class="community-recipe-card-body">
                       <div class="community-recipe-card-author">
@@ -385,6 +392,7 @@
 
         activePost = post;
         activePostId = String(post.communityPostId || post.id || '');
+        const isDeletedPost = Boolean(post.isDeleted || post.is_deleted);
         const avatarUrl = post.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true`;
         const postComments = Array.isArray(post.comments) ? post.comments : [];
         const mediaUrl = post.imageUrl || '/images/1.png';
@@ -400,11 +408,15 @@
           detailImage.src = mediaUrl;
           detailImage.alt = post.title || 'Gambar resep';
         }
+        if (detailOverlay) {
+          detailOverlay.classList.toggle('is-deleted', isDeletedPost);
+        }
         if (detailMeta) {
           detailMeta.innerHTML = `
             <span><i class="fa-solid fa-layer-group"></i> ${escapeHtml(categoryText)} / ${escapeHtml(cuisineText)}</span>
             <span><i class="fa-regular fa-clock"></i> ${escapeHtml(String(post.cookingTime || 0))} min</span>
             <span><i class="fa-solid fa-wallet"></i> Rp ${escapeHtml(String(post.estimatedPrice || 0).replace(/\B(?=(\d{3})+(?!\d))/g, '.'))}</span>
+            ${isDeletedPost ? '<span class="community-post-status-pill is-deleted"><i class="fa-solid fa-trash"></i> DELETED</span>' : ''}
           `;
         }
         if (detailLikeCount) detailLikeCount.textContent = String(post.likesCount || 0);
@@ -412,7 +424,22 @@
         if (detailCommentState) detailCommentState.textContent = postComments.length ? `${postComments.length} balasan` : 'Belum ada komentar';
         if (detailLikeButton) {
           detailLikeButton.classList.toggle('is-liked', Boolean(post.likedByMe));
-          detailLikeButton.disabled = Boolean(post.likedByMe);
+          detailLikeButton.disabled = isDeletedPost || Boolean(post.likedByMe);
+        }
+        if (detailCommentButton) {
+          detailCommentButton.classList.toggle('is-disabled', isDeletedPost);
+          detailCommentButton.setAttribute('aria-disabled', isDeletedPost ? 'true' : 'false');
+        }
+        if (detailReplyForm) {
+          detailReplyForm.classList.toggle('is-disabled', isDeletedPost);
+          const replyTextarea = detailReplyForm.querySelector('textarea');
+          const replySubmit = detailReplyForm.querySelector('button[type="submit"]');
+          if (replyTextarea) {
+            replyTextarea.disabled = isDeletedPost;
+          }
+          if (replySubmit) {
+            replySubmit.disabled = isDeletedPost;
+          }
         }
         if (detailCommentsList) {
           detailCommentsList.innerHTML = postComments.length
@@ -561,8 +588,12 @@
         if (!postId) {
           return;
         }
+        const isDeletedPost = card.getAttribute('data-post-deleted') === 'true' || Boolean(postMap.get(postId)?.isDeleted);
 
         if (likeButton) {
+          if (isDeletedPost) {
+            return;
+          }
           event.preventDefault();
           event.stopPropagation();
 
@@ -597,6 +628,9 @@
         }
 
         if (deleteButton) {
+          if (isDeletedPost) {
+            return;
+          }
           event.preventDefault();
           event.stopPropagation();
 
