@@ -53,7 +53,7 @@
               <div class="auth-alert landing-alert"><%= error %></div>
             <% } %>
 
-            <% if (notice) { %>
+            <% if (typeof notice !== "undefined" && notice) { %>
               <div class="auth-alert landing-alert landing-alert-success"><%= notice %></div>
             <% } %>
 
