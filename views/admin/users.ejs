@@ -24,6 +24,8 @@
 <body>
   <% const pager = pagination || { page: 1, pageSize: 5, totalItems: users.length, totalPages: 1, hasPrev: false, hasNext: false }; %>
   <% const activeFilters = filters || { search: '', role: '' }; %>
+  <% const currentSessionUserId = String(user?.id || ''); %>
+  <% const shouldOpenAccordion = Boolean(selectedUser || notice || error); %>
   <% const buildUsersPageUrl = (targetPage, targetUserId = '') => {
     const params = new URLSearchParams();
     params.set('page', String(targetPage));
@@ -64,9 +66,6 @@
               <p class="user-panel-kicker">User</p>
               <h1><%= selectedUser ? 'Edit user yang dipilih' : 'Tambah user baru' %></h1>
             </div>
-            <div class="admin-hero-actions">
-              <a class="auth-button auth-button-secondary" href="/admin/dashboard">Kembali ke dashboard</a>
-            </div>
           </div>
           <p class="admin-hero-copy">
             Halaman ini memusatkan pengelolaan user: tambah akun, ubah role dan profil, serta hapus
@@ -74,67 +73,86 @@
           </p>
         </section>
 
-        <article class="user-panel admin-panel" id="user-form">
-          <div class="user-panel-head">
+        <details class="admin-user-accordion" <%= shouldOpenAccordion ? 'open' : '' %>>
+          <summary class="admin-user-accordion-summary">
             <div>
               <p class="user-panel-kicker">Form user</p>
               <h2><%= selectedUser ? 'Edit user' : 'Tambah user' %></h2>
             </div>
-            <% if (selectedUser) { %>
-              <a class="user-panel-link" href="<%= buildUsersPageUrl(pager.page) %>">Batal edit</a>
-            <% } %>
+            <span class="admin-user-accordion-hint">
+              <i class="fa-solid fa-chevron-down"></i>
+            </span>
+          </summary>
+
+          <div class="user-panel admin-panel admin-user-accordion-panel">
+            <form
+              class="admin-form"
+              action="<%= selectedUser ? `/admin/users/${selectedUser.id}` : '/admin/users' %>"
+              method="post"
+              enctype="multipart/form-data"
+            >
+              <input type="hidden" name="page" value="<%= pager.page %>" />
+              <input type="hidden" name="search" value="<%= activeFilters.search %>" />
+              <input type="hidden" name="filter_role" value="<%= activeFilters.role %>" />
+              <input type="hidden" name="avatar_url" value="<%= selectedUserForm.avatar_url || '' %>" />
+              <div class="admin-form-grid">
+                <label class="admin-field">
+                  <span>Username</span>
+                  <input name="username" value="<%= selectedUserForm.username %>" placeholder="Username" required />
+                </label>
+                <label class="admin-field">
+                  <span>Email</span>
+                  <input type="email" name="email" value="<%= selectedUserForm.email %>" placeholder="email@domain.com" required />
+                </label>
+                <label class="admin-field">
+                  <span>Role</span>
+                  <select name="role">
+                    <option value="user" <%= selectedUserForm.role === 'user' ? 'selected' : '' %>>user</option>
+                    <option value="admin" <%= selectedUserForm.role === 'admin' ? 'selected' : '' %>>admin</option>
+                  </select>
+                </label>
+                <label class="admin-field admin-field-wide">
+                  <span>Password <%= selectedUser ? '(opsional)' : '' %></span>
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="<%= selectedUser ? 'Kosongkan jika tidak diubah' : 'Password baru' %>"
+                    <%= selectedUser ? '' : 'required' %>
+                  />
+                </label>
+                <div class="admin-field admin-field-wide">
+                  <span>Avatar</span>
+                  <input class="admin-avatar-input" type="file" id="avatarImageInput" name="avatar_image" accept="image/*" />
+                  <label class="admin-avatar-picker" for="avatarImageInput">
+                    <img
+                      id="avatarPreview"
+                      src="<%= selectedUserForm.avatar_url || defaultAvatar(selectedUserForm.username || 'User') %>"
+                      alt="Preview avatar"
+                      referrerpolicy="no-referrer"
+                    />
+                    <span class="admin-avatar-plus" aria-hidden="true">
+                      <i class="fa-solid fa-plus"></i>
+                    </span>
+                  </label>
+                  <small class="admin-field-help">Klik kotaknya untuk upload foto profil. Kalau kosong, avatar default akan dipakai.</small>
+                </div>
+                <label class="admin-field admin-field-wide">
+                  <span>Bio</span>
+                  <textarea name="bio" rows="4" placeholder="Bio singkat user"><%= selectedUserForm.bio %></textarea>
+                </label>
+              </div>
+
+              <div class="admin-form-actions">
+                <button type="submit" class="auth-button">
+                  <%= selectedUser ? 'Simpan perubahan' : 'Tambah user' %>
+                </button>
+                <% if (selectedUser) { %>
+                  <a class="auth-button auth-button-secondary" href="<%= buildUsersPageUrl(pager.page) %>">Batal edit</a>
+                <% } %>
+              </div>
+            </form>
           </div>
-
-          <form
-            class="admin-form"
-            action="<%= selectedUser ? `/admin/users/${selectedUser.id}` : '/admin/users' %>"
-            method="post"
-          >
-            <input type="hidden" name="page" value="<%= pager.page %>" />
-            <input type="hidden" name="search" value="<%= activeFilters.search %>" />
-            <input type="hidden" name="filter_role" value="<%= activeFilters.role %>" />
-            <div class="admin-form-grid">
-              <label class="admin-field">
-                <span>Username</span>
-                <input name="username" value="<%= selectedUserForm.username %>" placeholder="Username" required />
-              </label>
-              <label class="admin-field">
-                <span>Email</span>
-                <input type="email" name="email" value="<%= selectedUserForm.email %>" placeholder="email@domain.com" required />
-              </label>
-              <label class="admin-field">
-                <span>Role</span>
-                <select name="role">
-                  <option value="user" <%= selectedUserForm.role === 'user' ? 'selected' : '' %>>user</option>
-                  <option value="admin" <%= selectedUserForm.role === 'admin' ? 'selected' : '' %>>admin</option>
-                </select>
-              </label>
-              <label class="admin-field admin-field-wide">
-                <span>Password <%= selectedUser ? '(opsional)' : '' %></span>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="<%= selectedUser ? 'Kosongkan jika tidak diubah' : 'Password baru' %>"
-                  <%= selectedUser ? '' : 'required' %>
-                />
-              </label>
-              <label class="admin-field admin-field-wide">
-                <span>Avatar URL</span>
-                <input name="avatar_url" value="<%= selectedUserForm.avatar_url %>" placeholder="https://..." />
-              </label>
-              <label class="admin-field admin-field-wide">
-                <span>Bio</span>
-                <textarea name="bio" rows="4" placeholder="Bio singkat user"><%= selectedUserForm.bio %></textarea>
-              </label>
-            </div>
-
-            <div class="admin-form-actions">
-              <button type="submit" class="auth-button">
-                <%= selectedUser ? 'Simpan perubahan' : 'Tambah user' %>
-              </button>
-            </div>
-          </form>
-        </article>
+        </details>
 
         <article class="user-panel">
           <div class="user-panel-head">
@@ -172,8 +190,15 @@
 
           <div class="admin-user-list">
             <% users.forEach((item) => { %>
+              <% const isCurrentSessionUser = String(item.id || '') === currentSessionUserId; %>
+              <% const displayAvatarUrl = isCurrentSessionUser ? (user.avatar_url || item.avatar_url) : item.avatar_url; %>
               <article class="admin-user-card admin-user-card-compact">
-                <img src="<%= item.avatar_url || defaultAvatar(item.username) %>" alt="<%= item.username %>" />
+                <img
+                  src="<%= displayAvatarUrl || defaultAvatar(item.username) %>"
+                  alt="<%= item.username %>"
+                  referrerpolicy="no-referrer"
+                  onerror="this.onerror=null;this.src='<%= defaultAvatar(item.username) %>'"
+                />
                 <div class="admin-user-copy">
                   <div class="admin-list-topline">
                     <h3><%= item.username %></h3>
@@ -229,5 +254,24 @@
       </section>
     </div>
   </main>
+  <script>
+    (() => {
+      const avatarInput = document.getElementById('avatarImageInput');
+      const avatarPreview = document.getElementById('avatarPreview');
+
+      avatarInput?.addEventListener('change', () => {
+        const file = avatarInput.files && avatarInput.files[0];
+        if (!file || !avatarPreview) {
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          avatarPreview.src = event.target?.result || avatarPreview.src;
+        };
+        reader.readAsDataURL(file);
+      });
+    })();
+  </script>
 </body>
 </html>

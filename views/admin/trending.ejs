@@ -89,11 +89,6 @@
                 <div class="admin-list-copy">
                   <h3><%= dailyChallenge.title %></h3>
                   <p><%= dailyChallenge.category || 'Uncategorized' %> &bull; <%= dailyChallenge.cuisine || 'International' %></p>
-                  <div class="admin-approval-meta">
-                    <span><i class="fa-regular fa-clock"></i> <%= dailyChallenge.cooking_time || 0 %> min</span>
-                    <span><i class="fa-solid fa-heart"></i> <%= dailyChallenge.likes_count || 0 %> likes</span>
-                    <span><i class="fa-solid fa-eye"></i> <%= dailyChallenge.views_count || 0 %> views</span>
-                  </div>
                 </div>
               </article>
             <% } else { %>
@@ -118,11 +113,6 @@
                 <div class="admin-list-copy">
                   <h3><%= weeklyChallenge.title %></h3>
                   <p><%= weeklyChallenge.category || 'Uncategorized' %> &bull; <%= weeklyChallenge.cuisine || 'International' %></p>
-                  <div class="admin-approval-meta">
-                    <span><i class="fa-regular fa-clock"></i> <%= weeklyChallenge.cooking_time || 0 %> min</span>
-                    <span><i class="fa-solid fa-heart"></i> <%= weeklyChallenge.likes_count || 0 %> likes</span>
-                    <span><i class="fa-solid fa-eye"></i> <%= weeklyChallenge.views_count || 0 %> views</span>
-                  </div>
                 </div>
               </article>
             <% } else { %>

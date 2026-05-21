@@ -120,7 +120,8 @@ router.get('/shopping-list', async (req, res) => {
             return;
         }
 
-        const summary = await shoppingListService.getShoppingList(req.session.user.id);
+        const region = String(req.query.region || req.session.user?.priceRegion || 'jakarta').trim() || 'jakarta';
+        const summary = await shoppingListService.getShoppingList(req.session.user.id, { region });
 
         res.json({
             success: true,
@@ -142,7 +143,8 @@ router.post('/:id/shopping-list', async (req, res) => {
         const summary = await shoppingListService.upsertRecipeSelection(
             req.session.user.id,
             req.params.id,
-            desiredServings
+            desiredServings,
+            { region: String(req.body?.region || req.query.region || req.session.user?.priceRegion || 'jakarta').trim() || 'jakarta' }
         );
 
         res.json({
@@ -218,6 +220,28 @@ router.post('/shopping-list/manual-items', async (req, res) => {
     } catch (error) {
         console.error('Manual shopping item add error:', error.message);
         res.status(500).json({ success: false, error: error.message || 'Gagal menambahkan item manual.' });
+    }
+});
+
+router.post('/shopping-list/manual-items/estimate', async (req, res) => {
+    try {
+        if (!ensureUserSession(req, res)) {
+            return;
+        }
+
+        const region = String(req.body?.region || req.query.region || req.session.user?.priceRegion || 'jakarta').trim() || 'jakarta';
+        const estimatedPrice = await shoppingListService.estimateManualItemPriceSmart({
+            ...(req.body || {}),
+            region
+        });
+
+        res.json({
+            success: true,
+            estimatedPrice: Number.isFinite(Number(estimatedPrice)) ? Number(estimatedPrice) : 0
+        });
+    } catch (error) {
+        console.error('Manual shopping item estimate error:', error.message);
+        res.status(500).json({ success: false, error: 'Gagal menghitung estimasi harga.' });
     }
 });
 

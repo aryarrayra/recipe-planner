@@ -1,11 +1,27 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 const pool = require('../config/db');
 const mealdb = require('../services/mealdb');
 const challengeService = require('../services/challengeService');
 const { preventBack, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
+const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
+fs.mkdirSync(uploadDir, { recursive: true });
+const adminUserUpload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, uploadDir),
+        filename: (req, file, cb) => {
+            const safeName = String(file.originalname || 'upload')
+                .toLowerCase()
+                .replace(/[^a-z0-9.]+/g, '-');
+            cb(null, `${Date.now()}-${safeName}`);
+        }
+    })
+});
 
 router.use(requireRole('admin'));
 router.use((req, res, next) => {
@@ -26,7 +42,19 @@ function toInt(value, fallback = 0) {
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function buildUsersRedirect(page, userId = '', notice = '', error = '', filters = {}) {
+function safeRows(result) {
+    return Array.isArray(result?.rows) ? result.rows : [];
+}
+
+function fileToPublicUrl(file = null) {
+    if (!file || !file.filename || !file.mimetype || !String(file.mimetype).startsWith('image/')) {
+        return '';
+    }
+
+    return `/uploads/${encodeURIComponent(file.filename)}`;
+}
+
+function buildUsersRedirect(page, userId = '', notice = '', error = '', filters = {}, drawer = '') {
     const params = new URLSearchParams();
     const safePage = Math.max(1, toInt(page, 1));
 
@@ -50,6 +78,10 @@ function buildUsersRedirect(page, userId = '', notice = '', error = '', filters 
 
     if (filters.role) {
         params.set('role', filters.role);
+    }
+
+    if (drawer) {
+        params.set('drawer', drawer);
     }
 
     return `/admin/users?${params.toString()}`;
@@ -540,7 +572,8 @@ async function fetchDashboardData(auditPage = 1, auditPageSize = 5) {
         userMetrics,
         recipeMetrics,
         reportTotalsResult,
-        categoryRows,
+        activeTodayResult,
+        topPostResult,
         approvalQueueResult,
         reportQueueResult
     ] = await Promise.all([
@@ -556,11 +589,21 @@ async function fetchDashboardData(auditPage = 1, auditPageSize = 5) {
         pool.query(`
             SELECT
                 COUNT(*)::int AS recipes_count,
-                COUNT(*) FILTER (WHERE is_approved = true)::int AS approved_recipes_count,
-                COUNT(*) FILTER (WHERE is_approved = false)::int AS pending_recipes_count,
-                COALESCE(SUM(likes_count), 0)::int AS total_likes,
-                COALESCE((SELECT COUNT(*) FROM user_favorites), 0)::int AS total_wishlist
-            FROM recipes
+                COUNT(*) FILTER (WHERE r.is_approved = true)::int AS approved_recipes_count,
+                COUNT(*) FILTER (WHERE r.is_approved = false)::int AS pending_recipes_count,
+                COALESCE(SUM(r.likes_count), 0)::int AS total_likes,
+                COALESCE((
+                    SELECT COUNT(DISTINCT (uf.user_id, uf.recipe_id))
+                    FROM user_favorites uf
+                    INNER JOIN recipes rf ON rf.id = uf.recipe_id
+                    INNER JOIN community_posts pf ON pf.recipe_id = rf.id
+                    WHERE rf.created_by IS NOT NULL
+                      AND COALESCE(pf.is_deleted, false) = false
+                ), 0)::int AS total_wishlist
+            FROM recipes r
+            INNER JOIN community_posts p ON p.recipe_id = r.id
+            WHERE r.created_by IS NOT NULL
+              AND COALESCE(p.is_deleted, false) = false
         `),
         pool.query(`
             SELECT
@@ -571,32 +614,33 @@ async function fetchDashboardData(auditPage = 1, auditPageSize = 5) {
         `),
         pool.query(`
             SELECT
-                COALESCE(category, 'Uncategorized') AS category,
-                COUNT(*)::int AS recipe_count,
-                COALESCE(SUM(likes_count), 0)::int AS likes_count,
-                COALESCE(SUM(views_count), 0)::int AS views_count
-            FROM recipes
-            GROUP BY COALESCE(category, 'Uncategorized')
-            ORDER BY recipe_count DESC, likes_count DESC, views_count DESC, category ASC
-            LIMIT 6
+                COUNT(*) FILTER (WHERE p.created_at >= CURRENT_DATE)::int AS active_today_count
+            FROM community_posts p
+            INNER JOIN recipes r ON r.id = p.recipe_id
+            WHERE r.created_by IS NOT NULL
+              AND COALESCE(p.is_deleted, false) = false
         `),
         pool.query(`
             SELECT
-                r.id,
-                r.title,
-                r.description,
-                r.image_url,
-                r.category,
-                r.cuisine,
-                r.cooking_time,
-                r.estimated_price,
-                r.created_at,
-                COALESCE(u.username, 'Community user') AS creator_name
-            FROM recipes r
+                p.id,
+                p.title,
+                p.created_at,
+                COALESCE(u.username, 'Community user') AS creator_name,
+                COALESCE(p.likes_count, 0)::int AS likes_count,
+                COALESCE(p.comments_count, 0)::int AS comments_count,
+                COALESCE(p.shares_count, 0)::int AS shares_count,
+                (
+                    COALESCE(p.likes_count, 0)
+                    + COALESCE(p.comments_count, 0)
+                    + COALESCE(p.shares_count, 0)
+                )::int AS total_interactions
+            FROM community_posts p
+            INNER JOIN recipes r ON r.id = p.recipe_id
             LEFT JOIN users u ON u.id = r.created_by
             WHERE r.created_by IS NOT NULL
-            ORDER BY r.created_at DESC
-            LIMIT 6
+              AND COALESCE(p.is_deleted, false) = false
+            ORDER BY total_interactions DESC, p.created_at DESC
+            LIMIT 1
         `),
         pool.query(`
             SELECT
@@ -626,27 +670,30 @@ async function fetchDashboardData(auditPage = 1, auditPageSize = 5) {
     const auditTrailData = await fetchAdminAuditTrail(auditPage, auditPageSize);
 
     const metrics = {
-        ...(userMetrics.rows[0] || {}),
-        ...(recipeMetrics.rows[0] || {}),
-        ...(reportTotalsResult.rows[0] || {})
+        ...(safeRows(userMetrics)[0] || {}),
+        ...(safeRows(recipeMetrics)[0] || {}),
+        ...(safeRows(reportTotalsResult)[0] || {})
     };
-    const topCategories = (categoryRows.rows || []).map((row) => ({
-        category: row.category,
-        recipe_count: Number(row.recipe_count || 0),
-        likes_count: Number(row.likes_count || 0),
-        views_count: Number(row.views_count || 0)
-    }));
+    const activeTodayCount = Number(safeRows(activeTodayResult)[0]?.active_today_count || 0);
+    const topPostRow = safeRows(topPostResult)[0] || null;
 
     return {
         metrics,
-        approvalQueue: approvalQueueResult.rows || [],
-        reportQueue: reportQueueResult.rows || [],
-        topCategories,
+        approvalQueue: safeRows(approvalQueueResult),
+        reportQueue: safeRows(reportQueueResult),
         secondaryInsights: {
-            topCategory: topCategories[0] || null,
-            totalEngagement: Number(metrics.total_likes || 0) + Number(metrics.total_wishlist || 0),
-            approvedRecipes: Number(metrics.approved_recipes_count || 0),
-            resolvedReports: Number(metrics.resolved_reports_count || 0)
+            activeTodayCount,
+            openReportsCount: Number(metrics.open_reports_count || 0),
+            topPost: topPostRow ? {
+                id: topPostRow.id,
+                title: topPostRow.title,
+                creatorName: topPostRow.creator_name,
+                totalInteractions: Number(topPostRow.total_interactions || 0),
+                likesCount: Number(topPostRow.likes_count || 0),
+                commentsCount: Number(topPostRow.comments_count || 0),
+                sharesCount: Number(topPostRow.shares_count || 0),
+                createdAt: topPostRow.created_at
+            } : null
         },
         auditTrail: auditTrailData.items,
         auditPagination: auditTrailData.pagination
@@ -1043,7 +1090,8 @@ router.get('/users', async (req, res) => {
         );
         renderUsersPage(res, req, data, {
             notice: normalizeText(req.query.notice),
-            error: normalizeText(req.query.error)
+            error: normalizeText(req.query.error),
+            drawerOpen: normalizeText(req.query.drawer) === 'open' || Boolean(data.selectedUser)
         });
     } catch (error) {
         console.error('Admin users error:', error.message);
@@ -1207,7 +1255,7 @@ router.post('/recipes/:id/delete', async (req, res) => {
     return res.redirect('/admin/dashboard?notice=Resep+ditunda+sementara');
 });
 
-router.post('/users', async (req, res) => {
+router.post('/users', adminUserUpload.single('avatar_image'), async (req, res) => {
     const username = normalizeText(req.body.username);
     const email = normalizeText(req.body.email).toLowerCase();
     const password = normalizeText(req.body.password);
@@ -1220,11 +1268,11 @@ router.post('/users', async (req, res) => {
 
     try {
         if (!username || !email || !password) {
-            return res.redirect(buildUsersRedirect(page, '', '', 'Username, email, dan password wajib diisi', filters));
+            return res.redirect(buildUsersRedirect(page, '', '', 'Username, email, dan password wajib diisi', filters, 'open'));
         }
 
         if (!['user', 'admin'].includes(role)) {
-            return res.redirect(buildUsersRedirect(page, '', '', 'Role tidak valid', filters));
+            return res.redirect(buildUsersRedirect(page, '', '', 'Role tidak valid', filters, 'open'));
         }
 
         const existingUser = await pool.query(
@@ -1233,10 +1281,10 @@ router.post('/users', async (req, res) => {
         );
 
         if (existingUser.rows.length) {
-            return res.redirect(buildUsersRedirect(page, '', '', 'Email atau username sudah dipakai', filters));
+            return res.redirect(buildUsersRedirect(page, '', '', 'Email atau username sudah dipakai', filters, 'open'));
         }
 
-        const avatarUrl = optionalText(req.body.avatar_url) || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}`;
+        const avatarUrl = fileToPublicUrl(req.file) || optionalText(req.body.avatar_url) || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}`;
         const bio = optionalText(req.body.bio);
         const passwordHash = await bcrypt.hash(password, 10);
 
@@ -1251,11 +1299,11 @@ router.post('/users', async (req, res) => {
         return res.redirect(buildUsersRedirect(page, '', 'User berhasil ditambahkan', '', filters));
     } catch (error) {
         console.error('Create user error:', error.message);
-        return res.redirect(buildUsersRedirect(page, '', '', 'Gagal menambah user', filters));
+        return res.redirect(buildUsersRedirect(page, '', '', 'Gagal menambah user', filters, 'open'));
     }
 });
 
-router.post('/users/:id', async (req, res) => {
+router.post('/users/:id', adminUserUpload.single('avatar_image'), async (req, res) => {
     const userId = normalizeText(req.params.id);
     const username = normalizeText(req.body.username);
     const email = normalizeText(req.body.email).toLowerCase();
@@ -1269,11 +1317,11 @@ router.post('/users/:id', async (req, res) => {
 
     try {
         if (!username || !email) {
-            return res.redirect(buildUsersRedirect(page, userId, '', 'Username dan email wajib diisi', filters));
+            return res.redirect(buildUsersRedirect(page, userId, '', 'Username dan email wajib diisi', filters, 'open'));
         }
 
         if (!['user', 'admin'].includes(role)) {
-            return res.redirect(buildUsersRedirect(page, userId, '', 'Role tidak valid', filters));
+            return res.redirect(buildUsersRedirect(page, userId, '', 'Role tidak valid', filters, 'open'));
         }
 
         const targetUserResult = await pool.query(
@@ -1283,7 +1331,7 @@ router.post('/users/:id', async (req, res) => {
         const targetUser = targetUserResult.rows[0];
 
         if (!targetUser) {
-            return res.redirect(buildUsersRedirect(page, '', '', 'User tidak ditemukan', filters));
+            return res.redirect(buildUsersRedirect(page, '', '', 'User tidak ditemukan', filters, 'open'));
         }
 
         const existingUser = await pool.query(
@@ -1292,7 +1340,7 @@ router.post('/users/:id', async (req, res) => {
         );
 
         if (existingUser.rows.length) {
-            return res.redirect(buildUsersRedirect(page, userId, '', 'Email atau username sudah dipakai', filters));
+            return res.redirect(buildUsersRedirect(page, userId, '', 'Email atau username sudah dipakai', filters, 'open'));
         }
 
         if (targetUser.role === 'admin' && role !== 'admin') {
@@ -1300,11 +1348,11 @@ router.post('/users/:id', async (req, res) => {
             const adminCount = adminCountResult.rows[0]?.count || 0;
 
             if (adminCount <= 1) {
-                return res.redirect(buildUsersRedirect(page, userId, '', 'Minimal harus ada satu admin', filters));
+                return res.redirect(buildUsersRedirect(page, userId, '', 'Minimal harus ada satu admin', filters, 'open'));
             }
         }
 
-        const avatarUrl = optionalText(req.body.avatar_url) || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}`;
+        const avatarUrl = fileToPublicUrl(req.file) || optionalText(req.body.avatar_url) || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}`;
         const bio = optionalText(req.body.bio);
 
         if (password) {
@@ -1331,7 +1379,7 @@ router.post('/users/:id', async (req, res) => {
         return res.redirect(buildUsersRedirect(page, '', 'User berhasil diupdate', '', filters));
     } catch (error) {
         console.error('Update user error:', error.message);
-        return res.redirect(buildUsersRedirect(page, userId, '', 'Gagal update user', filters));
+        return res.redirect(buildUsersRedirect(page, userId, '', 'Gagal update user', filters, 'open'));
     }
 });
 

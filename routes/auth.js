@@ -95,6 +95,11 @@ function buildGoogleAvatar(profile = {}) {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`;
 }
 
+function isPlaceholderAvatarUrl(value = '') {
+    const text = normalizeText(value).toLowerCase();
+    return !text || text.includes('ui-avatars.com/api/');
+}
+
 async function createUniqueUsername(baseValue, email) {
     const base = normalizeUsernameBase(baseValue || String(email || '').split('@')[0] || 'user');
 
@@ -342,7 +347,7 @@ async function getOrCreateGoogleUser(profile = {}) {
         const user = existing.rows[0];
         const nextAvatarUrl = buildGoogleAvatar(profile);
 
-        if (nextAvatarUrl && !normalizeText(user.avatar_url)) {
+        if (nextAvatarUrl && isPlaceholderAvatarUrl(user.avatar_url)) {
             await pool.query(
                 `
                     UPDATE users
@@ -356,7 +361,7 @@ async function getOrCreateGoogleUser(profile = {}) {
 
         return {
             ...user,
-            avatar_url: user.avatar_url || nextAvatarUrl
+            avatar_url: isPlaceholderAvatarUrl(user.avatar_url) ? nextAvatarUrl : user.avatar_url
         };
     }
 
@@ -3611,18 +3616,21 @@ router.get('/shopping-list', async (req, res) => {
 
     try {
         const userId = req.session.user.id;
-        const summary = await shoppingListService.getShoppingList(userId);
+        const region = String(req.query.region || req.session.user.priceRegion || 'jakarta').trim() || 'jakarta';
+        const summary = await shoppingListService.getShoppingList(userId, { region });
         const selectedRecipes = summary.recipes || [];
-        const estimatedBudget = Number(summary.totalEstimatedPrice || 0);
+        const estimatedBudget = Number(summary.manualBudget || 0);
 
         res.render('user/shopping-list', {
             title: 'Shopping List - AI Recipe Planner',
             user: req.session.user,
+            shoppingRegion: summary.region || region,
             shoppingListData: {
                 favoriteRecipes: selectedRecipes,
                 ingredients: summary.items,
                 sections: summary.sections,
                 estimatedBudget,
+                manualBudget: Number(summary.manualBudget || 0),
                 totalRecipes: Number(summary.totalRecipes || 0),
                 totalIngredients: Number(summary.totalItems || 0)
             }

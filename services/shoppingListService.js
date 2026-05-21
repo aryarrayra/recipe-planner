@@ -1,12 +1,18 @@
 const pool = require('../config/db');
 const mealdb = require('./mealdb');
-const { estimateIngredientPrice } = require('./priceEstimator');
+const { estimateIngredientPrice, getRegionMultiplier, normalizePriceRegion } = require('./priceEstimator');
+const { getLookupStatus, lookupIngredientPrice, lookupManualItemPrice, lookupRecipePrice } = require('./priceLookup');
 
 const COMMUNITY_SOURCE = 'community';
+
 let schemaReady;
 
 function roundQuantity(value) {
     return Math.round(Number(value || 0) * 100) / 100;
+}
+
+function applyRegionPrice(price, region = 'jakarta') {
+    return roundQuantity(Number(price || 0) * getRegionMultiplier(region));
 }
 
 function escapeRegExp(value = '') {
@@ -139,6 +145,10 @@ function inferCategory(name = '') {
 
     const categoryRules = [
         {
+            key: 'oil',
+            terms: ['minyak goreng', 'minyak', 'cooking oil', 'vegetable oil', 'oil', 'canola', 'sunflower']
+        },
+        {
             key: 'alat',
             terms: ['wajan', 'panci', 'spatula', 'pisau', 'sutil', 'sendok', 'garpu', 'mangkuk', 'oven', 'kukusan', 'blender', 'talenan', 'mixer']
         },
@@ -170,6 +180,85 @@ function inferCategory(name = '') {
 
     const match = categoryRules.find((rule) => rule.terms.some((term) => value.includes(term)));
     return match ? match.key : 'lainnya';
+}
+
+async function estimateManualItemPriceSmart(payload = {}) {
+    const region = normalizePriceRegion(payload.region || 'jakarta');
+    const itemName = String(payload.itemName || payload.name || payload.item || '').trim();
+
+    if (!itemName) {
+        return 0;
+    }
+
+    const webPrice = await lookupManualItemPrice({
+        name: itemName,
+        quantity: String(payload.quantity || '').trim(),
+        unit: String(payload.unit || '').trim(),
+        category: String(payload.category || '').trim() || inferCategory(itemName),
+        region,
+    });
+
+    if (Number.isFinite(webPrice) && webPrice > 0) {
+        return webPrice;
+    }
+
+    const fallbackPrice = estimateManualItemPrice(payload);
+    return fallbackPrice;
+}
+
+async function estimateIngredientPriceSmart(item = {}, options = {}) {
+    const fallbackPrice = estimateIngredientPrice(item, options);
+    const webPrice = await lookupIngredientPrice(item, {
+        ...options,
+        category: String(options.category || item.category || inferCategory(item.name || item.label || item.title || '')).trim()
+    });
+
+    if (Number.isFinite(webPrice) && webPrice > 0) {
+        return webPrice;
+    }
+
+    return fallbackPrice;
+}
+
+async function estimateRecipePriceSmart(recipe = {}, scaledIngredients = [], options = {}) {
+    const desiredServings = Math.max(1, Number(options.desiredServings || recipe.desiredServings || 1));
+    const fallbackPrice = roundQuantity(
+        Number(recipe.estimated_price || 0) * (desiredServings / Math.max(1, Number(options.baseServings || recipe.servings || 1)))
+    );
+    const webPrice = await lookupRecipePrice(recipe, scaledIngredients, {
+        ...options,
+        desiredServings
+    });
+
+    if (Number.isFinite(webPrice) && webPrice > 0) {
+        return webPrice;
+    }
+
+    return fallbackPrice;
+}
+
+function estimateManualItemPrice(payload = {}) {
+    const itemName = String(payload.itemName || payload.name || payload.item || '').trim();
+    if (!itemName) {
+        return 0;
+    }
+
+    const quantity = String(payload.quantity || '').trim();
+    const category = String(payload.category || '').trim() || inferCategory(itemName);
+    const region = normalizePriceRegion(payload.region || 'jakarta');
+
+    return estimateIngredientPrice(
+        {
+            name: itemName,
+            amount: quantity,
+            unit: String(payload.unit || '').trim()
+        },
+        {
+            category,
+            title: itemName,
+            region
+        }
+    );
 }
 
 function normalizeIngredientItem(item = {}) {
@@ -364,28 +453,14 @@ async function getItemStateMap(userId) {
     return new Map(result.rows.map((row) => [String(row.item_key), Boolean(row.checked)]));
 }
 
-function buildManualItems(rows = []) {
-    return rows.map((row) => {
+async function buildManualItems(rows = [], options = {}) {
+    return Promise.all(rows.map(async (row) => {
         const name = String(row.item_name || 'Item belanja').trim() || 'Item belanja';
         const quantity = String(row.quantity || '').trim();
         const unit = String(row.unit || '').trim();
         const category = String(row.category || 'lainnya').trim() || 'lainnya';
         const storedEstimatedPrice = Number(row.estimated_price || 0);
-        const estimatedPrice = roundQuantity(
-            storedEstimatedPrice > 0
-                ? storedEstimatedPrice
-                : estimateIngredientPrice(
-                    {
-                        name,
-                        amount: quantity,
-                        unit
-                    },
-                    {
-                        category,
-                        title: name
-                    }
-                )
-        );
+        const estimatedPrice = roundQuantity(storedEstimatedPrice > 0 ? storedEstimatedPrice : 0);
         const displayQuantity = buildManualItemLabel(quantity, unit) || 'Secukupnya';
 
         return {
@@ -401,7 +476,7 @@ function buildManualItems(rows = []) {
             source: 'manual',
             estimatedPrice
         };
-    });
+    }));
 }
 
 function aggregateShoppingItems(recipeEntries = [], manualEntries = [], checkedMap = new Map()) {
@@ -483,8 +558,9 @@ function aggregateShoppingItems(recipeEntries = [], manualEntries = [], checkedM
     };
 }
 
-async function getShoppingList(userId) {
+async function getShoppingList(userId, options = {}) {
     await ensureSchema();
+    const region = normalizePriceRegion(options.region || 'jakarta');
 
     const [recipesResult, checkedMap, manualItemsResult] = await Promise.all([
         pool.query(
@@ -518,29 +594,34 @@ async function getShoppingList(userId) {
         category: row.recipe_category || 'Resep',
         baseServings: Number(row.base_servings || 1),
         desiredServings: Number(row.desired_servings || 1),
-        estimatedPrice: Number(row.estimated_price || 0),
+        estimatedPrice: roundQuantity(row.estimated_price || 0),
         scaledIngredients: Array.isArray(row.scaled_ingredients) ? row.scaled_ingredients : [],
         recipeSnapshot: row.recipe_snapshot || {}
     }));
 
-    const manualItems = buildManualItems(manualItemsResult.rows);
+    const manualItems = await buildManualItems(manualItemsResult.rows, { region });
     const { items, sections } = aggregateShoppingItems(recipes, manualItems, checkedMap);
     const totalEstimatedPrice = recipes.reduce((sum, recipe) => sum + Number(recipe.estimatedPrice || 0), 0) +
         manualItems.reduce((sum, item) => sum + Number(item.estimatedPrice || 0), 0);
+    const manualBudget = manualItems.reduce((sum, item) => sum + Number(item.estimatedPrice || 0), 0);
 
     return {
         recipes,
         items,
         sections,
         totalEstimatedPrice: roundQuantity(totalEstimatedPrice),
+        manualBudget: roundQuantity(manualBudget),
         totalRecipes: recipes.length,
         totalItems: items.length,
-        manualItems
+        manualItems,
+        region,
+        priceLookupStatus: getLookupStatus()
     };
 }
 
-async function upsertRecipeSelection(userId, recipeKey, desiredServings) {
+async function upsertRecipeSelection(userId, recipeKey, desiredServings, options = {}) {
     await ensureSchema();
+    const region = normalizePriceRegion(options.region || 'jakarta');
 
     const recipe = await lookupRecipeSnapshot(recipeKey);
     if (!recipe) {
@@ -550,7 +631,15 @@ async function upsertRecipeSelection(userId, recipeKey, desiredServings) {
     const baseServings = Math.max(1, Number(recipe.servings || 1));
     const nextServings = Math.max(1, Number(desiredServings || baseServings));
     const scaledIngredients = scaleRecipeIngredients(recipe.ingredients, nextServings, baseServings);
-    const estimatedPrice = roundQuantity(Number(recipe.estimated_price || 0) * (nextServings / baseServings));
+    const estimatedPrice = roundQuantity(
+        Number(recipe.estimated_price || 0) > 0
+            ? Number(recipe.estimated_price || 0) * (nextServings / baseServings)
+            : await estimateRecipePriceSmart(recipe, scaledIngredients, {
+                desiredServings: nextServings,
+                baseServings,
+                region
+            })
+    );
     const parsed = parseRecipeKey(recipeKey);
 
     await pool.query(
@@ -601,7 +690,7 @@ async function upsertRecipeSelection(userId, recipeKey, desiredServings) {
         ]
     );
 
-    return getShoppingList(userId);
+    return getShoppingList(userId, { region });
 }
 
 async function removeRecipeSelection(userId, recipeKey) {
@@ -623,6 +712,7 @@ async function removeRecipeSelection(userId, recipeKey) {
 
 async function updateItemCheckedState(userId, itemKey, checked, payload = {}) {
     await ensureSchema();
+    const region = normalizePriceRegion(payload.region || 'jakarta');
 
     const normalizedKey = String(itemKey || '').trim();
     if (normalizedKey.startsWith('manual:')) {
@@ -649,7 +739,7 @@ async function updateItemCheckedState(userId, itemKey, checked, payload = {}) {
             [userId, manualId, itemName, quantity, unit, category, Number.isFinite(estimatedPrice) ? estimatedPrice : 0, Boolean(checked)]
         );
 
-        return getShoppingList(userId);
+        return getShoppingList(userId, { region });
     }
 
     const itemName = String(payload.itemName || 'Item belanja').trim() || 'Item belanja';
@@ -680,11 +770,12 @@ async function updateItemCheckedState(userId, itemKey, checked, payload = {}) {
         [userId, String(itemKey || ''), itemName, unit, category, Boolean(checked)]
     );
 
-    return getShoppingList(userId);
+    return getShoppingList(userId, { region });
 }
 
 async function addManualItem(userId, payload = {}) {
     await ensureSchema();
+    const region = normalizePriceRegion(payload.region || 'jakarta');
 
     const itemName = String(payload.itemName || payload.name || '').trim();
     if (!itemName) {
@@ -694,19 +785,7 @@ async function addManualItem(userId, payload = {}) {
     const quantity = String(payload.quantity || '').trim();
     const category = String(payload.category || 'lainnya').trim() || 'lainnya';
     const manualEstimatedPrice = String(payload.estimatedPrice || '').replace(/[^\d]/g, '');
-    const estimatedPrice = manualEstimatedPrice
-        ? Number(manualEstimatedPrice)
-        : estimateIngredientPrice(
-            {
-                name: itemName,
-                amount: quantity,
-                unit: String(payload.unit || '').trim()
-            },
-            {
-                category,
-                title: itemName
-            }
-        );
+    const estimatedPrice = roundQuantity(manualEstimatedPrice ? Number(manualEstimatedPrice) : 0);
     const checked = Boolean(payload.checked);
 
     await pool.query(
@@ -735,11 +814,12 @@ async function addManualItem(userId, payload = {}) {
         ]
     );
 
-    return getShoppingList(userId);
+    return getShoppingList(userId, { region });
 }
 
-async function removeManualItem(userId, itemKey) {
+async function removeManualItem(userId, itemKey, options = {}) {
     await ensureSchema();
+    const region = normalizePriceRegion(options.region || 'jakarta');
 
     const normalizedKey = String(itemKey || '').trim();
     if (!normalizedKey.startsWith('manual:')) {
@@ -756,13 +836,15 @@ async function removeManualItem(userId, itemKey) {
         [userId, manualId]
     );
 
-    return getShoppingList(userId);
+    return getShoppingList(userId, { region });
 }
 
 module.exports = {
     ensureSchema,
     scaleRecipeIngredients,
     getShoppingList,
+    estimateManualItemPrice,
+    estimateManualItemPriceSmart,
     upsertRecipeSelection,
     removeRecipeSelection,
     updateItemCheckedState,

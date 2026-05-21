@@ -82,10 +82,7 @@
                 </div>
 
                 <div class="user-recipe-detail-tags">
-                  <span><i class="fa-solid fa-star"></i> <%= activeRecipe.likesCount %> likes</span>
-                  <span><i class="fa-regular fa-eye"></i> <%= activeRecipe.viewsCount %> views</span>
                   <span><i class="fa-regular fa-clock"></i> <%= activeRecipe.cookingTime %> menit</span>
-                  <span><i class="fa-solid fa-wallet"></i> Perkiraan Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
                   <span><i class="fa-solid fa-signal"></i> <%= activeRecipe.difficulty %></span>
                   <span><i class="fa-solid fa-fire"></i> <%= activeRecipe.calories %> kkal</span>
                   <span><i class="fa-solid fa-rotate-right"></i> <%= Number(activeRecipe.recookCount || 0) %> kali recook</span>
@@ -229,11 +226,6 @@
                 </div>
 
                 <div class="user-stat-list">
-                  <div class="user-stat-card">
-                    <i class="fa-solid fa-users"></i>
-                    <strong><%= activeRecipe.viewsCount %> pembaca</strong>
-                    <span>Resep ini sedang ramai dibuka user lain.</span>
-                  </div>
                   <div class="user-stat-card">
                     <i class="fa-solid fa-bookmark"></i>
                     <strong><%= activeRecipe.savesCount %> simpan</strong>

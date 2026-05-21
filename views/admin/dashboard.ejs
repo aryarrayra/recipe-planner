@@ -23,7 +23,6 @@
   <% const insights = secondaryInsights || {}; %>
   <% const auditItems = Array.isArray(auditTrail) ? auditTrail : []; %>
   <% const auditPager = auditPagination || { page: 1, pageSize: 5, totalItems: auditItems.length, totalPages: 1, hasPrev: false, hasNext: false }; %>
-  <% const categoryItems = Array.isArray(topCategories) ? topCategories : []; %>
   <% const buildAuditPageUrl = (targetPage) => `/admin/dashboard?auditPage=${targetPage}`; %>
   <% const formatDateTime = (value) => value ? new Date(value).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; %>
   <% const formatRelativeTime = (value) => {
@@ -64,17 +63,12 @@
           <div class="user-panel-head">
             <div>
               <p class="user-panel-kicker">Fokus admin</p>
-              <h1>Moderasi resep community, tindak laporan, kelola user, dan pantau kesehatan operasional.</h1>
-            </div>
-            <div class="admin-hero-actions">
-              <a class="auth-button auth-button-secondary" href="/admin/trending">Moderasi resep</a>
-              <a class="auth-button auth-button-secondary" href="/admin/reports">Tindak laporan</a>
-              <a class="auth-button" href="/admin/users">Kelola user</a>
+              <h1>Ringkasan operasional untuk resep aktif hari ini, laporan terbuka, dan post paling ramai.</h1>
             </div>
           </div>
 
           <p class="admin-hero-copy">
-            Baris pertama menunjukkan KPI yang butuh perhatian cepat. Baris kedua adalah dua antrean utama yang harus dikerjakan admin. Insight dan audit diletakkan di bawah sebagai konteks pendukung.
+            Tiga kartu utama di bawah ini menunjukkan aktivitas yang paling perlu dilihat cepat: seberapa banyak resep aktif hari ini, jumlah laporan terbuka, dan post mana yang sedang paling ramai.
           </p>
         </section>
 
@@ -93,11 +87,6 @@
             <span>Total users</span>
             <strong><%= dashboardMetrics.users_count || 0 %></strong>
             <small><%= dashboardMetrics.admin_count || 0 %> admin, <%= dashboardMetrics.user_count || 0 %> user</small>
-          </article>
-          <article class="admin-stat-card">
-            <span>New users</span>
-            <strong><%= dashboardMetrics.new_users_today || 0 %> / <%= dashboardMetrics.new_users_week || 0 %></strong>
-            <small>Hari ini / 7 hari terakhir</small>
           </article>
         </section>
 
@@ -188,45 +177,26 @@
             <div class="user-panel-head">
               <div>
                 <p class="user-panel-kicker">Platform insight</p>
-                <h2>Insight sekunder</h2>
+                <h2>Insight operasional</h2>
               </div>
             </div>
 
             <div class="admin-analytics-periods">
               <article class="admin-analytics-card">
-                <span>Top category</span>
-                <strong><%= insights.topCategory ? insights.topCategory.category : '-' %></strong>
-                <small><%= insights.topCategory ? `${insights.topCategory.recipe_count} recipe • ${insights.topCategory.likes_count} likes` : 'Belum ada data kategori' %></small>
+                <span>Resep aktif hari ini</span>
+                <strong><%= insights.activeTodayCount || 0 %></strong>
+                <small>Post community yang dibuat dan masih aktif hari ini</small>
               </article>
               <article class="admin-analytics-card">
-                <span>Total engagement</span>
-                <strong><%= insights.totalEngagement || 0 %></strong>
-                <small>Gabungan likes dan wishlist</small>
+                <span>Laporan terbuka</span>
+                <strong><%= insights.openReportsCount || 0 %></strong>
+                <small>Report yang belum diselesaikan</small>
               </article>
               <article class="admin-analytics-card">
-                <span>Resolved reports</span>
-                <strong><%= insights.resolvedReports || 0 %></strong>
-                <small>Kasus yang sudah ditutup</small>
+                <span>Post paling ramai</span>
+                <strong><%= insights.topPost ? insights.topPost.totalInteractions : 0 %></strong>
+                <small><%= insights.topPost ? `${insights.topPost.title} &middot; ${insights.topPost.creatorName}` : 'Belum ada post aktif' %></small>
               </article>
-            </div>
-
-            <div class="admin-category-list">
-              <% if (categoryItems.length) { %>
-                <% categoryItems.slice(0, 4).forEach((item, index) => { %>
-                  <article class="admin-category-card">
-                    <div class="admin-category-rank">#<%= index + 1 %></div>
-                    <div class="admin-category-copy">
-                      <h3><%= item.category %></h3>
-                      <p><%= item.recipe_count %> recipe <span>&middot;</span> <%= item.likes_count %> likes <span>&middot;</span> <%= item.views_count %> views</p>
-                    </div>
-                  </article>
-                <% }) %>
-              <% } else { %>
-                <div class="admin-empty-state">
-                  <h3>Belum ada insight kategori.</h3>
-                  <p>Data kategori akan muncul setelah resep mulai aktif digunakan.</p>
-                </div>
-              <% } %>
             </div>
           </article>
 
@@ -257,7 +227,7 @@
                         <h3><%= item.event_title || 'Aktivitas' %></h3>
                         <span class="admin-status is-neutral"><%= item.event_label || '-' %></span>
                       </div>
-                      <p><strong><%= item.actor_name || 'System' %></strong> • <%= item.event_meta || '-' %></p>
+                      <p><strong><%= item.actor_name || 'System' %></strong> &middot; <%= item.event_meta || '-' %></p>
                       <small><i class="fa-regular fa-clock"></i> <%= formatDateTime(item.event_time) %></small>
                     </div>
                   </article>

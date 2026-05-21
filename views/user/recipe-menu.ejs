@@ -40,7 +40,7 @@
 
               <p class="user-ai-copy">
                 Halaman ini khusus katalog resep. Pilih filter region dan bahan untuk mempersempit hasil, lalu tombol
-                `Cooked` untuk masuk ke detail resep dan mulai ikuti step memasaknya.
+                `Cook` untuk masuk ke detail resep dan mulai ikuti step memasaknya.
               </p>
 
               <form class="user-recipe-filter-form" action="/recipe-menu" method="get">
@@ -94,7 +94,6 @@
 
                     <div class="user-recipe-tags">
                       <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime %> menit</span>
-                      <span><i class="fa-solid fa-wallet"></i> Perkiraan Rp <%= formatPrice(recipe.estimatedPrice) %></span>
                       <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
                     </div>
 
@@ -105,13 +104,8 @@
                       </div>
                     <% } %>
 
-                    <div class="user-recipe-menu-meta">
-                      <span><i class="fa-regular fa-heart"></i> <%= recipe.likesCount %> likes</span>
-                      <span><i class="fa-regular fa-eye"></i> <%= recipe.viewsCount %> views</span>
-                    </div>
-
                     <div class="user-ai-actions">
-                      <a class="auth-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">Cooked</a>
+                      <a class="auth-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">Cook</a>
                     </div>
                   </div>
                 </article>
