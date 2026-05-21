@@ -927,7 +927,7 @@
 
     @media (max-width: 700px) {
       .profile-dashboard .user-dashboard-main {
-        padding: 16px;
+        padding: 16px 16px calc(132px + env(safe-area-inset-bottom));
       }
 
       .profile-topbar {
@@ -1000,6 +1000,12 @@
         min-width: 0;
       }
 
+      .profile-layout,
+      .profile-main,
+      .profile-sidebar {
+        padding-bottom: calc(8px + env(safe-area-inset-bottom));
+      }
+
       .profile-community-card-link {
         width: 100%;
       }
@@ -1012,6 +1018,10 @@
     }
 
     @media (max-width: 640px) {
+      .profile-dashboard .user-dashboard-main {
+        padding-bottom: calc(136px + env(safe-area-inset-bottom));
+      }
+
       .profile-community-grid {
         gap: 10px;
       }

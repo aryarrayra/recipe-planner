@@ -11649,6 +11649,16 @@ body.history-page {
     padding: 20px 14px 8px !important;
   }
 
+  .user-fyp-page .user-dashboard-main {
+    padding-bottom: calc(128px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .user-fyp-page .user-fyp-layout,
+  .user-fyp-page .user-fyp-main,
+  .user-fyp-page .user-fyp-sidebar {
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+
   .community-page .community-layout,
   .community-page .community-main-column,
   .community-page .community-feed-grid {
