@@ -10525,6 +10525,8 @@ body.history-page {
   }
 
   .user-dashboard {
+    width: 100%;
+    margin: 0;
     padding-top: 0;
     padding-left: 0;
     padding-right: 0;
@@ -10536,6 +10538,23 @@ body.history-page {
     margin: 0;
     padding: 0 0 124px;
     min-height: auto;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-shell,
+  .admin-shell,
+  .chat-dashboard-shell,
+  .history-dashboard-shell,
+  .food-shell {
+    width: 100%;
+    margin: 0;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .chat-dashboard-shell,
@@ -10557,8 +10576,11 @@ body.history-page {
   }
 
   .community-page .user-dashboard-main,
+  .admin-dashboard .user-dashboard-main,
   .chat-dashboard .user-dashboard-main,
-  .history-dashboard .user-dashboard-main {
+  .history-dashboard .user-dashboard-main,
+  .user-recipe-detail-page .user-dashboard-main,
+  .user-feed-page .user-dashboard-main {
     background: transparent;
     border: 0;
     box-shadow: none;
@@ -10570,6 +10592,8 @@ body.history-page {
   .user-search,
   .user-profile-pill,
   .admin-banner,
+  .user-panel-banner,
+  .history-panel,
   .community-page .community-feed-empty,
   .community-page .community-recipe-card,
   .community-page .community-composer-modal,
@@ -10601,8 +10625,22 @@ body.history-page {
   .community-page .user-dashboard-topbar,
   .community-page .user-panel,
   .user-search,
-  .user-profile-pill {
+  .user-profile-pill,
+  .admin-banner,
+  .user-panel-banner,
+  .history-panel {
     background: transparent;
+  }
+
+  .user-dashboard-topbar,
+  .user-panel,
+  .user-search,
+  .user-profile-pill,
+  .admin-banner,
+  .user-panel-banner,
+  .history-panel {
+    border: 0 !important;
+    box-shadow: none !important;
   }
 
   .community-page .user-dashboard-topbar,
@@ -10623,16 +10661,19 @@ body.history-page {
     border: 0 !important;
   }
 
+  .user-search,
+  .user-profile-pill,
+  .admin-banner,
+  .user-panel-banner,
+  .history-panel {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
   .community-page .user-panel,
   .community-page .community-main-column > .user-panel,
   .community-page .community-side-column > .user-panel {
     padding: 0 14px 18px;
-  }
-
-  .user-search,
-  .user-profile-pill {
-    padding-left: 14px;
-    padding-right: 14px;
   }
 
   .community-page .community-composer-overlay {
@@ -11485,16 +11526,11 @@ body.history-page {
     padding-right: 0;
   }
 
-  .user-panel,
   .admin-hero-panel,
-  .admin-banner,
   .form-card,
-  .food-shell,
-  .community-page .user-panel,
   .community-page .community-book-cover-panel,
   .community-page .community-book-section,
   .community-page .community-book-sidecard,
-  .history-panel,
   .chat-feed,
   .chat-composer {
     padding: 16px;
@@ -11522,6 +11558,30 @@ body.history-page {
   .chat-dashboard .chat-dashboard-topbar {
     padding-left: 14px;
     padding-right: 14px;
+  }
+
+  .user-dashboard-topbar,
+  .user-panel,
+  .user-search,
+  .user-profile-pill,
+  .admin-banner,
+  .food-shell,
+  .history-panel,
+  .community-page .user-dashboard-topbar,
+  .community-page .user-panel {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .user-panel,
+  .community-page .user-panel,
+  .history-panel {
+    padding-top: 0 !important;
+    padding-bottom: 16px !important;
   }
 
   .community-page .user-dashboard-topbar,
