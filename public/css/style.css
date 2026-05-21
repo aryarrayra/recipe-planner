@@ -8433,12 +8433,12 @@ html.page-is-loading .page-load-overlay {
 @media (max-width: 560px) {
   .user-dashboard,
   .user-dashboard-shell {
-    padding: 8px;
+    padding: 0;
   }
 
   .user-dashboard-shell {
-    border-radius: 22px;
-    padding: 10px 10px 104px;
+    border-radius: 0;
+    padding: 0 0 118px;
   }
 
   .user-dashboard-topbar {
@@ -10521,7 +10521,7 @@ body.history-page {
 
   .user-dashboard,
   .user-dashboard-shell {
-    padding-bottom: 112px;
+    padding-bottom: 124px;
   }
 
   .user-dashboard-shell {
@@ -10536,7 +10536,7 @@ body.history-page {
     display: block;
     width: calc(100% - 16px);
     margin: 8px auto;
-    padding: 12px 12px 116px;
+    padding: 0 0 124px;
   }
 
   .chat-dashboard-shell > .user-dashboard-main,
@@ -10547,6 +10547,14 @@ body.history-page {
   .user-dashboard-main,
   .chat-dashboard .user-dashboard-main {
     min-height: auto;
+  }
+
+  .community-page .user-dashboard-main,
+  .chat-dashboard .user-dashboard-main,
+  .history-dashboard .user-dashboard-main {
+    background: #fff;
+    border: 0;
+    box-shadow: none;
   }
 
   .mobile-bottom-nav-shell {
@@ -11247,14 +11255,14 @@ body.history-page {
   .history-dashboard .user-dashboard-main,
   .community-page .user-dashboard-main,
   .admin-dashboard .user-dashboard-main {
-    padding-inline: 8px;
+    padding-inline: 0;
   }
 
   .admin-dashboard .admin-shell,
   .admin-shell,
   .user-dashboard-shell {
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .user-panel,
@@ -11271,6 +11279,40 @@ body.history-page {
   .chat-composer {
     padding: 16px;
     border-radius: 18px;
+  }
+
+  .community-page .user-dashboard-main,
+  .community-page .user-dashboard-topbar,
+  .community-page .user-panel,
+  .community-page .community-feed-empty,
+  .community-page .community-recipe-card,
+  .chat-dashboard .user-dashboard-main,
+  .chat-dashboard .chat-dashboard-topbar,
+  .chat-dashboard .chat-window-shell,
+  .chat-dashboard .chat-topbar,
+  .chat-dashboard .chat-feed,
+  .chat-dashboard .chat-composer {
+    border-radius: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .community-page .user-dashboard-topbar,
+  .chat-dashboard .chat-dashboard-topbar {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .community-page .community-layout,
+  .community-page .community-main-column,
+  .community-page .community-feed-grid {
+    gap: 0;
+  }
+
+  .community-page .community-feed-empty {
+    min-height: 116px;
+    padding: 18px 14px;
   }
 
   .user-panel-head h1 {
