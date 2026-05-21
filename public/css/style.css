@@ -10559,7 +10559,7 @@ body.history-page {
   .community-page .user-dashboard-main,
   .chat-dashboard .user-dashboard-main,
   .history-dashboard .user-dashboard-main {
-    background: #fff;
+    background: transparent;
     border: 0;
     box-shadow: none;
   }
@@ -10593,13 +10593,25 @@ body.history-page {
   .user-dashboard-main {
     padding: 0;
     gap: 0;
+    background: transparent;
   }
 
   .user-dashboard-topbar,
   .user-panel,
+  .community-page .user-dashboard-topbar,
+  .community-page .user-panel,
   .user-search,
   .user-profile-pill {
-    background: #fff;
+    background: transparent;
+  }
+
+  .community-page .user-dashboard-topbar,
+  .community-page .user-panel,
+  .community-page .community-main-column > .user-panel,
+  .community-page .community-side-column > .user-panel,
+  .community-page .community-feed-empty {
+    border: 0 !important;
+    background: transparent !important;
   }
 
   .user-dashboard-topbar {
@@ -10608,6 +10620,13 @@ body.history-page {
 
   .user-panel {
     padding: 18px 14px;
+    border: 0 !important;
+  }
+
+  .community-page .user-panel,
+  .community-page .community-main-column > .user-panel,
+  .community-page .community-side-column > .user-panel {
+    padding: 0 14px 18px;
   }
 
   .user-search,
@@ -10645,10 +10664,8 @@ body.history-page {
     z-index: 2;
     margin: 0 -14px 14px;
     padding: 14px 14px 12px;
-    background: rgba(255, 255, 255, 0.96);
+    background: #fff;
     border-bottom: 1px solid rgba(29, 29, 29, 0.08);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
   }
 
   .community-page .community-composer-head .user-panel-kicker {
@@ -10698,6 +10715,9 @@ body.history-page {
 
   .community-page .community-upload-card {
     gap: 10px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
   }
 
   .community-page .community-upload-preview {
@@ -10741,10 +10761,8 @@ body.history-page {
     padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
     flex-direction: column;
     align-items: stretch;
-    background: rgba(255, 255, 255, 0.96);
+    background: #fff;
     border-top: 1px solid rgba(29, 29, 29, 0.08);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
   }
 
   .community-page .community-composer-modal .community-form-actions .auth-button,
@@ -11504,6 +11522,26 @@ body.history-page {
   .chat-dashboard .chat-dashboard-topbar {
     padding-left: 14px;
     padding-right: 14px;
+  }
+
+  .community-page .user-dashboard-topbar,
+  .community-page .user-panel,
+  .community-page .community-main-column > .user-panel,
+  .community-page .community-side-column > .user-panel,
+  .community-page .community-feed-empty {
+    background: transparent !important;
+    border: 0 !important;
+  }
+
+  .community-page .user-panel,
+  .community-page .community-main-column > .user-panel,
+  .community-page .community-side-column > .user-panel {
+    padding: 0 14px 16px !important;
+  }
+
+  .community-page .community-feed-empty {
+    min-height: auto;
+    padding: 20px 14px 8px !important;
   }
 
   .community-page .community-layout,
