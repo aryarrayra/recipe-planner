@@ -17,8 +17,8 @@ if (chatWindow && chatForm && chatInput) {
   const starterMessage = {
     role: 'ai',
     label: 'AI',
-    text: 'Kirim bahan, budget, tujuan makan, atau foto makanan. Enter untuk kirim, Shift+Enter untuk baris baru.',
-    html: '<p>Kirim bahan, budget, tujuan makan, atau foto makanan. <strong>Enter</strong> untuk kirim, <strong>Shift+Enter</strong> untuk baris baru.</p>'
+    text: 'Kirim bahan, budget, tujuan makan, atau foto makanan.',
+    html: '<p>Kirim bahan, budget, tujuan makan, atau foto makanan.</p>'
   };
 
   let attachmentFile = null;
