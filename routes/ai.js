@@ -170,7 +170,6 @@ function categorizeRecipe(text = '') {
         { label: 'Dessert', terms: ['dessert', 'manis', 'pisang', 'cake', 'cookie', 'brownies', 'pudding', 'coklat'] },
         { label: 'Minuman', terms: ['minuman', 'drink', 'kopi', 'teh', 'jus', 'boba', 'es '] },
         { label: 'Healthy food', terms: ['healthy', 'diet', 'salad', 'oat', 'protein', 'low calorie'] },
-        { label: 'Budget food', terms: ['hemat', 'budget', 'murah', 'anak kost'] },
         { label: 'Cemilan', terms: ['cemilan', 'snack', 'goreng', 'nugget', 'roll', 'crispy'] }
     ];
 

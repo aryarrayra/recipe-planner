@@ -1939,11 +1939,10 @@ function getFallbackDashboard(user) {
         searchPlaceholder: 'Cari makanan, bahan, atau kategori',
         categories: [
             { label: 'Makanan berat', image: '/images/2.png', feedKey: 'indonesia' },
-            { label: 'Dessert', image: '/images/3.png', feedKey: 'dessert' },
-            { label: 'Minuman', image: '/images/6.png', feedKey: 'random' },
-            { label: 'Cemilan', image: '/images/1.png', feedKey: 'random' },
-            { label: 'Healthy food', image: '/images/5.png', feedKey: 'healthy' },
-            { label: 'Budget food', image: '/images/4.png', feedKey: 'indonesia' }
+            { label: 'Dessert', image: '/images/desserts.jpg', feedKey: 'dessert' },
+            { label: 'Minuman', image: '/images/drinks.jpg', feedKey: 'random' },
+            { label: 'Cemilan', image: '/images/cemilan.jpg', feedKey: 'random' },
+            { label: 'Healthy food', image: '/images/salads.jpg', feedKey: 'healthy' }
         ],
         moods: ['Lagi pengen pedes?', 'Comfort food', 'Masak cepat', 'Menu hemat'],
         trendingRecipes: [
