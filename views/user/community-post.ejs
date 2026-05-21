@@ -207,7 +207,7 @@
               <form class="community-detail-reply-form <%= postIsDeleted ? 'is-disabled' : '' %>" id="replyForm">
                 <textarea id="replyInput" rows="3" placeholder="<%= postIsDeleted ? 'Postingan sudah dihapus' : 'Tulis komentar...' %>" required <%= postIsDeleted ? 'disabled' : '' %>></textarea>
                 <div class="community-detail-reply-actions">
-                  <span class="community-detail-reply-hint">Enter untuk kirim, Shift+Enter untuk baris baru.</span>
+                  <span class="community-detail-reply-hint">Tulis komentar untuk membalas postingan ini.</span>
                   <button type="submit" class="auth-button" id="replySubmit" <%= postIsDeleted ? 'disabled' : '' %>>Reply</button>
                 </div>
               </form>
