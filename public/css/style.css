@@ -10670,6 +10670,34 @@ body.history-page {
     padding-right: 14px;
   }
 
+  .user-panel-banner,
+  .user-panel-hero {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding-top: 0;
+    padding-bottom: 18px;
+  }
+
+  .user-banner-copy {
+    padding: 0;
+  }
+
+  .user-banner-description {
+    max-width: none;
+  }
+
+  .user-banner-card {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .user-mood-row span {
+    box-shadow: none;
+  }
+
   .community-page .user-panel,
   .community-page .community-main-column > .user-panel,
   .community-page .community-side-column > .user-panel {
@@ -11582,6 +11610,23 @@ body.history-page {
   .history-panel {
     padding-top: 0 !important;
     padding-bottom: 16px !important;
+  }
+
+  .user-panel-banner,
+  .user-panel-hero {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+    padding-top: 0 !important;
+    padding-bottom: 16px !important;
+    background: transparent !important;
+  }
+
+  .user-banner-card {
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .community-page .user-dashboard-topbar,
