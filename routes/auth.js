@@ -4228,9 +4228,10 @@ router.get('/recipe-menu', async (req, res) => {
             recipeList = shuffleRecipesBySeed(recipeList, `${req.session.user.id}:recipe-menu:catalog`);
         }
 
+        const shouldApplyIngredientMatcher = selectedIngredient && !groupedCatalogFilters.has(selectedIngredient);
         const filteredRecipes = filterRecipesForDisplay(recipeList, preferences)
             .filter((recipe) => matchesRecipeRegion(recipe, selectedRegion))
-            .filter((recipe) => matchesRecipeIngredient(recipe, selectedIngredient))
+            .filter((recipe) => (shouldApplyIngredientMatcher ? matchesRecipeIngredient(recipe, selectedIngredient) : true))
             .filter((recipe) => matchesRecipeAlphabet(recipe, selectedAlphabet))
             .map((recipe) => ({
                 ...recipe,
