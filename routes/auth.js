@@ -698,7 +698,9 @@ function getRecipeFilterGroups() {
             { value: 'rice-noodle', label: 'Nasi / Mi', hint: 'Karbo utama' },
             { value: 'dairy', label: 'Susu / Keju', hint: 'Dairy' },
             { value: 'spicy', label: 'Pedas', hint: 'Cabai dan sambal' },
-            { value: 'dessert', label: 'Dessert', hint: 'Manis / penutup' }
+            { value: 'dessert', label: 'Dessert', hint: 'Manis / penutup' },
+            { value: 'snack', label: 'Cemilan', hint: 'Snack ringan' },
+            { value: 'healthy', label: 'Healthy', hint: 'Ringan / fit' }
         ],
         alphabet: [
             { value: '', label: 'Semua huruf', hint: 'Semua judul resep' },
@@ -2087,7 +2089,6 @@ function getFallbackDashboard(user) {
         categories: [
             { label: 'Makanan berat', image: '/images/2.png', feedKey: 'indonesia' },
             { label: 'Dessert', image: '/images/desserts.jpg', feedKey: 'dessert' },
-            { label: 'Minuman', image: '/images/drinks.jpg', feedKey: 'drink' },
             { label: 'Cemilan', image: '/images/cemilan.jpg', feedKey: 'snack' },
             { label: 'Healthy food', image: '/images/salads.jpg', feedKey: 'healthy' }
         ],
@@ -4480,7 +4481,6 @@ router.get('/recipe-detail', async (req, res) => {
                 { value: 'asian', label: 'Asian', hint: 'Jepang/Korea/Thai' },
                 { value: 'western', label: 'Western', hint: 'Pasta/Steak' },
                 { value: 'dessert', label: 'Dessert', hint: 'Manis' },
-                { value: 'drink', label: 'Minuman', hint: 'Segar / hangat' },
                 { value: 'snack', label: 'Cemilan', hint: 'Ringan' },
                 { value: 'healthy', label: 'Healthy', hint: 'Fit' }
             ]
@@ -4625,7 +4625,6 @@ router.get('/recipes', async (req, res) => {
                 { value: 'asian', label: 'Asian', hint: 'Jepang/Korea/Thai' },
                 { value: 'western', label: 'Western', hint: 'Pasta/Steak' },
                 { value: 'dessert', label: 'Dessert', hint: 'Manis' },
-                { value: 'drink', label: 'Minuman', hint: 'Segar / hangat' },
                 { value: 'snack', label: 'Cemilan', hint: 'Ringan' },
                 { value: 'healthy', label: 'Healthy', hint: 'Fit' }
             ]
