@@ -85,7 +85,12 @@
                     type="password"
                     placeholder="Password"
                   />
-                  <button type="button" class="password-toggle" data-password-toggle data-target="password" aria-label="Tampilkan password">Show</button>
+                  <button type="button" class="password-toggle" data-password-toggle data-target="password" aria-label="Tampilkan password">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
                 </div>
 
                 <label class="sr-only" for="confirmPassword">Confirm password</label>
@@ -96,7 +101,12 @@
                     type="password"
                     placeholder="Confirm password"
                   />
-                  <button type="button" class="password-toggle" data-password-toggle data-target="confirmPassword" aria-label="Tampilkan konfirmasi password">Show</button>
+                  <button type="button" class="password-toggle" data-password-toggle data-target="confirmPassword" aria-label="Tampilkan konfirmasi password">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
                 </div>
 
                 <button type="submit">Create account</button>
@@ -171,7 +181,6 @@
           button.addEventListener("click", () => {
             const showPassword = target.type === "password";
             target.type = showPassword ? "text" : "password";
-            button.textContent = showPassword ? "Hide" : "Show";
             button.setAttribute("aria-label", showPassword ? "Sembunyikan password" : "Tampilkan password");
           });
         });
