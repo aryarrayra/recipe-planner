@@ -591,6 +591,10 @@ function normalizeRecipe(recipe = {}) {
         'nusantara'
     ]);
 
+    const rawCalories = Number(recipe.calories || recipe.kalori || 0) || 0;
+    const rawLikes = Number(recipe.likes_count || recipe.likes || 0) || 0;
+    const rawViews = Number(recipe.views_count || recipe.views || 0) || 0;
+
     return {
         id: buildRecipeId(sourceId),
         source: SOURCE,
@@ -612,7 +616,7 @@ function normalizeRecipe(recipe = {}) {
         cuisine,
         origin_place: originPlace,
         difficulty: recipe.difficulty || recipe.dificulty || estimateDifficulty(steps.length, ingredients.length),
-        calories: Number(recipe.calories || recipe.kalori || 0) || (200 + ingredients.length * 26),
+        calories: rawCalories || (200 + ingredients.length * 26),
         estimated_price: Number(recipe.estimated_price || recipe.price || recipe.harga || 0) || estimateBudget(ingredients, {
             title,
             category,
@@ -622,9 +626,12 @@ function normalizeRecipe(recipe = {}) {
             steps
         }),
         tags,
-        likes_count: Number(recipe.likes_count || recipe.likes || 0) || 0,
+        likes_count: rawLikes,
         saves_count: Number(recipe.saves_count || recipe.saved || 0) || 0,
-        views_count: Number(recipe.views_count || recipe.views || 0) || 0,
+        views_count: rawViews,
+        has_real_likes: rawLikes > 0,
+        has_real_views: rawViews > 0,
+        has_real_calories: rawCalories > 0,
         created_at: recipe.created_at || recipe.createdAt || new Date().toISOString(),
         creator_name: recipe.creator_name || recipe.creatorName || 'Masak Apa Hari Ini',
         contains_nuts: false,

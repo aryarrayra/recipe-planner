@@ -41,6 +41,7 @@ let preferenceSchemaReady;
 let communityPostLikesSchemaReady;
 let communityPostsSchemaReady;
 let communityReportsSchemaReady;
+let recentViewsSchemaReady;
 let authOtpSchemaReady;
 let mailerTransport = null;
 let nodemailerModule = null;
@@ -1379,6 +1380,11 @@ function getFirstName(username = '') {
 
 function mapRecipeCard(recipe, fallbackImage = '/images/1.png') {
     const tags = Array.isArray(recipe.tags) ? recipe.tags.slice(0, 2) : [];
+    const recipeSource = String(recipe.source || '').trim().toLowerCase();
+    const isCommunityRecipe = recipeSource === COMMUNITY_RECIPE_SOURCE;
+    const showLikesCount = recipe.has_real_likes === true || (isCommunityRecipe && Number(recipe.likes_count || 0) > 0);
+    const showViewsCount = recipe.has_real_views === true || (isCommunityRecipe && Number(recipe.views_count || 0) > 0);
+    const showCalories = recipe.has_real_calories === true || (isCommunityRecipe && Number(recipe.calories || 0) > 0);
 
     return {
         id: recipe.id,
@@ -1393,6 +1399,9 @@ function mapRecipeCard(recipe, fallbackImage = '/images/1.png') {
         estimatedPrice: recipe.estimated_price || 0,
         likesCount: recipe.likes_count || 0,
         viewsCount: recipe.views_count || 0,
+        showLikesCount,
+        showViewsCount,
+        showCalories,
         tags
     };
 }
@@ -1579,6 +1588,9 @@ function mapRecipeDetail(recipe, fallbackImage = '/images/1.png', videoSource = 
         likesCount: recipe.likes_count || 0,
         savesCount: recipe.saves_count || 0,
         viewsCount: recipe.views_count || 0,
+        showLikesCount: recipe.has_real_likes === true || (String(recipe.source || '').trim().toLowerCase() === COMMUNITY_RECIPE_SOURCE && Number(recipe.likes_count || 0) > 0),
+        showViewsCount: recipe.has_real_views === true || (String(recipe.source || '').trim().toLowerCase() === COMMUNITY_RECIPE_SOURCE && Number(recipe.views_count || 0) > 0),
+        showCalories: recipe.has_real_calories === true || (String(recipe.source || '').trim().toLowerCase() === COMMUNITY_RECIPE_SOURCE && Number(recipe.calories || 0) > 0),
         ingredients: normalizedIngredients,
         steps: normalizedSteps,
         tags: Array.isArray(recipe.tags) ? recipe.tags : [],
@@ -1728,6 +1740,124 @@ async function recordRecipeRecook(userId, recipe = {}) {
     } finally {
         client.release();
     }
+}
+
+function buildRecentViewIdentity(recipe = {}) {
+    const source = String(recipe.source || recipe.sourceType || 'themealdb').trim() || 'themealdb';
+    const sourceId = String(recipe.sourceId || recipe.idMeal || recipe.id || '').trim();
+    const recipeId = String(recipe.recipeId || (source === COMMUNITY_RECIPE_SOURCE ? recipe.id : '') || '').trim();
+
+    return {
+        source,
+        sourceId,
+        recipeId: recipeId || null
+    };
+}
+
+function buildRecentViewPayload(recipe = {}) {
+    const identity = buildRecentViewIdentity(recipe);
+
+    return {
+        ...identity,
+        id: String(recipe.id || recipe.sourceId || identity.sourceId || '').trim(),
+        title: String(recipe.title || recipe.recipe_title || 'Resep').trim(),
+        description: String(recipe.description || '').trim(),
+        image_url: String(recipe.imageUrl || recipe.image_url || recipe.recipe_image_url || '').trim(),
+        video_url: String(recipe.video_url || '').trim(),
+        cooking_time: Number(recipe.cookingTime || recipe.cooking_time || 0) || 0,
+        category: String(recipe.category || recipe.recipe_category || '').trim(),
+        cuisine: String(recipe.cuisine || recipe.recipe_cuisine || '').trim(),
+        difficulty: String(recipe.difficulty || '').trim(),
+        calories: Number(recipe.calories || 0) || 0,
+        estimated_price: Number(recipe.estimatedPrice || recipe.estimated_price || 0) || 0,
+        likes_count: Number(recipe.likesCount || recipe.likes_count || 0) || 0,
+        saves_count: Number(recipe.savesCount || recipe.saves_count || 0) || 0,
+        views_count: Number(recipe.viewsCount || recipe.views_count || 0) || 0,
+        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+        steps: Array.isArray(recipe.steps) ? recipe.steps : []
+    };
+}
+
+async function ensureRecentViewsSchema() {
+    if (!recentViewsSchemaReady) {
+        recentViewsSchemaReady = (async () => {
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS recipe_recent_views (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
+                    recipe_source VARCHAR(50) NOT NULL DEFAULT 'themealdb',
+                    recipe_source_id VARCHAR(120) NOT NULL,
+                    recipe_payload JSONB NOT NULL,
+                    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (user_id, recipe_source, recipe_source_id)
+                )
+            `);
+        })().catch((error) => {
+            recentViewsSchemaReady = null;
+            throw error;
+        });
+    }
+
+    return recentViewsSchemaReady;
+}
+
+async function recordRecipeView(userId, recipe = {}) {
+    const payload = buildRecentViewPayload(recipe);
+    if (!userId || !payload.sourceId) {
+        return;
+    }
+
+    await ensureRecentViewsSchema();
+    await pool.query(
+        `
+            INSERT INTO recipe_recent_views (
+                user_id,
+                recipe_id,
+                recipe_source,
+                recipe_source_id,
+                recipe_payload,
+                viewed_at,
+                created_at,
+                updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id, recipe_source, recipe_source_id)
+            DO UPDATE SET
+                recipe_id = EXCLUDED.recipe_id,
+                recipe_payload = EXCLUDED.recipe_payload,
+                viewed_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+        `,
+        [
+            userId,
+            payload.recipeId,
+            payload.source,
+            payload.sourceId,
+            JSON.stringify(payload)
+        ]
+    );
+}
+
+async function getRecentViewedRecipes(userId, limit = 4) {
+    await ensureRecentViewsSchema();
+
+    const result = await pool.query(
+        `
+            SELECT recipe_payload, viewed_at
+            FROM recipe_recent_views
+            WHERE user_id = $1
+            ORDER BY viewed_at DESC
+            LIMIT $2
+        `,
+        [userId, Math.max(1, Number(limit) || 4)]
+    );
+
+    return result.rows
+        .map((row) => row.recipe_payload || null)
+        .filter(Boolean);
 }
 
 function buildShoppingSummary(recipes = []) {
@@ -2150,80 +2280,8 @@ function getFallbackDashboard(user) {
             { label: 'Healthy food', image: '/images/salads.jpg', feedKey: 'healthy' }
         ],
         moods: ['Lagi pengen pedes?', 'Comfort food', 'Masak cepat', 'Menu hemat'],
-        trendingRecipes: [
-            mapRecipeCard({
-                id: 'sample-1',
-                title: 'Nasi Goreng Jawa',
-                description: 'Menu rumahan yang cepat, gurih, dan cocok untuk sarapan atau makan malam.',
-                image_url: '/images/2.png',
-                cooking_time: 15,
-                difficulty: 'easy',
-                calories: 520,
-                category: 'main course',
-                estimated_price: 12000,
-                likes_count: 89,
-                views_count: 342,
-                tags: ['nusantara', 'pedas']
-            }),
-            mapRecipeCard({
-                id: 'sample-2',
-                title: 'Pisang Coklat Lumer',
-                description: 'Cemilan manis yang gampang dibuat saat ingin sesuatu yang comfort.',
-                image_url: '/images/3.png',
-                cooking_time: 12,
-                difficulty: 'easy',
-                calories: 280,
-                category: 'dessert',
-                estimated_price: 9000,
-                likes_count: 63,
-                views_count: 218,
-                tags: ['manis', 'cemilan']
-            }),
-            mapRecipeCard({
-                id: 'sample-3',
-                title: 'Es Kopi Susu Gula Aren',
-                description: 'Minuman segar untuk boost mood dengan bahan yang sederhana.',
-                image_url: '/images/6.png',
-                cooking_time: 8,
-                difficulty: 'easy',
-                calories: 190,
-                category: 'drink',
-                estimated_price: 15000,
-                likes_count: 57,
-                views_count: 176,
-                tags: ['minuman', 'segar']
-            })
-        ],
-        recommendedRecipes: [
-            mapRecipeCard({
-                id: 'sample-4',
-                title: 'Ayam Bakar Teflon',
-                description: 'Cocok untuk kamu yang suka menu gurih dan praktis tanpa alat ribet.',
-                image_url: '/images/4.png',
-                cooking_time: 25,
-                difficulty: 'medium',
-                calories: 410,
-                category: 'main course',
-                estimated_price: 18000,
-                likes_count: 48,
-                views_count: 150,
-                tags: ['gurih', 'praktis']
-            }),
-            mapRecipeCard({
-                id: 'sample-5',
-                title: 'Salad Buah Yogurt',
-                description: 'Pilihan ringan untuk mood yang ingin makan segar dan manis.',
-                image_url: '/images/5.png',
-                cooking_time: 10,
-                difficulty: 'easy',
-                calories: 240,
-                category: 'healthy food',
-                estimated_price: 14000,
-                likes_count: 41,
-                views_count: 130,
-                tags: ['healthy', 'fresh']
-            })
-        ],
+        trendingRecipes: [],
+        recommendedRecipes: [],
         recentlyViewed: [],
         favoriteRecipes: [],
         preferences: Array.isArray(user.preferences) ? user.preferences : [],
@@ -3162,7 +3220,7 @@ router.get('/profile', async (req, res) => {
             pool.query(
                 `
                     SELECT COUNT(*)::int AS favorite_count
-                    FROM user_favorites
+                    FROM meal_favorites
                     WHERE user_id = $1
                 `,
                 [req.session.user.id]
@@ -3942,41 +4000,73 @@ router.get('/dashboard', async (req, res) => {
         const userId = req.session.user.id;
         const preferences = await fetchUserPreferences(userId);
         req.session.user.preferences = preferences;
-        const [trendingMeals, recommendedMeals, favoriteMeals, dailyChallengeMeals] = await Promise.all([
-            mealdb.getFeedMeals('random', 8).catch(() => []),
-            mealdb.getFeedMeals('healthy', 8).catch(() => []),
+        const [trendingMeals, recommendedMeals, favoriteMeals, autoChallenges, catalogMeals, mainCourseMeals, popularSearchMeals, recentlyViewedMeals] = await Promise.all([
+            mealdb.getFeedMeals('international', 8).catch(() => []),
+            mealdb.getFeedMeals('international', 12).catch(() => []),
             mealFavorites.getFavoriteMeals(userId).catch(() => []),
-            mealdb.getFeedMeals('indonesia', 6).catch(() => [])
+            challengeService.getAutoChallenges().catch(() => ({ dailyChallenge: null, weeklyChallenge: null })),
+            mealdb.getCatalogMeals(24).catch(() => []),
+            getRecipesForGroupedCategory('main-course', 12).catch(() => []),
+            Promise.all(['burger', 'pizza', 'ramen', 'pasta', 'steak', 'sushi'].map((term) => mealdb.searchMeals(term).catch(() => [])))
+                .then((results) => results.flat())
+                .catch(() => []),
+            getRecentViewedRecipes(userId, 2).catch(() => [])
         ]);
-        const recentlyViewedMeals = [];
-        const realTrendingMeals = uniqueRecipesById(filterRecipesByPreferences(trendingMeals, preferences)).slice(0, 4);
-        const realRecommendedMeals = uniqueRecipesById(filterRecipesByPreferences(recommendedMeals, preferences))
+        const recipeCardFallbackImage = fallback.categories[0]?.image || '/images/1.png';
+        const favoriteCardFallbackImage = fallback.categories[1]?.image || recipeCardFallbackImage;
+        const recentCardFallbackImage = fallback.categories[2]?.image || recipeCardFallbackImage;
+        const displayCatalogMeals = uniqueRecipesById(filterRecipesForDisplay(catalogMeals, preferences));
+        const globalPopularMeals = uniqueRecipesById([
+            ...mainCourseMeals,
+            ...trendingMeals,
+            ...popularSearchMeals,
+            ...displayCatalogMeals.filter((recipe) => !matchesRecipeRegion(recipe, 'indonesia'))
+        ])
+            .sort((left, right) => {
+                const leftScore = Number(left.views_count || 0) + (Number(left.likes_count || 0) * 3) + (Number(left.saves_count || 0) * 2);
+                const rightScore = Number(right.views_count || 0) + (Number(right.likes_count || 0) * 3) + (Number(right.saves_count || 0) * 2);
+                return rightScore - leftScore;
+            });
+        const preferredPopularMeals = filterRecipesByPreferences(globalPopularMeals, preferences);
+        const rankedPopularMeals = preferredPopularMeals.length ? preferredPopularMeals : globalPopularMeals;
+        const realTrendingMeals = uniqueRecipesById([
+            ...rankedPopularMeals,
+            ...displayCatalogMeals
+        ]).slice(0, 4);
+        const recommendedPool = uniqueRecipesById([
+            ...favoriteMeals,
+            ...recommendedMeals,
+            ...displayCatalogMeals
+        ]);
+        const preferredRecommendedMeals = filterRecipesByPreferences(recommendedPool, preferences);
+        const rankedRecommendedMeals = preferredRecommendedMeals.length ? preferredRecommendedMeals : recommendedPool;
+        const realRecommendedMeals = rankedRecommendedMeals
             .filter((recipe) => !realTrendingMeals.some((item) => getRecipeDedupKey(item) === getRecipeDedupKey(recipe)))
             .slice(0, 4);
-        const dailyChallengeRecipe = uniqueRecipesById(filterRecipesByPreferences(dailyChallengeMeals, preferences))[0] || null;
 
         const dashboardData = {
             ...fallback,
             trendingRecipes: realTrendingMeals.length
                 ? realTrendingMeals
-                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[0].image))
-                : fallback.trendingRecipes,
+                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, recipeCardFallbackImage))
+                : [],
             favoriteRecipes: favoriteMeals.length
-                ? filterRecipesByPreferences(favoriteMeals, preferences)
+                ? uniqueRecipesById(favoriteMeals)
                     .slice(0, 4)
-                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[4].image))
+                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, favoriteCardFallbackImage))
                 : [],
             recentlyViewed: recentlyViewedMeals.length
-                ? filterRecipesByPreferences(recentlyViewedMeals, preferences)
-                    .slice(0, 4)
-                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[2].image))
+                ? uniqueRecipesById(filterRecipesForDisplay(recentlyViewedMeals, preferences))
+                    .filter((recipe) => !favoriteMeals.some((item) => getRecipeDedupKey(item) === getRecipeDedupKey(recipe)))
+                    .slice(0, 2)
+                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, recentCardFallbackImage))
                 : [],
             recommendedRecipes: realRecommendedMeals.length
                 ? realRecommendedMeals
-                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[1].image))
-                : fallback.recommendedRecipes,
-            dailyChallenge: dailyChallengeRecipe
-                ? enhanceRecipeForPreference(dailyChallengeRecipe, preferences, fallback.categories[0].image)
+                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, favoriteCardFallbackImage))
+                : [],
+            dailyChallenge: autoChallenges.dailyChallenge
+                ? enhanceRecipeForPreference(autoChallenges.dailyChallenge, preferences, recipeCardFallbackImage)
                 : fallback.dailyChallenge,
             tip: getCookingTip(),
             preferences
@@ -4591,6 +4681,9 @@ router.get('/recipe-detail', async (req, res) => {
         if (activeRecipeData) {
             activeRecipeData.recookCount = Number(activeRecipeRecookStats.recook_count || 0);
             activeRecipeData.latestRecookedAt = activeRecipeRecookStats.latest_recooked_at || null;
+            await recordRecipeView(req.session.user.id, activeRecipeData).catch((viewError) => {
+                console.error('Recent recipe view tracking error:', viewError.message);
+            });
         }
         const relatedRecipes = activeRecipeData
             ? activeRecipeData.source === COMMUNITY_RECIPE_SOURCE
@@ -4710,6 +4803,11 @@ router.get('/recipes', async (req, res) => {
 
             return null;
         })();
+        if (selectedRecipeId && activeRecipe) {
+            await recordRecipeView(req.session.user.id, activeRecipe).catch((viewError) => {
+                console.error('Recent recipe view tracking error:', viewError.message);
+            });
+        }
 
         const selectedRecipeIdResolved = activeRecipe ? String(activeRecipe.id) : '';
         const selectedRecipeCard = recipes.find((recipe) => String(recipe.id) === selectedRecipeIdResolved) || recipes.find((recipe) => hasUsableVideo(recipe)) || recipes[0] || null;

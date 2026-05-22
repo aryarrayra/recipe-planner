@@ -83,24 +83,37 @@
                 <a class="user-panel-link" href="/recipes">Lihat semua</a>
               </div>
 
-              <div class="user-recipe-list user-recipe-list-compact">
-                <% dashboardData.trendingRecipes.forEach((recipe) => { %>
-                  <a class="user-recipe-card user-recipe-card-modern user-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
-                    <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
-                    <div class="user-recipe-copy">
-                      <h3><%= recipe.title %></h3>
-                      <p><%= recipe.description %></p>
-                      <div class="user-recipe-tags">
-                        <span><i class="fa-regular fa-eye"></i> <%= recipe.viewsCount %></span>
-                        <span><i class="fa-regular fa-heart"></i> <%= recipe.likesCount %></span>
-                        <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime %> menit</span>
-                        <span><i class="fa-solid fa-fire"></i> <%= recipe.calories %> kkal</span>
-                        <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
+              <% if (dashboardData.trendingRecipes.length) { %>
+                <div class="user-recipe-list user-recipe-list-compact">
+                  <% dashboardData.trendingRecipes.forEach((recipe) => { %>
+                    <a class="user-recipe-card user-recipe-card-modern user-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
+                      <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                      <div class="user-recipe-copy">
+                        <h3><%= recipe.title %></h3>
+                        <p><%= recipe.description %></p>
+                        <div class="user-recipe-tags">
+                          <% if (recipe.showViewsCount) { %>
+                            <span><i class="fa-regular fa-eye"></i> <%= recipe.viewsCount %></span>
+                          <% } %>
+                          <% if (recipe.showLikesCount) { %>
+                            <span><i class="fa-regular fa-heart"></i> <%= recipe.likesCount %></span>
+                          <% } %>
+                          <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime %> menit</span>
+                          <% if (recipe.showCalories) { %>
+                            <span><i class="fa-solid fa-fire"></i> <%= recipe.calories %> kkal</span>
+                          <% } %>
+                          <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
+                        </div>
                       </div>
-                    </div>
-                  </a>
-                <% }) %>
-              </div>
+                    </a>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="user-empty-state">
+                  <i class="fa-regular fa-compass"></i>
+                  <p>Belum ada resep populer global yang bisa ditampilkan sekarang.</p>
+                </div>
+              <% } %>
             </article>
 
             <article class="user-panel">
@@ -111,18 +124,25 @@
                 </div>
               </div>
 
-              <div class="user-card-grid">
-                <% dashboardData.recommendedRecipes.forEach((recipe) => { %>
-                  <a class="user-mini-recipe-card user-mini-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
-                    <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
-                    <div class="user-mini-recipe-copy">
-                      <h3><%= recipe.title %></h3>
-                      <p><%= recipe.category %></p>
-                      <small><%= recipe.cookingTime %> menit - <%= recipe.difficulty %></small>
-                    </div>
-                  </a>
-                <% }) %>
-              </div>
+              <% if (dashboardData.recommendedRecipes.length) { %>
+                <div class="user-card-grid">
+                  <% dashboardData.recommendedRecipes.forEach((recipe) => { %>
+                    <a class="user-mini-recipe-card user-mini-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
+                      <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                      <div class="user-mini-recipe-copy">
+                        <h3><%= recipe.title %></h3>
+                        <p><%= recipe.category %></p>
+                        <small><%= recipe.cookingTime %> menit - <%= recipe.difficulty %></small>
+                      </div>
+                    </a>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="user-empty-state">
+                  <i class="fa-regular fa-lightbulb"></i>
+                  <p>Belum ada rekomendasi yang cocok ditampilkan sekarang.</p>
+                </div>
+              <% } %>
             </article>
 
             <div class="user-section-grid">
