@@ -2040,7 +2040,7 @@ html.page-is-loading .page-load-overlay {
 }
 
 .user-dashboard-inline-tip {
-  margin: 0;
+  margin: 8px 0 0;
   max-width: 620px;
   color: var(--muted);
   font-size: 0.92rem;
