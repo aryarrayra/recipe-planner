@@ -1095,7 +1095,7 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
         dessert: {
             categoryTerms: ['dessert', 'sweet', 'pastry', 'cake', 'cookie', 'pudding', 'ice cream'],
             labelTerms: ['dessert', 'cake', 'cookie', 'pudding', 'brownie', 'tart', 'pie', 'mousse', 'custard'],
-            excludeTerms: ['beef', 'chicken', 'ayam', 'broccoli', 'rice', 'nasi', 'steak', 'goreng', 'kari', 'curry', 'salad', 'soup', 'mie', 'noodle']
+            excludeTerms: ['beef', 'chicken', 'ayam', 'broccoli', 'rice', 'nasi', 'steak', 'goreng', 'kari', 'curry', 'salad', 'soup', 'mie', 'noodle', 'dal', 'paneer', 'fry']
         },
         drink: {
             categoryTerms: ['drink', 'beverage', 'minuman', 'juice', 'tea', 'coffee', 'smoothie'],
@@ -1188,14 +1188,20 @@ async function getRecipesForGroupedCategory(category, count) {
     }
 
     if (key === 'dessert') {
-        const [dessertCategory, dessertFeed, catalogRecipes] = await Promise.all([
+        const dessertKeywords = ['cake', 'cookie', 'brownie', 'ice cream', 'churros', 'tart', 'pudding'];
+        const [dessertCategory, dessertFeed, catalogRecipes, searchedDesserts] = await Promise.all([
             mealdb.getMealsByCategory('Dessert', safeCount).catch(() => []),
             mealdb.getFeedMeals('dessert', safeCount).catch(() => []),
-            mealdb.getCatalogMeals(Math.max(safeCount * 2, 36)).catch(() => [])
+            mealdb.getCatalogMeals(Math.max(safeCount * 2, 36)).catch(() => []),
+            Promise.all(dessertKeywords.map((term) => mealdb.searchMeals(term).catch(() => []))).catch(() => [])
         ]);
 
         const matchedCatalog = catalogRecipes.filter((recipe) => matchesRecipeIngredient(recipe, 'dessert'));
-        return uniqueRecipesById([...dessertCategory, ...dessertFeed, ...matchedCatalog]).slice(0, safeCount);
+        const matchedSearch = searchedDesserts
+            .flat()
+            .filter((recipe) => matchesRecipeIngredient(recipe, 'dessert'));
+
+        return uniqueRecipesById([...dessertCategory, ...dessertFeed, ...matchedSearch, ...matchedCatalog]).slice(0, safeCount);
     }
 
     if (key === 'snack' || key === 'healthy') {
