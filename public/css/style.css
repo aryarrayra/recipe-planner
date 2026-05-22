@@ -163,15 +163,7 @@ a {
 }
 
 .login-page::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 78%;
-  height: 72%;
-  background: var(--highlight);
-  clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 100%);
-  z-index: 0;
+  display: none;
 }
 
 .visual-panel {
