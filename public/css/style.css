@@ -175,13 +175,7 @@ a {
 }
 
 .visual-strip {
-  position: absolute;
-  top: 0;
-  left: 57%;
-  width: 50%;
-  height: 100%;
-  background: url("/images/5.png") center / cover no-repeat;
-  z-index: 1;
+  display: none;
 }
 
 .visual-outline {
@@ -257,8 +251,8 @@ a {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: var(--highlight);
-  box-shadow: 0 0 0 6px rgba(254, 219, 113, 0.18);
+  background: var(--accent);
+  box-shadow: 0 0 0 6px rgba(56, 156, 154, 0.12);
 }
 
 .brand-badge strong,
