@@ -4106,8 +4106,19 @@ router.get('/recipe-menu', async (req, res) => {
         preventBack(req, res, () => {});
 
         const search = String(req.query.q || '').trim();
-        const selectedRegion = normalizeRecipeRegionFilter(req.query.region || req.query.category || '');
-        const selectedIngredient = normalizeRecipeIngredientFilter(req.query.ingredient || '');
+        const categoryQuery = String(req.query.category || '').trim();
+        const explicitRegion = String(req.query.region || '').trim();
+        const explicitIngredient = String(req.query.ingredient || '').trim();
+        const categoryAsRegion = normalizeRecipeRegionFilter(categoryQuery);
+        const categoryAsIngredient = normalizeRecipeIngredientFilter(categoryQuery);
+        const regionKeys = new Set(['indonesia', 'asia', 'middle-east', 'europe', 'america', 'africa']);
+        const ingredientKeys = new Set(['chicken', 'beef', 'seafood', 'egg', 'tofu-tempe', 'vegetable', 'rice-noodle', 'dairy', 'spicy', 'dessert', 'drink', 'snack', 'healthy']);
+        const selectedRegion = normalizeRecipeRegionFilter(
+            explicitRegion || (!explicitIngredient && regionKeys.has(categoryAsRegion) ? categoryAsRegion : '')
+        );
+        const selectedIngredient = normalizeRecipeIngredientFilter(
+            explicitIngredient || (!explicitRegion && ingredientKeys.has(categoryAsIngredient) ? categoryAsIngredient : '')
+        );
         const selectedAlphabet = normalizeRecipeAlphabetFilter(req.query.alphabet || req.query.alpha || '');
         const pageSize = 12;
         const currentPage = Math.max(1, Number.parseInt(String(req.query.page || '1'), 10) || 1);
