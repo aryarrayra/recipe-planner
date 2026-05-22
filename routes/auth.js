@@ -1032,6 +1032,21 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
     }
 
     const blob = getRecipeIngredientBlob(recipe);
+    const categoryBlob = [
+        recipe.category,
+        Array.isArray(recipe.tags) ? recipe.tags.join(' ') : recipe.tags
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+    const labelBlob = [
+        recipe.title,
+        recipe.description,
+        recipe.category
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
     const aliases = {
         chicken: ['chicken', 'ayam', 'poultry', 'dada ayam', 'paha ayam'],
         beef: ['beef', 'sapi', 'daging sapi', 'daging'],
@@ -1044,6 +1059,30 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
         spicy: ['spicy', 'pedas', 'cabai', 'cabe', 'chili', 'sambal', 'pepper'],
         dessert: ['dessert', 'manis', 'cake', 'pudding', 'chocolate', 'cookies', 'cookie', 'pastry']
     };
+    const groupedAliases = {
+        dessert: {
+            categoryTerms: ['dessert', 'sweet', 'pastry', 'cake', 'cookie', 'pudding', 'ice cream'],
+            labelTerms: ['dessert', 'cake', 'cookie', 'pudding', 'brownie', 'tart', 'pie', 'mousse', 'custard']
+        },
+        drink: {
+            categoryTerms: ['drink', 'beverage', 'minuman', 'juice', 'tea', 'coffee', 'smoothie'],
+            labelTerms: ['juice', 'tea', 'coffee', 'smoothie', 'latte', 'milkshake', 'mocktail', 'sirup', 'es ']
+        },
+        snack: {
+            categoryTerms: ['snack', 'cemilan', 'camilan', 'appetizer', 'starter', 'finger food', 'side'],
+            labelTerms: ['snack', 'cemilan', 'camilan', 'gorengan', 'roll', 'bite', 'crispy', 'fritter']
+        },
+        healthy: {
+            categoryTerms: ['healthy', 'vegetarian', 'vegan', 'salad', 'light'],
+            labelTerms: ['healthy', 'salad', 'vegan', 'vegetarian', 'low calorie', 'high protein', 'clean']
+        }
+    };
+
+    if (groupedAliases[key]) {
+        const { categoryTerms = [], labelTerms = [] } = groupedAliases[key];
+        return categoryTerms.some((term) => categoryBlob.includes(term))
+            || labelTerms.some((term) => labelBlob.includes(term));
+    }
 
     const terms = aliases[key] || [key];
     return terms.some((term) => blob.includes(term));
