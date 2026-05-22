@@ -64,7 +64,7 @@
                 <div class="user-category-carousel-viewport" data-category-carousel-viewport>
                   <div class="user-category-carousel-track">
                     <% dashboardData.categories.forEach((category) => { %>
-                      <a class="user-category-chip" href="/recipes?feed=<%= encodeURIComponent(category.feedKey || 'random') %>">
+                      <a class="user-category-chip" href="/recipe-menu?category=<%= encodeURIComponent(category.feedKey || 'random') %>">
                         <img src="<%= category.image %>" alt="<%= category.label %>" />
                         <span><%= category.label %></span>
                       </a>
