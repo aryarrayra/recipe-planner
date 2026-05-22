@@ -1503,17 +1503,26 @@
                     <div class="profile-password-grid">
                       <label class="profile-field">
                         <span>Password lama</span>
-                        <input type="password" name="current_password" placeholder="Password saat ini" required />
+                        <div class="password-field">
+                          <input type="password" id="currentPassword" name="current_password" placeholder="Password saat ini" required />
+                          <button type="button" class="password-toggle" data-password-toggle data-target="currentPassword" aria-label="Tampilkan password lama">Show</button>
+                        </div>
                       </label>
 
                       <label class="profile-field">
                         <span>Password baru</span>
-                        <input type="password" name="new_password" placeholder="Password baru" required />
+                        <div class="password-field">
+                          <input type="password" id="newPassword" name="new_password" placeholder="Password baru" required />
+                          <button type="button" class="password-toggle" data-password-toggle data-target="newPassword" aria-label="Tampilkan password baru">Show</button>
+                        </div>
                       </label>
 
                       <label class="profile-field">
                         <span>Konfirmasi password</span>
-                        <input type="password" name="confirm_password" placeholder="Ulangi password baru" required />
+                        <div class="password-field">
+                          <input type="password" id="confirmPassword" name="confirm_password" placeholder="Ulangi password baru" required />
+                          <button type="button" class="password-toggle" data-password-toggle data-target="confirmPassword" aria-label="Tampilkan konfirmasi password">Show</button>
+                        </div>
                       </label>
                     </div>
 
@@ -1597,6 +1606,20 @@
         if (avatarInput.files && avatarInput.files.length > 0) {
           avatarForm?.submit();
         }
+      });
+
+      document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+        const target = document.getElementById(button.dataset.target || '');
+        if (!target) {
+          return;
+        }
+
+        button.addEventListener('click', () => {
+          const showPassword = target.type === 'password';
+          target.type = showPassword ? 'text' : 'password';
+          button.textContent = showPassword ? 'Hide' : 'Show';
+          button.setAttribute('aria-label', showPassword ? 'Sembunyikan password' : 'Tampilkan password');
+        });
       });
     })();
   </script>

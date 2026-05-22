@@ -682,6 +682,50 @@ a {
   box-shadow: 0 0 0 2px rgba(56, 156, 154, 0.18);
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 88px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  background: rgba(56, 156, 154, 0.08);
+}
+
+.password-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(56, 156, 154, 0.18);
+}
+
+.password-toggle svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
 .auth-select {
   appearance: none;
   -webkit-appearance: none;
@@ -724,7 +768,7 @@ a {
   color: var(--accent);
 }
 
-.login-form button {
+.login-form > button[type="submit"] {
   justify-self: center;
   margin-top: 6px;
   border: 0;
@@ -12646,7 +12690,7 @@ body.history-page {
     color: #7d8774;
   }
 
-  .auth-page .login-form button {
+  .auth-page .login-form > button[type="submit"] {
     width: 100%;
     min-width: 0;
     margin-top: 2px;
