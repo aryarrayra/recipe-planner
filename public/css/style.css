@@ -687,7 +687,7 @@ a {
 }
 
 .password-field input {
-  padding-right: 88px;
+  padding-right: 76px;
 }
 
 .password-toggle {
@@ -699,11 +699,16 @@ a {
   background: transparent;
   color: var(--accent);
   cursor: pointer;
-  padding: 6px;
+  padding: 6px 8px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 46px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .password-toggle:hover {
@@ -713,17 +718,6 @@ a {
 .password-toggle:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px rgba(56, 156, 154, 0.18);
-}
-
-.password-toggle svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  pointer-events: none;
 }
 
 .auth-select {
