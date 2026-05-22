@@ -1385,12 +1385,14 @@ function mapRecipeCard(recipe, fallbackImage = '/images/1.png') {
     const showLikesCount = recipe.has_real_likes === true || (isCommunityRecipe && Number(recipe.likes_count || 0) > 0);
     const showViewsCount = recipe.has_real_views === true || (isCommunityRecipe && Number(recipe.views_count || 0) > 0);
     const showCalories = recipe.has_real_calories === true || (isCommunityRecipe && Number(recipe.calories || 0) > 0);
+    const imageUrl = String(recipe.image_url || '').trim();
 
     return {
         id: recipe.id,
         title: recipe.title,
         description: recipe.description,
-        imageUrl: recipe.image_url || fallbackImage,
+        imageUrl: imageUrl || fallbackImage,
+        hasImage: Boolean(imageUrl),
         cookingTime: recipe.cooking_time || 0,
         difficulty: recipe.difficulty || 'easy',
         calories: recipe.calories || 0,

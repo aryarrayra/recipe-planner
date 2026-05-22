@@ -86,8 +86,10 @@
               <% if (dashboardData.trendingRecipes.length) { %>
                 <div class="user-recipe-list user-recipe-list-compact">
                   <% dashboardData.trendingRecipes.forEach((recipe) => { %>
-                    <a class="user-recipe-card user-recipe-card-modern user-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
-                      <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                    <a class="user-recipe-card user-recipe-card-modern user-recipe-card-link <%= recipe.hasImage ? '' : 'is-text-only' %>" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
+                      <% if (recipe.hasImage) { %>
+                        <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                      <% } %>
                       <div class="user-recipe-copy">
                         <h3><%= recipe.title %></h3>
                         <p><%= recipe.description %></p>
@@ -144,7 +146,6 @@
                 </div>
               <% } %>
             </article>
-
             <div class="user-section-grid">
               <article class="user-panel">
                 <div class="user-panel-head">
@@ -157,8 +158,10 @@
                 <% if (dashboardData.favoriteRecipes.length) { %>
                   <div class="user-card-grid">
                     <% dashboardData.favoriteRecipes.forEach((recipe) => { %>
-                      <a class="user-mini-recipe-card user-mini-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
-                        <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                      <a class="user-mini-recipe-card user-mini-recipe-card-link <%= recipe.hasImage ? '' : 'is-text-only' %>" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
+                        <% if (recipe.hasImage) { %>
+                          <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                        <% } %>
                         <div class="user-mini-recipe-copy">
                           <h3><%= recipe.title %></h3>
                           <p><%= recipe.category %></p>
@@ -186,8 +189,10 @@
                 <% if (dashboardData.recentlyViewed.length) { %>
                   <div class="user-card-grid">
                     <% dashboardData.recentlyViewed.forEach((recipe) => { %>
-                      <a class="user-mini-recipe-card user-mini-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
-                        <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                      <a class="user-mini-recipe-card user-mini-recipe-card-link <%= recipe.hasImage ? '' : 'is-text-only' %>" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
+                        <% if (recipe.hasImage) { %>
+                          <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                        <% } %>
                         <div class="user-mini-recipe-copy">
                           <h3><%= recipe.title %></h3>
                           <p><%= recipe.category %></p>

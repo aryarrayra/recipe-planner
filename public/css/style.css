@@ -2029,6 +2029,10 @@ html.page-is-loading .page-load-overlay {
   object-fit: cover;
 }
 
+.user-recipe-card.is-text-only {
+  grid-template-columns: 1fr;
+}
+
 .user-recipe-copy h3 {
   margin: 0 0 8px;
   font-family: "Space Grotesk", sans-serif;
@@ -2236,6 +2240,10 @@ html.page-is-loading .page-load-overlay {
   width: 52px;
   height: 52px;
   border-radius: 12px;
+}
+
+.user-mini-recipe-card.is-text-only {
+  grid-template-columns: 1fr;
 }
 
 .user-recipe-detail-page .user-mini-recipe-copy h3 {
