@@ -2566,30 +2566,22 @@ html.page-is-loading .page-load-overlay {
 
 .shopping-section-shell {
   display: grid;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 22px;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 24px;
   background: #faf9f6;
   box-shadow: 0 1px 0 rgba(29, 29, 29, 0.03);
-  grid-template-columns: minmax(0, 1fr) 0fr;
-  grid-template-areas:
-    "head drawer"
-    "body body";
-  transition: box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 240ms cubic-bezier(0.22, 1, 0.36, 1), grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1), transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .shopping-section-shell:has(.shopping-section[open]) {
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
   box-shadow: 0 12px 28px rgba(29, 29, 29, 0.06);
   transform: translateY(-1px);
 }
 
 .shopping-section {
-  display: contents;
-  gap: 12px;
-  padding: 0;
-  border-radius: 0;
-  background: transparent;
+  display: grid;
+  gap: 14px;
 }
 
 .shopping-section-head {
@@ -2619,10 +2611,9 @@ html.page-is-loading .page-load-overlay {
 
 .shopping-section-toggle {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  grid-area: head;
+  gap: 16px;
 }
 
 .shopping-section-toggle::-webkit-details-marker {
@@ -2667,12 +2658,10 @@ html.page-is-loading .page-load-overlay {
 }
 
 .shopping-section-drawer {
-  grid-area: drawer;
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
   transform: translateY(-6px);
-  align-self: start;
   transition:
     grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 220ms ease,
@@ -2685,7 +2674,6 @@ html.page-is-loading .page-load-overlay {
 }
 
 .shopping-section-body {
-  grid-area: body;
   display: grid;
   gap: 12px;
 }
@@ -2696,11 +2684,13 @@ html.page-is-loading .page-load-overlay {
 
 .shopping-section-form {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  padding: 14px;
-  border-radius: 18px;
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(140px, 0.8fr)) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
   background: rgba(56, 156, 154, 0.08);
+  border: 1px solid rgba(56, 156, 154, 0.1);
   min-height: 0;
 }
 
@@ -2711,7 +2701,7 @@ html.page-is-loading .page-load-overlay {
 }
 
 .shopping-section-form-field-wide {
-  grid-column: 1 / -1;
+  grid-column: auto;
 }
 
 .shopping-section-form-field span {
@@ -2724,7 +2714,8 @@ html.page-is-loading .page-load-overlay {
 
 .shopping-section-form-field input {
   width: 100%;
-  padding: 10px 12px;
+  min-height: 46px;
+  padding: 10px 14px;
   border-radius: 14px;
   border: 1px solid rgba(29, 29, 29, 0.1);
   background: #fff;
@@ -2734,13 +2725,30 @@ html.page-is-loading .page-load-overlay {
 
 .shopping-section-form-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
-  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .shopping-section-form-actions .shopping-manual-submit {
-  grid-column: auto;
+  margin: 0;
+  min-width: 0;
+  white-space: nowrap;
+  padding-inline: 22px;
+}
+
+.shopping-manual-submit {
+  margin: 0;
+}
+
+.shopping-section-toggle > div {
+  min-width: 0;
+}
+
+.shopping-section-empty-wrap,
+.shopping-list-grid {
+  margin-top: 4px;
 }
 
 .shopping-section[open] .shopping-section-drawer {
@@ -8874,6 +8882,10 @@ html.page-is-loading .page-load-overlay {
     padding: 12px 14px;
   }
 
+  .shopping-section-shell {
+    padding: 16px;
+  }
+
   .shopping-section-form {
     grid-template-columns: 1fr;
   }
@@ -8883,12 +8895,16 @@ html.page-is-loading .page-load-overlay {
     grid-column: auto;
   }
 
-  .shopping-section-form-actions .shopping-manual-submit {
-    justify-self: stretch;
+  .shopping-section-form-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .shopping-manual-submit {
-    justify-self: stretch;
+  .shopping-section-form-actions .shopping-manual-submit,
+  .shopping-manual-submit,
+  .shopping-section-cancel {
+    width: 100%;
+    justify-content: center;
   }
 
   .shopping-region-control {
@@ -8906,6 +8922,10 @@ html.page-is-loading .page-load-overlay {
 
   .shopping-item-remove-manual {
     grid-column: 2;
+  }
+
+  .shopping-section-toggle {
+    align-items: flex-start;
   }
 
   .shopping-recipe-actions {
