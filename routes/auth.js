@@ -1379,12 +1379,14 @@ function getFirstName(username = '') {
 
 function mapRecipeCard(recipe, fallbackImage = '/images/1.png') {
     const tags = Array.isArray(recipe.tags) ? recipe.tags.slice(0, 2) : [];
+    const imageUrl = String(recipe.image_url || '').trim();
 
     return {
         id: recipe.id,
         title: recipe.title,
         description: recipe.description,
-        imageUrl: recipe.image_url || fallbackImage,
+        imageUrl: imageUrl || fallbackImage,
+        hasImage: Boolean(imageUrl),
         cookingTime: recipe.cooking_time || 0,
         difficulty: recipe.difficulty || 'easy',
         calories: recipe.calories || 0,
