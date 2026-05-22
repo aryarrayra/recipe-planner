@@ -1093,9 +1093,9 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
             excludeTerms: ['dessert', 'cake', 'cookie', 'pudding', 'brownie', 'drink', 'juice', 'coffee', 'tea', 'smoothie', 'snack', 'cemilan', 'camilan', 'gorengan', 'fritter']
         },
         dessert: {
-            categoryTerms: ['dessert', 'sweet', 'pastry', 'cake', 'cookie', 'pudding', 'ice cream'],
-            labelTerms: ['dessert', 'cake', 'cookie', 'pudding', 'brownie', 'tart', 'pie', 'mousse', 'custard'],
-            excludeTerms: ['beef', 'chicken', 'ayam', 'broccoli', 'rice', 'nasi', 'steak', 'goreng', 'kari', 'curry', 'salad', 'soup', 'mie', 'noodle', 'dal', 'paneer', 'fry']
+            categoryTerms: ['dessert', 'sweet', 'pastry', 'cake', 'cookie', 'pudding', 'ice cream', 'bakery', 'treat'],
+            labelTerms: ['dessert', 'cake', 'cookie', 'pudding', 'brownie', 'tart', 'pie', 'mousse', 'custard', 'churros', 'ice cream', 'gelato', 'sorbet', 'donut', 'doughnut', 'waffle', 'crepe', 'cheesecake', 'cupcake', 'muffin', 'es krim'],
+            excludeTerms: ['beef', 'chicken', 'ayam', 'broccoli', 'rice', 'nasi', 'steak', 'goreng', 'kari', 'curry', 'salad', 'soup', 'mie', 'noodle', 'dal fry', 'matar paneer']
         },
         drink: {
             categoryTerms: ['drink', 'beverage', 'minuman', 'juice', 'tea', 'coffee', 'smoothie'],
@@ -1183,7 +1183,7 @@ async function getRecipesForGroupedCategory(category, count) {
     const safeCount = Math.max(1, Number(count) || 12);
     const keywordMap = {
         'main-course': ['rice', 'pasta', 'chicken', 'beef', 'seafood', 'curry'],
-        dessert: ['cake', 'cookie', 'brownie', 'ice cream', 'churros', 'tart', 'pudding'],
+        dessert: ['cake', 'cookie', 'brownie', 'ice cream', 'churros', 'tart', 'pudding', 'cheesecake', 'waffle', 'donut'],
         snack: ['snack', 'croquette', 'fritter', 'roll', 'toast', 'crispy'],
         healthy: ['salad', 'vegan', 'vegetarian', 'grilled chicken', 'fruit bowl', 'clean eating']
     };
