@@ -1165,6 +1165,36 @@ async function getRecipesForRegion(region, count) {
     return uniqueRecipesById([...merged, ...fallback]).slice(0, count);
 }
 
+async function getRecipesForGroupedCategory(category, count) {
+    const key = String(category || '').trim().toLowerCase();
+    const safeCount = Math.max(1, Number(count) || 12);
+
+    if (key === 'dessert') {
+        const [dessertCategory, dessertFeed] = await Promise.all([
+            mealdb.getMealsByCategory('Dessert', safeCount).catch(() => []),
+            mealdb.getFeedMeals('dessert', safeCount).catch(() => [])
+        ]);
+
+        return uniqueRecipesById([...dessertCategory, ...dessertFeed]).slice(0, safeCount);
+    }
+
+    if (key === 'snack' || key === 'healthy') {
+        const [feedRecipes, catalogRecipes] = await Promise.all([
+            mealdb.getFeedMeals(key, safeCount).catch(() => []),
+            mealdb.getCatalogMeals(Math.max(safeCount * 2, 24)).catch(() => [])
+        ]);
+
+        const matchedCatalog = catalogRecipes.filter((recipe) => matchesRecipeIngredient(recipe, key));
+        return uniqueRecipesById([...feedRecipes, ...matchedCatalog]).slice(0, safeCount);
+    }
+
+    if (key === 'drink') {
+        return [];
+    }
+
+    return [];
+}
+
 function hasKeyword(source, keywords) {
     return keywords.some((keyword) => source.includes(keyword));
 }
@@ -4303,7 +4333,7 @@ router.get('/recipe-menu', async (req, res) => {
             } else if (selectedRegion) {
                 recipeList = await getRecipesForRegion(selectedRegion, catalogFetchSize);
             } else if (groupedCatalogFilters.has(selectedIngredient)) {
-                recipeList = await mealdb.getFeedMeals(selectedIngredient, catalogFetchSize);
+                recipeList = await getRecipesForGroupedCategory(selectedIngredient, catalogFetchSize);
             } else if (selectedAlphabet) {
                 recipeList = await mealdb.searchMealsByLetter(selectedAlphabet);
             } else {
@@ -4311,7 +4341,9 @@ router.get('/recipe-menu', async (req, res) => {
             }
         } catch (apiError) {
             console.error('TheMealDB recipe menu fallback:', apiError.message);
-            recipeList = getFallbackRecipeCatalog(selectedRegion || selectedIngredient);
+            recipeList = groupedCatalogFilters.has(selectedIngredient)
+                ? await getRecipesForGroupedCategory(selectedIngredient, catalogFetchSize).catch(() => [])
+                : getFallbackRecipeCatalog(selectedRegion || selectedIngredient);
         }
 
         if (selectedAlphabet && (!Array.isArray(recipeList) || !recipeList.length)) {
@@ -4319,7 +4351,9 @@ router.get('/recipe-menu', async (req, res) => {
         }
 
         if (!Array.isArray(recipeList) || !recipeList.length) {
-            recipeList = getFallbackRecipeCatalog(selectedRegion || selectedIngredient);
+            recipeList = groupedCatalogFilters.has(selectedIngredient)
+                ? await getRecipesForGroupedCategory(selectedIngredient, catalogFetchSize).catch(() => [])
+                : getFallbackRecipeCatalog(selectedRegion || selectedIngredient);
         }
 
         if (!search && !selectedRegion && !selectedIngredient && !selectedAlphabet) {
