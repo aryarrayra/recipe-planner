@@ -11269,6 +11269,180 @@ body.history-page {
   }
 }
 
+@media (max-width: 1180px) {
+  .user-recipe-detail-page .user-dashboard-main {
+    padding-inline: 0;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-layout-no-rail {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 18px !important;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-sidebar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-sidebar .user-panel {
+    height: 100%;
+  }
+
+  .user-recipe-detail-page .user-recipe-sidecards {
+    grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(220px, 1fr));
+    gap: 14px;
+  }
+
+  .user-recipe-detail-page .user-recipe-hero-media {
+    min-height: 380px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .user-recipe-detail-page .user-dashboard,
+  .user-recipe-detail-page .user-dashboard-shell {
+    padding: 12px;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-head h1 {
+    font-size: clamp(1.95rem, 5vw, 2.8rem);
+    line-height: 1;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-tags span {
+    flex: 1 1 calc(50% - 10px);
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .user-recipe-detail-page .user-recipe-sidecards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .user-recipe-detail-page .user-recipe-sidecards > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .user-recipe-detail-page .user-recipe-action-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .user-recipe-detail-page .user-recipe-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 820px) {
+  .user-recipe-detail-page .user-dashboard,
+  .user-recipe-detail-page .user-dashboard-shell {
+    padding: 10px;
+  }
+
+  .user-recipe-detail-page .user-dashboard-shell {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .user-recipe-detail-page .user-dashboard-main {
+    min-width: 0;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-layout-no-rail,
+  .user-recipe-detail-page .user-recipe-detail-main,
+  .user-recipe-detail-page .user-recipe-detail-grid,
+  .user-recipe-detail-page .user-recipe-sidecards,
+  .user-recipe-detail-page .user-recipe-detail-sidebar,
+  .user-recipe-detail-page .user-recipe-action-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-layout-no-rail,
+  .user-recipe-detail-page .user-recipe-detail-main,
+  .user-recipe-detail-page .user-recipe-detail-panel,
+  .user-recipe-detail-page .user-recipe-steps-panel {
+    gap: 14px;
+  }
+
+  .user-recipe-detail-page .user-recipe-hero-media {
+    min-height: 240px;
+    aspect-ratio: 4 / 3;
+    border-radius: 22px;
+  }
+
+  .user-recipe-detail-page .user-recipe-hero-media img,
+  .user-recipe-detail-page .user-recipe-hero-media iframe,
+  .user-recipe-detail-page .user-recipe-hero-media video {
+    border-radius: 22px;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-head h1 {
+    font-size: clamp(1.65rem, 8vw, 2.15rem);
+    line-height: 1.04;
+  }
+
+  .user-recipe-detail-page .user-recipe-author {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-tags {
+    gap: 8px;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-tags span {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .user-recipe-detail-page .user-recipe-mini-panel {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .user-recipe-detail-page .recipe-serving-scaler {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .user-recipe-detail-page .recipe-serving-btn {
+    width: 44px;
+    height: 44px;
+    justify-self: center;
+  }
+
+  .user-recipe-detail-page .recipe-serving-input-wrap,
+  .user-recipe-detail-page .recipe-serving-input-wrap input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .user-recipe-detail-page .user-recipe-summary-list span {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .user-recipe-detail-page .user-recipe-step-card {
+    padding: 14px;
+  }
+
+  .user-recipe-detail-page .user-panel-meta {
+    align-self: flex-start;
+  }
+}
+
 @media (max-width: 820px) {
   .site-header,
   .food-shell,
