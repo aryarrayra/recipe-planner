@@ -27,18 +27,12 @@
       <section class="user-dashboard-main">
         <header class="user-dashboard-topbar user-recipe-topbar">
           <div class="user-feed-topline">
+            <a class="user-recipe-back-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>" aria-label="Kembali ke resep">
+              <span aria-hidden="true">&lt;</span>
+              <span>Kembali</span>
+            </a>
             <p class="user-panel-kicker">Cooking complete</p>
             <h1>Masakan siap dihidangkan</h1>
-          </div>
-
-          <div class="user-topbar-actions">
-            <a class="user-icon-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>" aria-label="Kembali ke resep">
-              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-            </a>
-            <div class="user-profile-pill">
-              <strong><%= user.username %></strong>
-              <span><%= user.role %></span>
-            </div>
           </div>
         </header>
 
