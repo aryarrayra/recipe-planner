@@ -3432,6 +3432,31 @@ html.page-is-loading .page-load-overlay {
   gap: 16px;
 }
 
+.user-recipe-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid rgba(29, 29, 29, 0.08);
+  color: var(--accent);
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(29, 29, 29, 0.06);
+}
+
+.user-recipe-back-link:hover,
+.user-recipe-back-link:focus-visible {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.user-recipe-back-link span:first-child {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
 .user-recipe-search {
   flex: 1;
 }
@@ -12135,5 +12160,146 @@ body.history-page {
   .user-recipe-detail-page .user-recipe-detail-description {
     font-size: 0.95rem;
     line-height: 1.65;
+  }
+}
+
+@media (max-width: 1024px) {
+  .user-recipe-served-page .user-dashboard-main {
+    display: grid;
+    gap: 16px;
+    padding: 0 0 16px;
+    background: transparent;
+  }
+
+  .user-recipe-served-page .user-dashboard-topbar,
+  .user-recipe-served-page .user-panel,
+  .user-recipe-served-page .user-profile-pill {
+    background: #ffffff !important;
+    border: 1px solid rgba(29, 29, 29, 0.06) !important;
+    box-shadow: 0 14px 34px rgba(29, 29, 29, 0.06) !important;
+    border-radius: 24px !important;
+  }
+
+  .user-recipe-served-page .user-dashboard-topbar {
+    padding: 16px !important;
+  }
+
+  .user-recipe-served-page .user-panel {
+    padding: 18px !important;
+  }
+
+  .user-recipe-served-page .user-recipe-served-hero,
+  .user-recipe-served-page .user-recipe-detail-sidebar .user-panel {
+    overflow: hidden;
+  }
+
+  .user-recipe-served-page .user-recipe-detail-sidebar {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 820px) {
+  .user-recipe-served-page .user-dashboard {
+    padding: 10px 8px 18px;
+  }
+
+  .user-recipe-served-page .user-dashboard-shell {
+    width: 100%;
+    padding: 10px 0 0;
+  }
+
+  .user-recipe-served-page .user-dashboard-main {
+    padding-bottom: calc(136px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .user-recipe-served-page .user-dashboard-topbar,
+  .user-recipe-served-page .user-panel {
+    background: #ffffff !important;
+    border-radius: 22px !important;
+  }
+
+  .user-recipe-served-page .user-dashboard-topbar {
+    padding: 14px !important;
+  }
+
+  .user-recipe-served-page .user-panel {
+    padding: 16px !important;
+  }
+
+  .user-recipe-served-page .user-panel-head {
+    margin-bottom: 16px;
+    padding: 0;
+  }
+
+  .user-recipe-served-page .user-panel-head h2,
+  .user-recipe-served-page .user-panel-head h1 {
+    margin-top: 8px;
+  }
+
+  .user-recipe-served-page .user-topbar-actions {
+    align-items: stretch;
+  }
+
+  .user-recipe-served-page .user-topbar-actions .user-profile-pill {
+    width: 100%;
+    min-width: 0;
+    padding: 12px 14px;
+    border-radius: 18px !important;
+    text-align: left;
+  }
+
+  .user-recipe-served-page .user-recipe-served-layout,
+  .user-recipe-served-page .user-recipe-served-main {
+    gap: 14px;
+  }
+
+  .user-recipe-served-page .user-recipe-served-hero {
+    gap: 14px;
+  }
+
+  .user-recipe-served-page .user-recipe-served-visual {
+    min-height: 220px;
+    border-radius: 22px;
+  }
+
+  .user-recipe-served-page .user-recipe-served-copy h2 {
+    font-size: clamp(1.65rem, 7vw, 2.1rem);
+    line-height: 1.02;
+  }
+
+  .user-recipe-served-page .user-recipe-detail-tags {
+    gap: 8px;
+  }
+
+  .user-recipe-served-page .user-recipe-detail-tags span {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .user-recipe-served-page .user-recipe-detail-sidebar {
+    gap: 12px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .user-recipe-served-page .user-recipe-detail-sidebar .user-panel {
+    padding: 14px !important;
+  }
+
+  .user-recipe-served-page .user-recipe-review-item,
+  .user-recipe-served-page .user-mini-recipe-card,
+  .user-recipe-served-page .user-stat-card {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .user-recipe-served-page .user-mini-recipe-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .user-recipe-served-page .user-mini-recipe-card img {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
   }
 }
