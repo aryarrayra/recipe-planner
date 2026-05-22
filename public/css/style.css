@@ -12020,3 +12020,115 @@ body.history-page {
     margin-top: 18px;
   }
 }
+
+@media (max-width: 1024px) {
+  .user-recipe-detail-page .user-dashboard-main {
+    display: grid;
+    gap: 16px;
+    padding: 0 0 16px;
+    background: transparent;
+  }
+
+  .user-recipe-detail-page .user-dashboard-topbar,
+  .user-recipe-detail-page .user-panel {
+    background: #ffffff !important;
+    border: 1px solid rgba(29, 29, 29, 0.06) !important;
+    box-shadow: 0 14px 34px rgba(29, 29, 29, 0.06) !important;
+  }
+
+  .user-recipe-detail-page .user-dashboard-topbar {
+    padding: 16px !important;
+    border-radius: 24px !important;
+  }
+
+  .user-recipe-detail-page .user-panel {
+    padding: 18px !important;
+    border-radius: 24px !important;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-panel,
+  .user-recipe-detail-page .user-recipe-steps-panel,
+  .user-recipe-detail-page .user-recipe-detail-sidebar .user-panel {
+    overflow: hidden;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-sidebar {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 820px) {
+  .user-recipe-detail-page .user-dashboard {
+    padding: 10px 8px 18px;
+  }
+
+  .user-recipe-detail-page .user-dashboard-shell {
+    width: 100%;
+    padding: 10px 0 0;
+  }
+
+  .user-recipe-detail-page .user-dashboard-topbar,
+  .user-recipe-detail-page .user-panel {
+    background: #ffffff !important;
+    border-radius: 22px !important;
+  }
+
+  .user-recipe-detail-page .user-dashboard-topbar {
+    padding: 14px !important;
+  }
+
+  .user-recipe-detail-page .user-panel {
+    padding: 16px !important;
+  }
+
+  .user-recipe-detail-page .user-panel-head {
+    margin-bottom: 16px;
+    padding: 0;
+  }
+
+  .user-recipe-detail-page .user-panel-head h2,
+  .user-recipe-detail-page .user-panel-head h1 {
+    margin-top: 8px;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-layout {
+    gap: 14px;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-sidebar {
+    order: 3;
+    gap: 12px;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-sidebar .user-panel {
+    padding: 14px !important;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-sidebar .user-panel-head h2 {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .user-recipe-detail-page .user-recipe-review-item,
+  .user-recipe-detail-page .user-mini-recipe-card,
+  .user-recipe-detail-page .user-stat-card {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .user-recipe-detail-page .user-mini-recipe-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .user-recipe-detail-page .user-mini-recipe-card img {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+  }
+
+  .user-recipe-detail-page .user-recipe-detail-description {
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+}
