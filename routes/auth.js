@@ -1093,11 +1093,13 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
         },
         snack: {
             categoryTerms: ['snack', 'cemilan', 'camilan', 'appetizer', 'starter', 'finger food', 'side'],
-            labelTerms: ['snack', 'cemilan', 'camilan', 'gorengan', 'roll', 'bite', 'crispy', 'fritter']
+            labelTerms: ['snack', 'cemilan', 'camilan', 'gorengan', 'roll', 'bite', 'crispy', 'fritter'],
+            excludeTerms: ['nasi', 'rice', 'mie', 'noodle', 'pasta', 'spaghetti', 'soup', 'curry', 'gurame', 'steak', 'broccoli', 'salad']
         },
         healthy: {
             categoryTerms: ['healthy', 'vegetarian', 'vegan', 'salad', 'light'],
-            labelTerms: ['healthy', 'salad', 'vegan', 'vegetarian', 'low calorie', 'high protein', 'clean']
+            labelTerms: ['healthy', 'salad', 'vegan', 'vegetarian', 'low calorie', 'high protein', 'clean'],
+            excludeTerms: ['goreng', 'fried', 'crispy', 'kroket', 'popcorn', 'nasi goreng', 'mie goreng', 'burger', 'steak', 'cake', 'brownie', 'pudding', 'creamy', 'butter', 'cheesy']
         }
     };
 
@@ -1184,8 +1186,9 @@ async function getRecipesForGroupedCategory(category, count) {
             mealdb.getCatalogMeals(Math.max(safeCount * 2, 24)).catch(() => [])
         ]);
 
+        const matchedFeed = feedRecipes.filter((recipe) => matchesRecipeIngredient(recipe, key));
         const matchedCatalog = catalogRecipes.filter((recipe) => matchesRecipeIngredient(recipe, key));
-        return uniqueRecipesById([...feedRecipes, ...matchedCatalog]).slice(0, safeCount);
+        return uniqueRecipesById([...matchedFeed, ...matchedCatalog]).slice(0, safeCount);
     }
 
     if (key === 'drink') {
