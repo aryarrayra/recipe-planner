@@ -1391,7 +1391,7 @@ function mapRecipeCard(recipe, fallbackImage = '/images/1.png') {
         id: recipe.id,
         title: recipe.title,
         description: recipe.description,
-        imageUrl: imageUrl || fallbackImage,
+        imageUrl,
         hasImage: Boolean(imageUrl),
         cookingTime: recipe.cooking_time || 0,
         difficulty: recipe.difficulty || 'easy',
@@ -1550,7 +1550,7 @@ function collectToolItemsFromSteps(steps = []) {
 function normalizeRecipeForFeed(recipe, fallbackImage = '/images/1.png') {
     return {
         ...mapRecipeCard(recipe, fallbackImage),
-        image_url: recipe.image_url || fallbackImage,
+        image_url: String(recipe.image_url || '').trim(),
         videoUrl: recipe.video_url || '',
         isFavorite: Boolean(recipe.is_favorite),
         ingredients: parseRecipeItems(recipe.ingredients).map(normalizeIngredientItem),
@@ -1576,7 +1576,8 @@ function mapRecipeDetail(recipe, fallbackImage = '/images/1.png', videoSource = 
         id: recipe.id,
         title: recipe.title,
         description: recipe.description || 'Resep pilihan yang siap kamu masak langkah demi langkah.',
-        imageUrl: recipe.image_url || fallbackImage,
+        imageUrl: String(recipe.image_url || '').trim(),
+        hasImage: Boolean(String(recipe.image_url || '').trim()),
         videoSource: videoSource && videoSource.kind ? videoSource : normalizeVideoUrl(recipe.video_url),
         creatorName: recipe.creator_name || 'ResepKu',
         category: recipe.category || 'Recipe',
@@ -4002,49 +4003,24 @@ router.get('/dashboard', async (req, res) => {
         const userId = req.session.user.id;
         const preferences = await fetchUserPreferences(userId);
         req.session.user.preferences = preferences;
-        const [trendingMeals, recommendedMeals, favoriteMeals, autoChallenges, catalogMeals, mainCourseMeals, popularSearchMeals, recentlyViewedMeals] = await Promise.all([
+        const [trendingMeals, favoriteMeals, dailyChallengeMeals, mainCourseMeals, recentlyViewedMeals] = await Promise.all([
             mealdb.getFeedMeals('international', 8).catch(() => []),
-            mealdb.getFeedMeals('international', 12).catch(() => []),
             mealFavorites.getFavoriteMeals(userId).catch(() => []),
-            challengeService.getAutoChallenges().catch(() => ({ dailyChallenge: null, weeklyChallenge: null })),
-            mealdb.getCatalogMeals(24).catch(() => []),
+            mealdb.getFeedMeals('indonesia', 6).catch(() => []),
             getRecipesForGroupedCategory('main-course', 12).catch(() => []),
-            Promise.all(['burger', 'pizza', 'ramen', 'pasta', 'steak', 'sushi'].map((term) => mealdb.searchMeals(term).catch(() => [])))
-                .then((results) => results.flat())
-                .catch(() => []),
             getRecentViewedRecipes(userId, 2).catch(() => [])
         ]);
         const recipeCardFallbackImage = fallback.categories[0]?.image || '/images/1.png';
         const favoriteCardFallbackImage = fallback.categories[1]?.image || recipeCardFallbackImage;
         const recentCardFallbackImage = fallback.categories[2]?.image || recipeCardFallbackImage;
-        const displayCatalogMeals = uniqueRecipesById(filterRecipesForDisplay(catalogMeals, preferences));
         const globalPopularMeals = uniqueRecipesById([
             ...mainCourseMeals,
-            ...trendingMeals,
-            ...popularSearchMeals,
-            ...displayCatalogMeals.filter((recipe) => !matchesRecipeRegion(recipe, 'indonesia'))
-        ])
-            .sort((left, right) => {
-                const leftScore = Number(left.views_count || 0) + (Number(left.likes_count || 0) * 3) + (Number(left.saves_count || 0) * 2);
-                const rightScore = Number(right.views_count || 0) + (Number(right.likes_count || 0) * 3) + (Number(right.saves_count || 0) * 2);
-                return rightScore - leftScore;
-            });
+            ...trendingMeals
+        ]);
         const preferredPopularMeals = filterRecipesByPreferences(globalPopularMeals, preferences);
         const rankedPopularMeals = preferredPopularMeals.length ? preferredPopularMeals : globalPopularMeals;
-        const realTrendingMeals = uniqueRecipesById([
-            ...rankedPopularMeals,
-            ...displayCatalogMeals
-        ]).slice(0, 4);
-        const recommendedPool = uniqueRecipesById([
-            ...favoriteMeals,
-            ...recommendedMeals,
-            ...displayCatalogMeals
-        ]);
-        const preferredRecommendedMeals = filterRecipesByPreferences(recommendedPool, preferences);
-        const rankedRecommendedMeals = preferredRecommendedMeals.length ? preferredRecommendedMeals : recommendedPool;
-        const realRecommendedMeals = rankedRecommendedMeals
-            .filter((recipe) => !realTrendingMeals.some((item) => getRecipeDedupKey(item) === getRecipeDedupKey(recipe)))
-            .slice(0, 4);
+        const realTrendingMeals = uniqueRecipesById(rankedPopularMeals).slice(0, 4);
+        const dailyChallengeRecipe = uniqueRecipesById(filterRecipesByPreferences(dailyChallengeMeals, preferences))[0] || null;
 
         const dashboardData = {
             ...fallback,
@@ -4063,12 +4039,9 @@ router.get('/dashboard', async (req, res) => {
                     .slice(0, 2)
                     .map((recipe) => enhanceRecipeForPreference(recipe, preferences, recentCardFallbackImage))
                 : [],
-            recommendedRecipes: realRecommendedMeals.length
-                ? realRecommendedMeals
-                    .map((recipe) => enhanceRecipeForPreference(recipe, preferences, favoriteCardFallbackImage))
-                : [],
-            dailyChallenge: autoChallenges.dailyChallenge
-                ? enhanceRecipeForPreference(autoChallenges.dailyChallenge, preferences, recipeCardFallbackImage)
+            recommendedRecipes: [],
+            dailyChallenge: dailyChallengeRecipe
+                ? enhanceRecipeForPreference(dailyChallengeRecipe, preferences, recipeCardFallbackImage)
                 : fallback.dailyChallenge,
             tip: getCookingTip(),
             preferences

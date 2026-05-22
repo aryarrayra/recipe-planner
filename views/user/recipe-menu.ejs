@@ -43,6 +43,13 @@
                 `Cook` untuk masuk ke detail resep dan mulai ikuti step memasaknya.
               </p>
 
+              <div class="user-flow-strip" aria-label="Alur pilih resep">
+                <span class="user-flow-step is-active">1. Pilih resep</span>
+                <span class="user-flow-step">2. Cek detail</span>
+                <span class="user-flow-step">3. Mulai masak</span>
+                <span class="user-flow-step">4. Sajikan</span>
+              </div>
+
               <form class="user-recipe-filter-form" action="/recipe-menu" method="get">
                 <label class="user-recipe-filter-field">
                   <span>Region</span>
@@ -96,10 +103,12 @@
 
             <div class="user-recipe-menu-grid" id="recipe-results">
               <% recipes.forEach((recipe) => { %>
-                <article class="user-panel user-recipe-menu-card">
-                  <a class="user-recipe-menu-media" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>" aria-label="Buka resep <%= recipe.title %>">
-                    <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
-                  </a>
+                <article class="user-panel user-recipe-menu-card <%= recipe.hasImage ? '' : 'is-text-only' %>">
+                  <% if (recipe.hasImage) { %>
+                    <a class="user-recipe-menu-media" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>" aria-label="Buka resep <%= recipe.title %>">
+                      <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                    </a>
+                  <% } %>
                   <div class="user-recipe-menu-copy">
                     <div class="user-recipe-menu-copy-top">
                       <p class="user-panel-kicker"><%= recipe.originPlace || recipe.cuisine || recipe.category %></p>

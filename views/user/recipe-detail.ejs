@@ -30,7 +30,7 @@
       <section class="user-dashboard-main">
         <header class="user-dashboard-topbar user-recipe-topbar">
           <div class="user-topbar-actions">
-            <a class="user-recipe-back-link" href="/dashboard" aria-label="Kembali ke dashboard">
+            <a class="user-recipe-back-link" href="/recipe-menu" aria-label="Kembali ke daftar resep">
               <span aria-hidden="true">&lt;</span>
               <span>Kembali</span>
             </a>
@@ -41,6 +41,13 @@
           <div class="user-recipe-detail-layout user-recipe-detail-layout-no-rail">
             <section class="user-recipe-detail-main">
               <article class="user-panel user-recipe-detail-panel">
+                <div class="user-flow-strip" aria-label="Alur memasak">
+                  <span class="user-flow-step is-done">1. Pilih resep</span>
+                  <span class="user-flow-step is-active">2. Cek detail</span>
+                  <span class="user-flow-step">3. Mulai masak</span>
+                  <span class="user-flow-step">4. Sajikan / share</span>
+                </div>
+
                 <div class="user-recipe-visual user-recipe-hero-media">
                   <% if (activeRecipe.videoSource && activeRecipe.videoSource.kind === 'youtube') { %>
                     <iframe
@@ -67,8 +74,14 @@
                         </a>
                       </section>
                     </blockquote>
-                  <% } else { %>
+                  <% } else if (activeRecipe.hasImage) { %>
                     <img src="<%= activeRecipe.imageUrl %>" alt="<%= activeRecipe.title %>" />
+                  <% } else { %>
+                    <div class="user-recipe-visual-placeholder">
+                      <i class="fa-regular fa-image"></i>
+                      <strong>Resep ini belum punya gambar</strong>
+                      <span>Fokus ke ringkasan, bahan, dan langkah memasaknya.</span>
+                    </div>
                   <% } %>
                 </div>
 
@@ -150,6 +163,10 @@
                 <p class="user-recipe-detail-description"><%= activeRecipe.description %></p>
 
                 <div class="user-recipe-action-row">
+                  <a class="user-recipe-action-btn is-primary" href="#recipeSteps">
+                    <i class="fa-solid fa-play"></i>
+                    <span>Mulai masak</span>
+                  </a>
                   <button
                     type="button"
                     class="user-recipe-action-btn"
@@ -173,18 +190,18 @@
                     <i class="fa-solid fa-list-check"></i>
                     <span>Lihat shopping list</span>
                   </a>
-                  <a class="user-recipe-action-btn" href="/recipes?feed=<%= encodeURIComponent(feed) %>&recipeId=<%= encodeURIComponent(activeRecipe.id) %>">
+                  <a class="user-recipe-action-btn" href="/recipe-menu">
                     <i class="fa-solid fa-compass"></i>
-                    <span>Buka FYP</span>
+                    <span>Kembali ke katalog</span>
                   </a>
-                  <button type="button" class="user-recipe-action-btn is-primary" id="recipeDetailShare" data-action="share">
+                  <button type="button" class="user-recipe-action-btn" id="recipeDetailShare" data-action="share">
                     <i class="fa-solid fa-share-nodes"></i>
                     <span>Share</span>
                   </button>
                 </div>
               </article>
 
-              <article class="user-panel user-recipe-steps-panel">
+              <article class="user-panel user-recipe-steps-panel" id="recipeSteps">
                 <div class="user-panel-head">
                   <div>
                     <p class="user-panel-kicker">Step by step</p>
@@ -228,8 +245,10 @@
                 <% if (relatedRecipes.length) { %>
                   <div class="user-recipe-related-list">
                     <% relatedRecipes.forEach((recipe) => { %>
-                      <a class="user-mini-recipe-card user-mini-recipe-card-link" href="/recipe-detail?feed=<%= encodeURIComponent(feed) %>&recipeId=<%= encodeURIComponent(recipe.id) %>">
-                        <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                      <a class="user-mini-recipe-card user-mini-recipe-card-link <%= recipe.hasImage ? '' : 'is-text-only' %>" href="/recipe-detail?feed=<%= encodeURIComponent(feed) %>&recipeId=<%= encodeURIComponent(recipe.id) %>">
+                        <% if (recipe.hasImage) { %>
+                          <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
+                        <% } %>
                         <div class="user-mini-recipe-copy">
                           <h3><%= recipe.title %></h3>
                           <p><%= recipe.originPlace || recipe.cuisine || recipe.category %></p>

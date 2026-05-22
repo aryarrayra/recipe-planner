@@ -39,6 +39,12 @@
                   dan kebutuhan hari ini.
                 </p>
 
+                <div class="user-banner-actions">
+                  <a class="auth-button" href="/recipe-menu">Mulai pilih resep</a>
+                  <a class="auth-button auth-button-secondary" href="/shopping-list">Siapkan belanja</a>
+                  <a class="auth-button auth-button-secondary" href="/community">Share ke community</a>
+                </div>
+
                 <div class="user-mood-row">
                   <% dashboardData.moods.forEach((mood) => { %>
                     <span><%= mood %></span>
@@ -66,6 +72,13 @@
                 </div>
               </div>
 
+              <div class="user-flow-strip" aria-label="Alur utama aplikasi">
+                <span class="user-flow-step is-active">1. Pilih resep</span>
+                <span class="user-flow-step">2. Cek detail</span>
+                <span class="user-flow-step">3. Mulai masak</span>
+                <span class="user-flow-step">4. Sajikan / share</span>
+              </div>
+
               <div class="user-category-carousel" data-category-carousel>
                 <div class="user-category-carousel-viewport" data-category-carousel-viewport>
                   <div class="user-category-carousel-track">
@@ -86,7 +99,7 @@
                   <p class="user-panel-kicker">Resep trending / populer</p>
                   <h2>Paling sering dilihat atau disukai</h2>
                 </div>
-                <a class="user-panel-link" href="/recipes">Lihat semua</a>
+                <a class="user-panel-link" href="/recipe-menu">Lihat semua</a>
               </div>
 
               <% if (dashboardData.trendingRecipes.length) { %>
@@ -124,34 +137,6 @@
               <% } %>
             </article>
 
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Rekomendasi untuk user</p>
-                  <h2>Berdasarkan resep yang pernah dilihat atau disimpan</h2>
-                </div>
-              </div>
-
-              <% if (dashboardData.recommendedRecipes.length) { %>
-                <div class="user-card-grid">
-                  <% dashboardData.recommendedRecipes.forEach((recipe) => { %>
-                    <a class="user-mini-recipe-card user-mini-recipe-card-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">
-                      <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
-                      <div class="user-mini-recipe-copy">
-                        <h3><%= recipe.title %></h3>
-                        <p><%= recipe.category %></p>
-                        <small><%= recipe.cookingTime %> menit - <%= recipe.difficulty %></small>
-                      </div>
-                    </a>
-                  <% }) %>
-                </div>
-              <% } else { %>
-                <div class="user-empty-state">
-                  <i class="fa-regular fa-lightbulb"></i>
-                  <p>Belum ada rekomendasi yang cocok ditampilkan sekarang.</p>
-                </div>
-              <% } %>
-            </article>
             <div class="user-section-grid">
               <article class="user-panel">
                 <div class="user-panel-head">
@@ -171,7 +156,7 @@
                         <div class="user-mini-recipe-copy">
                           <h3><%= recipe.title %></h3>
                           <p><%= recipe.category %></p>
-                          <small><%= recipe.calories %> kkal - Perkiraan Rp<%= Number(recipe.estimatedPrice).toLocaleString('id-ID') %></small>
+                          <small><%= recipe.cookingTime %> menit - <%= recipe.difficulty %></small>
                         </div>
                       </a>
                     <% }) %>
