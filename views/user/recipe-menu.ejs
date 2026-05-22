@@ -118,8 +118,6 @@
                           <i class="fa-solid fa-triangle-exclamation"></i>
                           <span><%= recipe.warning %></span>
                         </div>
-                      <% } else { %>
-                        <span class="user-recipe-menu-origin"><%= recipe.creatorName %></span>
                       <% } %>
                       <a class="user-recipe-menu-cta" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">Cook</a>
                     </div>
