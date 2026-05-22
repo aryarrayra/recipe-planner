@@ -12067,6 +12067,10 @@ body.history-page {
     padding: 10px 0 0;
   }
 
+  .user-recipe-detail-page .user-dashboard-main {
+    padding-bottom: calc(136px + env(safe-area-inset-bottom)) !important;
+  }
+
   .user-recipe-detail-page .user-dashboard-topbar,
   .user-recipe-detail-page .user-panel {
     background: #ffffff !important;
@@ -12098,6 +12102,7 @@ body.history-page {
   .user-recipe-detail-page .user-recipe-detail-sidebar {
     order: 3;
     gap: 12px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
   }
 
   .user-recipe-detail-page .user-recipe-detail-sidebar .user-panel {
