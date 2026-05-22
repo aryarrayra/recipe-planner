@@ -163,7 +163,9 @@ a {
 }
 
 .login-page::before {
-  display: none;
+  content: none !important;
+  display: none !important;
+  background: none !important;
 }
 
 .visual-panel {
