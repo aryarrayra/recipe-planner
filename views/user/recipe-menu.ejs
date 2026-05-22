@@ -66,6 +66,17 @@
                   </select>
                 </label>
 
+                <label class="user-recipe-filter-field">
+                  <span>Alphabet</span>
+                  <select name="alphabet">
+                    <% alphabetOptions.forEach((option) => { %>
+                      <option value="<%= option.value %>" <%= String(selectedAlphabet || '') === String(option.value || '') ? 'selected' : '' %>>
+                        <%= option.label %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </label>
+
                 <label class="user-recipe-filter-field user-recipe-filter-field-text">
                   <span>Cari resep</span>
                   <input
@@ -83,7 +94,7 @@
               </form>
             </article>
 
-            <div class="user-recipe-menu-grid">
+            <div class="user-recipe-menu-grid" id="recipe-results">
               <% recipes.forEach((recipe) => { %>
                 <article class="user-panel user-recipe-menu-card">
                   <img src="<%= recipe.imageUrl %>" alt="<%= recipe.title %>" />
@@ -119,15 +130,47 @@
               <% } %>
             </div>
 
-            <% if (hasMoreRecipes && nextPageUrl) { %>
-              <div class="user-recipe-load-more-wrap">
-                <a class="auth-button user-recipe-load-more" href="<%= nextPageUrl %>">
-                  Load More
-                </a>
-                <p class="user-recipe-load-more-note">
-                  Menampilkan <%= Math.min(currentPage * pageSize, recipes.length) %> resep. Klik untuk memuat resep berikutnya.
-                </p>
-              </div>
+            <% if (totalPages > 1) { %>
+              <nav class="user-recipe-pagination" aria-label="Pagination resep">
+                <% if (currentPage <= 1) { %>
+                  <span class="user-recipe-pagination-link is-disabled" aria-disabled="true" tabindex="-1">
+                    <i class="fa-solid fa-chevron-left"></i>
+                    Prev
+                  </span>
+                <% } else { %>
+                  <a class="user-recipe-pagination-link" href="<%= prevPageUrl %>">
+                    <i class="fa-solid fa-chevron-left"></i>
+                    Prev
+                  </a>
+                <% } %>
+
+                <div class="user-recipe-pagination-pages">
+                  <% paginationItems.forEach((item) => { %>
+                    <% if (item === 'ellipsis') { %>
+                      <span class="user-recipe-pagination-ellipsis">...</span>
+                    <% } else if (item === currentPage) { %>
+                      <span class="user-recipe-pagination-page is-active"><%= item %></span>
+                    <% } else { %>
+                      <a class="user-recipe-pagination-page" href="<%= buildPageUrl(item) %>"><%= item %></a>
+                    <% } %>
+                  <% }) %>
+                </div>
+
+                <% if (currentPage >= totalPages) { %>
+                  <span class="user-recipe-pagination-link is-disabled" aria-disabled="true" tabindex="-1">
+                    Next
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </span>
+                <% } else { %>
+                  <a class="user-recipe-pagination-link" href="<%= nextPageUrl %>">
+                    Next
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </a>
+                <% } %>
+              </nav>
+              <p class="user-recipe-load-more-note">
+                Menampilkan <%= visibleRecipeCount %> resep dari <%= totalRecipeCount %> hasil.
+              </p>
             <% } %>
           </section>
 

@@ -220,45 +220,6 @@
               <article class="user-panel">
                 <div class="user-panel-head">
                   <div>
-                    <p class="user-panel-kicker">Active events</p>
-                    <h2>Activity di resep ini</h2>
-                  </div>
-                  <span class="user-panel-link">View all</span>
-                </div>
-
-                <div class="user-stat-list">
-                  <div class="user-stat-card">
-                    <i class="fa-solid fa-bookmark"></i>
-                    <strong><%= activeRecipe.savesCount %> simpan</strong>
-                    <span>Bisa dijadikan menu andalan minggu ini.</span>
-                  </div>
-                </div>
-              </article>
-
-              <article class="user-panel">
-                <div class="user-panel-head">
-                  <div>
-                    <p class="user-panel-kicker">Reviews & ratings</p>
-                    <h2>Feedback user</h2>
-                  </div>
-                </div>
-
-                <div class="user-recipe-review-list">
-                  <% reviews.forEach((review) => { %>
-                    <article class="user-recipe-review-item">
-                      <div class="user-recipe-review-head">
-                        <strong><%= review.name %></strong>
-                        <span><%- '&#9733;'.repeat(review.rating) %></span>
-                      </div>
-                      <p><%= review.note %></p>
-                    </article>
-                  <% }) %>
-                </div>
-              </article>
-
-              <article class="user-panel">
-                <div class="user-panel-head">
-                  <div>
                     <p class="user-panel-kicker">Related recipes</p>
                     <h2>Cocok dibuka berikutnya</h2>
                   </div>

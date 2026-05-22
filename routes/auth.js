@@ -647,17 +647,12 @@ function getRecipeFilterGroups() {
     return {
         regions: [
             { value: '', label: 'Semua region', hint: 'Campuran semua resep' },
-            { value: 'indonesia', label: 'Indonesia / Nusantara', hint: 'Resep lokal' },
-            { value: 'china', label: 'China', hint: 'Masakan China' },
-            { value: 'korea', label: 'Korea', hint: 'Masakan Korea' },
-            { value: 'japan', label: 'Jepang', hint: 'Masakan Jepang' },
-            { value: 'malaysia', label: 'Malaysia', hint: 'Masakan Malaysia' },
-            { value: 'thailand', label: 'Thailand', hint: 'Masakan Thailand' },
-            { value: 'india', label: 'India', hint: 'Masakan India' },
-            { value: 'turkey', label: 'Turki', hint: 'Masakan Turki' },
-            { value: 'saudi-arabia', label: 'Arab Saudi', hint: 'Masakan Arab Saudi' },
-            { value: 'asia', label: 'Asia Pilihan', hint: 'China, Korea, Jepang, Malaysia, Thailand, India' },
-            { value: 'middle-east', label: 'Timur Tengah Pilihan', hint: 'Turki dan Arab Saudi' }
+            { value: 'indonesia', label: 'Indonesia', hint: 'Resep lokal' },
+            { value: 'asia', label: 'Asia', hint: 'China, Korea, Jepang, Malaysia, Thailand, India' },
+            { value: 'middle-east', label: 'Timur Tengah', hint: 'Turki dan Arab Saudi' },
+            { value: 'europe', label: 'Eropa', hint: 'Italia, Prancis, Inggris, Mediterania' },
+            { value: 'america', label: 'Amerika', hint: 'Amerika Utara dan Latin' },
+            { value: 'africa', label: 'Afrika', hint: 'Masakan Afrika' }
         ],
         ingredients: [
             { value: '', label: 'Semua bahan', hint: 'Campuran semua bahan' },
@@ -671,6 +666,14 @@ function getRecipeFilterGroups() {
             { value: 'dairy', label: 'Susu / Keju', hint: 'Dairy' },
             { value: 'spicy', label: 'Pedas', hint: 'Cabai dan sambal' },
             { value: 'dessert', label: 'Dessert', hint: 'Manis / penutup' }
+        ],
+        alphabet: [
+            { value: '', label: 'Semua huruf', hint: 'Semua judul resep' },
+            ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((letter) => ({
+                value: letter,
+                label: letter,
+                hint: `Judul mulai huruf ${letter}`
+            }))
         ]
     };
 }
@@ -706,15 +709,27 @@ function normalizeRecipeRegionFilter(value = '') {
     }
 
     if (['turki', 'turkish'].includes(normalized)) {
-        return 'turkey';
-    }
-
-    if (['arab saudi', 'arab-saudi', 'saudi', 'saudi arabian', 'saudi arabia'].includes(normalized)) {
-        return 'saudi-arabia';
-    }
-
-    if (['middle east', 'middle-east', 'timur tengah'].includes(normalized)) {
         return 'middle-east';
+    }
+
+    if (['arab saudi', 'arab-saudi', 'saudi', 'saudi arabian', 'saudi arabia', 'arabic', 'arabian'].includes(normalized)) {
+        return 'middle-east';
+    }
+
+    if (['asia', 'asian'].includes(normalized)) {
+        return 'asia';
+    }
+
+    if (['europe', 'eropa', 'european', 'western'].includes(normalized)) {
+        return 'europe';
+    }
+
+    if (['america', 'amerika', 'americas', 'american', 'latin america', 'latin american', 'south america', 'north america'].includes(normalized)) {
+        return 'america';
+    }
+
+    if (['africa', 'afrika', 'african'].includes(normalized)) {
+        return 'africa';
     }
 
     return normalized;
@@ -731,6 +746,16 @@ function normalizeRecipeIngredientFilter(value = '') {
     }
 
     return normalized;
+}
+
+function normalizeRecipeAlphabetFilter(value = '') {
+    const normalized = String(value || '').trim().toUpperCase();
+    if (!normalized) {
+        return '';
+    }
+
+    const match = normalized.match(/[A-Z]/);
+    return match ? match[0] : '';
 }
 
 function fileToPublicUrl(file = null) {
@@ -956,16 +981,11 @@ function getRegionSourceOrigins(region = '') {
     const key = String(region || '').trim().toLowerCase();
     const regionMap = {
         indonesia: ['Indonesia'],
-        china: ['Chinese'],
-        korea: ['Korean'],
-        japan: ['Japanese'],
-        malaysia: ['Malaysian'],
-        thailand: ['Thai'],
-        india: ['Indian'],
-        turkey: ['Turkish'],
-        'saudi-arabia': ['Saudi Arabian', 'Arabic'],
-        asia: ['Chinese', 'Japanese', 'Indian', 'Thai', 'Malaysian', 'Korean'],
-        'middle-east': ['Turkish', 'Saudi Arabian', 'Arabic']
+        asia: ['Chinese', 'Japanese', 'Indian', 'Thai', 'Malaysian', 'Korean', 'Vietnamese', 'Filipino'],
+        'middle-east': ['Turkish', 'Saudi Arabian', 'Arabic', 'Persian'],
+        europe: ['Italian', 'French', 'British', 'Spanish', 'German', 'Greek', 'Dutch', 'Portuguese', 'Mediterranean'],
+        america: ['American', 'Mexican', 'Canadian', 'Caribbean', 'Brazilian', 'Latin American', 'South American', 'North American'],
+        africa: ['African', 'Moroccan', 'Egyptian', 'Ethiopian', 'Tunisian']
     };
 
     return regionMap[key] || [];
@@ -980,16 +1000,11 @@ function matchesRecipeRegion(recipe = {}, region = '') {
     const blob = getRecipeRegionBlob(recipe);
     const aliases = {
         indonesia: ['indonesia', 'nusantara', 'jawa', 'padang', 'sunda', 'betawi', 'bali', 'makassar', 'aceh', 'medan', 'sumatra', 'indonesian'],
-        china: ['china', 'chinese'],
-        korea: ['korea', 'korean'],
-        japan: ['japan', 'japanese'],
-        malaysia: ['malaysia', 'malaysian'],
-        thailand: ['thailand', 'thai'],
-        india: ['india', 'indian'],
-        turkey: ['turkey', 'turkish'],
-        'saudi-arabia': ['saudi', 'saudi arabia', 'saudi arabian', 'arab saudi', 'arabic', 'arabian'],
-        asia: ['japan', 'japanese', 'korea', 'korean', 'thai', 'thailand', 'china', 'chinese', 'malaysia', 'malaysian', 'india', 'indian'],
-        'middle-east': ['saudi', 'saudi arabia', 'saudi arabian', 'arab', 'arabic', 'arabian', 'turkey', 'turkish']
+        asia: ['japan', 'japanese', 'korea', 'korean', 'thai', 'thailand', 'china', 'chinese', 'malaysia', 'malaysian', 'india', 'indian', 'vietnam', 'vietnamese', 'philippines', 'filipino'],
+        'middle-east': ['saudi', 'saudi arabia', 'saudi arabian', 'arab', 'arabic', 'arabian', 'turkey', 'turkish', 'persian'],
+        europe: ['italy', 'italian', 'france', 'french', 'british', 'england', 'english', 'spain', 'spanish', 'germany', 'german', 'greek', 'mediterranean'],
+        america: ['american', 'mexican', 'canadian', 'caribbean', 'brazilian', 'latin american', 'south american', 'north american', 'usa', 'united states', 'tex-mex'],
+        africa: ['african', 'moroccan', 'egyptian', 'ethiopian', 'tunisian', 'north african', 'west african']
     };
 
     const terms = aliases[key] || [key];
@@ -1018,6 +1033,21 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
 
     const terms = aliases[key] || [key];
     return terms.some((term) => blob.includes(term));
+}
+
+function matchesRecipeAlphabet(recipe = {}, alphabet = '') {
+    const key = String(alphabet || '').trim().toUpperCase();
+    if (!key) {
+        return true;
+    }
+
+    const title = String(recipe.title || '').trim();
+    if (!title) {
+        return false;
+    }
+
+    const firstLetter = title.match(/[A-Z]/i)?.[0]?.toUpperCase() || '';
+    return firstLetter === key;
 }
 
 async function getRecipesForRegion(region, count) {
@@ -1133,10 +1163,22 @@ function filterRecipesForDisplay(recipes, preferences = []) {
     return filteredRecipes.length ? filteredRecipes : recipes;
 }
 
+function getRecipeDedupKey(item = {}) {
+    return [
+        String(item.source || '').trim().toLowerCase(),
+        String(item.sourceId || item.id || '').trim().toLowerCase(),
+        String(item.title || '').trim().toLowerCase(),
+        String(item.originPlace || item.origin_place || item.cuisine || '').trim().toLowerCase(),
+        String(item.category || '').trim().toLowerCase()
+    ]
+        .filter(Boolean)
+        .join('::');
+}
+
 function uniqueRecipesById(items = []) {
     const seen = new Set();
     return items.filter((item) => {
-        const key = String(item && item.id ? item.id : '');
+        const key = getRecipeDedupKey(item);
         if (!key || seen.has(key)) {
             return false;
         }
@@ -1144,6 +1186,32 @@ function uniqueRecipesById(items = []) {
         seen.add(key);
         return true;
     });
+}
+
+function createSeededRandom(seedText = '') {
+    let seed = 0;
+    const text = String(seedText || 'recipe-menu');
+
+    for (let index = 0; index < text.length; index += 1) {
+        seed = (seed * 31 + text.charCodeAt(index)) >>> 0;
+    }
+
+    return () => {
+        seed = (1664525 * seed + 1013904223) >>> 0;
+        return seed / 4294967296;
+    };
+}
+
+function shuffleRecipesBySeed(items = [], seedText = '') {
+    const list = Array.isArray(items) ? items.slice() : [];
+    const random = createSeededRandom(seedText);
+
+    for (let index = list.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(random() * (index + 1));
+        [list[index], list[swapIndex]] = [list[swapIndex], list[index]];
+    }
+
+    return list;
 }
 
 function getGreetingLabel(date = new Date()) {
@@ -1940,8 +2008,8 @@ function getFallbackDashboard(user) {
         categories: [
             { label: 'Makanan berat', image: '/images/2.png', feedKey: 'indonesia' },
             { label: 'Dessert', image: '/images/desserts.jpg', feedKey: 'dessert' },
-            { label: 'Minuman', image: '/images/drinks.jpg', feedKey: 'random' },
-            { label: 'Cemilan', image: '/images/cemilan.jpg', feedKey: 'random' },
+            { label: 'Minuman', image: '/images/drinks.jpg', feedKey: 'drink' },
+            { label: 'Cemilan', image: '/images/cemilan.jpg', feedKey: 'snack' },
             { label: 'Healthy food', image: '/images/salads.jpg', feedKey: 'healthy' }
         ],
         moods: ['Lagi pengen pedes?', 'Comfort food', 'Masak cepat', 'Menu hemat'],
@@ -2057,6 +2125,100 @@ function getFallbackRecipeCatalog(region = '') {
     const key = String(region || '').trim().toLowerCase();
     if (['indonesia', 'nusantara'].includes(key)) {
         return [];
+    }
+
+    if (key === 'drink') {
+        return [
+            mapRecipeCard({
+                id: 'fallback-drink-1',
+                title: 'Es Kopi Susu Gula Aren',
+                description: 'Minuman segar dengan rasa kopi manis yang cocok buat sore hari.',
+                image_url: '/images/drinks.jpg',
+                cooking_time: 8,
+                difficulty: 'easy',
+                calories: 180,
+                category: 'drink',
+                estimated_price: 12000,
+                likes_count: 72,
+                views_count: 290,
+                tags: ['drink', 'coffee', 'sweet']
+            }),
+            mapRecipeCard({
+                id: 'fallback-drink-2',
+                title: 'Jus Jeruk Segar',
+                description: 'Minuman simpel yang fresh dan cepat dibuat.',
+                image_url: '/images/drinks.jpg',
+                cooking_time: 5,
+                difficulty: 'easy',
+                calories: 120,
+                category: 'drink',
+                estimated_price: 8000,
+                likes_count: 58,
+                views_count: 210,
+                tags: ['drink', 'juice', 'fresh']
+            }),
+            mapRecipeCard({
+                id: 'fallback-drink-3',
+                title: 'Smoothie Pisang',
+                description: 'Pilihan minuman creamy untuk menu yang lebih ringan.',
+                image_url: '/images/drinks.jpg',
+                cooking_time: 7,
+                difficulty: 'easy',
+                calories: 160,
+                category: 'drink',
+                estimated_price: 10000,
+                likes_count: 49,
+                views_count: 180,
+                tags: ['drink', 'smoothie', 'banana']
+            })
+        ];
+    }
+
+    if (key === 'snack') {
+        return [
+            mapRecipeCard({
+                id: 'fallback-snack-1',
+                title: 'Pisang Coklat',
+                description: 'Cemilan manis dan simpel untuk teman santai.',
+                image_url: '/images/cemilan.jpg',
+                cooking_time: 12,
+                difficulty: 'easy',
+                calories: 240,
+                category: 'snack',
+                estimated_price: 9000,
+                likes_count: 81,
+                views_count: 320,
+                tags: ['snack', 'sweet', 'banana']
+            }),
+            mapRecipeCard({
+                id: 'fallback-snack-2',
+                title: 'Tahu Crispy',
+                description: 'Snack gurih renyah yang cepat dibuat.',
+                image_url: '/images/cemilan.jpg',
+                cooking_time: 15,
+                difficulty: 'easy',
+                calories: 260,
+                category: 'snack',
+                estimated_price: 10000,
+                likes_count: 66,
+                views_count: 250,
+                tags: ['snack', 'crispy', 'fried']
+            }),
+            mapRecipeCard({
+                id: 'fallback-snack-3',
+                title: 'Roti Bakar Coklat',
+                description: 'Cemilan hangat untuk sore atau malam.',
+                image_url: '/images/cemilan.jpg',
+                cooking_time: 10,
+                difficulty: 'easy',
+                calories: 220,
+                category: 'snack',
+                estimated_price: 11000,
+                likes_count: 54,
+                views_count: 190,
+                tags: ['snack', 'toast', 'sweet']
+            })
+        ];
     }
 
     return [
@@ -3549,19 +3711,30 @@ router.get('/dashboard', async (req, res) => {
         const userId = req.session.user.id;
         const preferences = await fetchUserPreferences(userId);
         req.session.user.preferences = preferences;
-        const [trendingMeals, recommendedMeals, favoriteMeals, autoChallenges] = await Promise.all([
+        const [trendingMeals, recommendedMeals, favoriteMeals, autoChallenges, catalogMeals] = await Promise.all([
             mealdb.getFeedMeals('random', 4),
             mealdb.getFeedMeals('healthy', 4),
             mealFavorites.getFavoriteMeals(userId),
-            challengeService.getAutoChallenges()
+            challengeService.getAutoChallenges(),
+            mealdb.getCatalogMeals(16).catch(() => [])
         ]);
         const recentlyViewedMeals = [];
+        const realCatalogMeals = uniqueRecipesById(filterRecipesByPreferences(catalogMeals, preferences));
+        const realTrendingMeals = uniqueRecipesById([
+            ...filterRecipesByPreferences(trendingMeals, preferences),
+            ...realCatalogMeals
+        ]).slice(0, 4);
+        const realRecommendedMeals = uniqueRecipesById([
+            ...filterRecipesByPreferences(recommendedMeals, preferences),
+            ...realCatalogMeals
+        ])
+            .filter((recipe) => !realTrendingMeals.some((item) => getRecipeDedupKey(item) === getRecipeDedupKey(recipe)))
+            .slice(0, 4);
 
         const dashboardData = {
             ...fallback,
-            trendingRecipes: trendingMeals.length
-                ? filterRecipesByPreferences(trendingMeals, preferences)
-                    .slice(0, 4)
+            trendingRecipes: realTrendingMeals.length
+                ? realTrendingMeals
                     .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[0].image))
                 : fallback.trendingRecipes,
             favoriteRecipes: favoriteMeals.length
@@ -3574,9 +3747,8 @@ router.get('/dashboard', async (req, res) => {
                     .slice(0, 4)
                     .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[2].image))
                 : [],
-            recommendedRecipes: recommendedMeals.length
-                ? filterRecipesByPreferences(recommendedMeals, preferences)
-                    .slice(0, 4)
+            recommendedRecipes: realRecommendedMeals.length
+                ? realRecommendedMeals
                     .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[1].image))
                 : fallback.recommendedRecipes,
             dailyChallenge: autoChallenges.dailyChallenge
@@ -3732,6 +3904,18 @@ function buildFeedPreset(feed) {
             title: 'Resep dessert',
             description: 'Kue, dessert box, minuman manis, dan camilan penutup.',
             terms: ['dessert', 'sweet', 'cake', 'cookie', 'pudding', 'drink']
+        },
+        drink: {
+            label: 'Minuman',
+            title: 'Resep minuman',
+            description: 'Minuman segar, hangat, dan menu cair yang cocok untuk berbagai mood.',
+            terms: ['drink', 'minuman', 'beverage', 'juice', 'coffee', 'tea', 'smoothie', 'latte', 'mocktail', 'es']
+        },
+        snack: {
+            label: 'Cemilan',
+            title: 'Resep cemilan',
+            description: 'Cemilan ringan, gorengan, dan snack sederhana untuk teman santai.',
+            terms: ['snack', 'cemilan', 'gorengan', 'crispy', 'roll', 'bite', 'fried', 'fritter']
         },
         healthy: {
             label: 'Healthy',
@@ -3910,9 +4094,19 @@ router.get('/recipe-menu', async (req, res) => {
         const search = String(req.query.q || '').trim();
         const selectedRegion = normalizeRecipeRegionFilter(req.query.region || req.query.category || '');
         const selectedIngredient = normalizeRecipeIngredientFilter(req.query.ingredient || '');
+        const selectedAlphabet = normalizeRecipeAlphabetFilter(req.query.alphabet || req.query.alpha || '');
         const pageSize = 12;
         const currentPage = Math.max(1, Number.parseInt(String(req.query.page || '1'), 10) || 1);
-        const requestedCount = (currentPage * pageSize) + 1;
+        const catalogFetchSize = Math.max(pageSize, Number(process.env.RECIPE_MENU_CATALOG_FETCH_SIZE || 240) || 240);
+        const buildPageUrl = (pageNumber) => {
+            const params = new URLSearchParams();
+            if (search) params.set('q', search);
+            if (selectedRegion) params.set('region', selectedRegion);
+            if (selectedIngredient) params.set('ingredient', selectedIngredient);
+            if (selectedAlphabet) params.set('alphabet', selectedAlphabet);
+            if (pageNumber > 1) params.set('page', String(pageNumber));
+            return `/recipe-menu${params.toString() ? `?${params.toString()}` : ''}`;
+        };
         const preferences = await fetchUserPreferences(req.session.user.id);
         req.session.user.preferences = preferences;
         let recipeList = [];
@@ -3921,34 +4115,77 @@ router.get('/recipe-menu', async (req, res) => {
             if (search) {
                 recipeList = await mealdb.searchMeals(search);
             } else if (selectedRegion) {
-                recipeList = await getRecipesForRegion(selectedRegion, Math.max(requestedCount, 48));
+                recipeList = await getRecipesForRegion(selectedRegion, catalogFetchSize);
+            } else if (selectedAlphabet) {
+                recipeList = await mealdb.searchMealsByLetter(selectedAlphabet);
             } else {
-                recipeList = await mealdb.getCatalogMeals(Math.max(requestedCount, 48));
+                recipeList = await mealdb.getCatalogMeals(catalogFetchSize);
             }
         } catch (apiError) {
             console.error('TheMealDB recipe menu fallback:', apiError.message);
             recipeList = getFallbackRecipeCatalog(selectedRegion);
         }
 
+        if (selectedAlphabet && (!Array.isArray(recipeList) || !recipeList.length)) {
+            recipeList = await mealdb.getCatalogMeals(catalogFetchSize).catch(() => []);
+        }
+
+        if (!search && !selectedRegion && !selectedIngredient && !selectedAlphabet) {
+            recipeList = shuffleRecipesBySeed(recipeList, `${req.session.user.id}:recipe-menu:catalog`);
+        }
+
         const filteredRecipes = filterRecipesForDisplay(recipeList, preferences)
             .filter((recipe) => matchesRecipeRegion(recipe, selectedRegion))
             .filter((recipe) => matchesRecipeIngredient(recipe, selectedIngredient))
+            .filter((recipe) => matchesRecipeAlphabet(recipe, selectedAlphabet))
+            .map((recipe) => ({
+                ...recipe,
+                source: recipe.source || 'themealdb'
+            }))
+            .filter((recipe, index, list) => {
+                const key = getRecipeDedupKey(recipe);
+                return key && list.findIndex((item) => getRecipeDedupKey(item) === key) === index;
+            })
             .map((recipe) => ({
             ...enhanceRecipeForPreference(recipe, preferences, '/images/1.png'),
             creatorName: recipe.creator_name || 'TheMealDB'
         }));
-        const visibleRecipes = filteredRecipes.slice(0, currentPage * pageSize);
-        const hasMoreRecipes = filteredRecipes.length > currentPage * pageSize;
-        const nextPageUrl = hasMoreRecipes
-            ? (() => {
-                const params = new URLSearchParams();
-                if (search) params.set('q', search);
-                if (selectedRegion) params.set('region', selectedRegion);
-                if (selectedIngredient) params.set('ingredient', selectedIngredient);
-                params.set('page', String(currentPage + 1));
-                return `/recipe-menu?${params.toString()}`;
-            })()
-            : '';
+        const totalRecipeCount = filteredRecipes.length;
+        const totalPages = Math.max(1, Math.ceil(totalRecipeCount / pageSize));
+        if (currentPage > totalPages) {
+            return res.redirect(buildPageUrl(totalPages));
+        }
+        const safeCurrentPage = Math.min(currentPage, totalPages);
+        const pageStart = (safeCurrentPage - 1) * pageSize;
+        const pageEnd = pageStart + pageSize;
+        const visibleRecipes = filteredRecipes.slice(pageStart, pageEnd);
+        const hasMoreRecipes = safeCurrentPage < totalPages;
+        const visibleRecipeCount = visibleRecipes.length;
+        const paginationItems = (() => {
+            if (totalPages <= 7) {
+                return Array.from({ length: totalPages }, (_, index) => index + 1);
+            }
+
+            if (safeCurrentPage <= 4) {
+                return [1, 2, 3, 4, 5, 'ellipsis', totalPages];
+            }
+
+            if (safeCurrentPage >= totalPages - 3) {
+                return [1, 'ellipsis', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+            }
+
+            return [
+                1,
+                'ellipsis',
+                safeCurrentPage - 1,
+                safeCurrentPage,
+                safeCurrentPage + 1,
+                'ellipsis',
+                totalPages
+            ];
+        })();
+        const prevPageUrl = safeCurrentPage > 1 ? buildPageUrl(safeCurrentPage - 1) : '';
+        const nextPageUrl = hasMoreRecipes ? buildPageUrl(safeCurrentPage + 1) : '';
 
         const filterGroups = getRecipeFilterGroups();
         res.render('user/recipe-menu', {
@@ -3957,12 +4194,20 @@ router.get('/recipe-menu', async (req, res) => {
             search,
             selectedRegion,
             selectedIngredient,
-            currentPage,
+            selectedAlphabet,
+            currentPage: safeCurrentPage,
             pageSize,
             hasMoreRecipes,
+            totalPages,
             nextPageUrl,
+            prevPageUrl,
+            totalRecipeCount,
+            visibleRecipeCount,
+            paginationItems,
+            buildPageUrl,
             regionOptions: filterGroups.regions,
             ingredientOptions: filterGroups.ingredients,
+            alphabetOptions: filterGroups.alphabet,
             preferences,
             recipes: visibleRecipes
         });
@@ -4125,31 +4370,12 @@ router.get('/recipe-detail', async (req, res) => {
             : [];
 
         const recipeCards = filterRecipesByPreferences(recipes, preferences);
-        const reviews = activeRecipeData ? [
-            {
-                name: 'Nabila',
-                note: `Aku suka bagian ${activeRecipeData.title} ini karena langkahnya gampang diikuti.`,
-                rating: 5
-            },
-            {
-                name: 'Raka',
-                note: 'Cocok buat masak cepat malam hari dan rasanya tetap berasa.',
-                rating: 4
-            },
-            {
-                name: 'Shinta',
-                note: 'Versi yang enak buat re-cook, apalagi kalau lagi cari comfort food.',
-                rating: 5
-            }
-        ] : [];
-
         res.render('user/recipe-detail', {
             title: 'Recipe Detail - AI Recipe Planner',
             user: req.session.user,
             recipes: recipeCards,
             activeRecipe: activeRecipeData,
             relatedRecipes,
-            reviews,
             search,
             feed,
             preferences,
@@ -4161,6 +4387,8 @@ router.get('/recipe-detail', async (req, res) => {
                 { value: 'asian', label: 'Asian', hint: 'Jepang/Korea/Thai' },
                 { value: 'western', label: 'Western', hint: 'Pasta/Steak' },
                 { value: 'dessert', label: 'Dessert', hint: 'Manis' },
+                { value: 'drink', label: 'Minuman', hint: 'Segar / hangat' },
+                { value: 'snack', label: 'Cemilan', hint: 'Ringan' },
                 { value: 'healthy', label: 'Healthy', hint: 'Fit' }
             ]
         });
@@ -4194,10 +4422,6 @@ router.get('/recipes', async (req, res) => {
         } catch (error) {
             console.error('FYP feed fallback error:', error.message);
             feedMeals = [];
-        }
-
-        if (!Array.isArray(feedMeals) || !feedMeals.length) {
-            feedMeals = getFallbackRecipeCatalog(feed).slice(0, 12);
         }
 
         const selectedMeal = selectedRecipeId
@@ -4308,6 +4532,8 @@ router.get('/recipes', async (req, res) => {
                 { value: 'asian', label: 'Asian', hint: 'Jepang/Korea/Thai' },
                 { value: 'western', label: 'Western', hint: 'Pasta/Steak' },
                 { value: 'dessert', label: 'Dessert', hint: 'Manis' },
+                { value: 'drink', label: 'Minuman', hint: 'Segar / hangat' },
+                { value: 'snack', label: 'Cemilan', hint: 'Ringan' },
                 { value: 'healthy', label: 'Healthy', hint: 'Fit' }
             ]
         });

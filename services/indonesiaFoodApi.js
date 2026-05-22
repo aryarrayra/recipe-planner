@@ -762,8 +762,7 @@ async function searchRecipes(query = '', limit = 12) {
             .every((term) => haystack.includes(term));
     });
 
-    const result = matched.length ? matched : recipes.filter(matchesIndonesiaRecipe);
-    return result.slice(0, limit);
+    return matched.slice(0, limit);
 }
 
 async function getRecipeById(recipeId) {
