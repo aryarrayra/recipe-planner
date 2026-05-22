@@ -26,11 +26,14 @@
 
       <section class="user-dashboard-main">
         <header class="user-dashboard-topbar user-recipe-topbar">
-          <div class="user-feed-topline">
+          <div class="user-topbar-actions">
             <a class="user-recipe-back-link" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>" aria-label="Kembali ke resep">
               <span aria-hidden="true">&lt;</span>
               <span>Kembali</span>
             </a>
+          </div>
+
+          <div class="user-feed-topline">
             <p class="user-panel-kicker">Cooking complete</p>
             <h1>Masakan siap dihidangkan</h1>
           </div>
