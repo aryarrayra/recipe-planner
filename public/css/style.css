@@ -255,12 +255,12 @@ a {
   z-index: 3;
 }
 
-.brand-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 6px rgba(56, 156, 154, 0.12);
+.brand-badge img {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex: 0 0 auto;
 }
 
 .brand-badge strong,

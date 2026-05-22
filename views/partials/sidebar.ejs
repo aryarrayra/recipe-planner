@@ -9,7 +9,7 @@
         { href: '/admin/reports', iconClass: 'fa-solid fa-flag', label: 'Reports', active: 'reports' }
       ]
     : [
-        { href: '/dashboard', iconClass: 'fa-solid fa-house', label: 'Dashboard', active: 'dashboard' },
+        { href: '/dashboard', iconClass: 'fa-solid fa-house', label: 'Home', active: 'dashboard' },
         { href: '/recipes', iconClass: 'fa-solid fa-compass', label: 'FYP', active: 'fyp' },
         { href: '/chat-ai', iconClass: 'fa-solid fa-wand-magic-sparkles', label: 'AI Chat', active: 'chat' },
         { href: '/community', iconClass: 'fa-solid fa-users', label: 'Community', active: 'community' }
@@ -51,7 +51,7 @@
       <% } else { %>
         <a class="user-sidebar-link <%= activePage === 'dashboard' ? 'is-active' : '' %>" href="/dashboard">
           <span class="user-sidebar-icon"><i class="fa-solid fa-house"></i></span>
-          <span>Dashboard</span>
+          <span>Home</span>
         </a>
         <a class="user-sidebar-link <%= activePage === 'fyp' ? 'is-active' : '' %>" href="/recipes">
           <span class="user-sidebar-icon"><i class="fa-solid fa-compass"></i></span>
