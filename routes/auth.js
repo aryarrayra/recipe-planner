@@ -1181,45 +1181,45 @@ async function getRecipesForRegion(region, count) {
 async function getRecipesForGroupedCategory(category, count) {
     const key = String(category || '').trim().toLowerCase();
     const safeCount = Math.max(1, Number(count) || 12);
+    const keywordMap = {
+        'main-course': ['rice', 'pasta', 'chicken', 'beef', 'seafood', 'curry'],
+        dessert: ['cake', 'cookie', 'brownie', 'ice cream', 'churros', 'tart', 'pudding'],
+        snack: ['snack', 'croquette', 'fritter', 'roll', 'toast', 'crispy'],
+        healthy: ['salad', 'vegan', 'vegetarian', 'grilled chicken', 'fruit bowl', 'clean eating']
+    };
+
+    const searchTerms = keywordMap[key] || [];
+    const catalogSize = key === 'main-course' ? Math.max(safeCount * 4, 48) : Math.max(safeCount * 3, 36);
+    const baseSources = [
+        mealdb.getCatalogMeals(catalogSize).catch(() => [])
+    ];
 
     if (key === 'main-course') {
-        const catalogRecipes = await mealdb.getCatalogMeals(Math.max(safeCount * 3, 36)).catch(() => []);
-        return uniqueRecipesById(catalogRecipes.filter((recipe) => matchesRecipeIngredient(recipe, key))).slice(0, safeCount);
+        baseSources.unshift(mealdb.getFeedMeals('random', Math.max(safeCount * 2, 24)).catch(() => []));
     }
 
     if (key === 'dessert') {
-        const dessertKeywords = ['cake', 'cookie', 'brownie', 'ice cream', 'churros', 'tart', 'pudding'];
-        const [dessertCategory, dessertFeed, catalogRecipes, searchedDesserts] = await Promise.all([
-            mealdb.getMealsByCategory('Dessert', safeCount).catch(() => []),
-            mealdb.getFeedMeals('dessert', safeCount).catch(() => []),
-            mealdb.getCatalogMeals(Math.max(safeCount * 2, 36)).catch(() => []),
-            Promise.all(dessertKeywords.map((term) => mealdb.searchMeals(term).catch(() => []))).catch(() => [])
-        ]);
-
-        const matchedCatalog = catalogRecipes.filter((recipe) => matchesRecipeIngredient(recipe, 'dessert'));
-        const matchedSearch = searchedDesserts
-            .flat()
-            .filter((recipe) => matchesRecipeIngredient(recipe, 'dessert'));
-
-        return uniqueRecipesById([...dessertCategory, ...dessertFeed, ...matchedSearch, ...matchedCatalog]).slice(0, safeCount);
+        baseSources.unshift(
+            mealdb.getMealsByCategory('Dessert', Math.max(safeCount * 2, 24)).catch(() => []),
+            mealdb.getFeedMeals('dessert', Math.max(safeCount * 2, 24)).catch(() => [])
+        );
     }
 
     if (key === 'snack' || key === 'healthy') {
-        const [feedRecipes, catalogRecipes] = await Promise.all([
-            mealdb.getFeedMeals(key, safeCount).catch(() => []),
-            mealdb.getCatalogMeals(Math.max(safeCount * 2, 24)).catch(() => [])
-        ]);
-
-        const matchedFeed = feedRecipes.filter((recipe) => matchesRecipeIngredient(recipe, key));
-        const matchedCatalog = catalogRecipes.filter((recipe) => matchesRecipeIngredient(recipe, key));
-        return uniqueRecipesById([...matchedFeed, ...matchedCatalog]).slice(0, safeCount);
+        baseSources.unshift(mealdb.getFeedMeals(key, Math.max(safeCount * 2, 24)).catch(() => []));
     }
 
     if (key === 'drink') {
         return [];
     }
 
-    return [];
+    const searchSource = searchTerms.length
+        ? Promise.all(searchTerms.map((term) => mealdb.searchMeals(term).catch(() => []))).catch(() => [])
+        : Promise.resolve([]);
+    const results = await Promise.all([...baseSources, searchSource]);
+    const flattened = results.flatMap((entry) => (Array.isArray(entry) ? entry : []));
+
+    return uniqueRecipesById(flattened.filter((recipe) => matchesRecipeIngredient(recipe, key))).slice(0, safeCount);
 }
 
 function hasKeyword(source, keywords) {
