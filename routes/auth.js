@@ -3942,25 +3942,18 @@ router.get('/dashboard', async (req, res) => {
         const userId = req.session.user.id;
         const preferences = await fetchUserPreferences(userId);
         req.session.user.preferences = preferences;
-        const [trendingMeals, recommendedMeals, favoriteMeals, autoChallenges, catalogMeals] = await Promise.all([
-            mealdb.getFeedMeals('random', 4),
-            mealdb.getFeedMeals('healthy', 4),
-            mealFavorites.getFavoriteMeals(userId),
-            challengeService.getAutoChallenges(),
-            mealdb.getCatalogMeals(16).catch(() => [])
+        const [trendingMeals, recommendedMeals, favoriteMeals, dailyChallengeMeals] = await Promise.all([
+            mealdb.getFeedMeals('random', 8).catch(() => []),
+            mealdb.getFeedMeals('healthy', 8).catch(() => []),
+            mealFavorites.getFavoriteMeals(userId).catch(() => []),
+            mealdb.getFeedMeals('indonesia', 6).catch(() => [])
         ]);
         const recentlyViewedMeals = [];
-        const realCatalogMeals = uniqueRecipesById(filterRecipesByPreferences(catalogMeals, preferences));
-        const realTrendingMeals = uniqueRecipesById([
-            ...filterRecipesByPreferences(trendingMeals, preferences),
-            ...realCatalogMeals
-        ]).slice(0, 4);
-        const realRecommendedMeals = uniqueRecipesById([
-            ...filterRecipesByPreferences(recommendedMeals, preferences),
-            ...realCatalogMeals
-        ])
+        const realTrendingMeals = uniqueRecipesById(filterRecipesByPreferences(trendingMeals, preferences)).slice(0, 4);
+        const realRecommendedMeals = uniqueRecipesById(filterRecipesByPreferences(recommendedMeals, preferences))
             .filter((recipe) => !realTrendingMeals.some((item) => getRecipeDedupKey(item) === getRecipeDedupKey(recipe)))
             .slice(0, 4);
+        const dailyChallengeRecipe = uniqueRecipesById(filterRecipesByPreferences(dailyChallengeMeals, preferences))[0] || null;
 
         const dashboardData = {
             ...fallback,
@@ -3982,8 +3975,8 @@ router.get('/dashboard', async (req, res) => {
                 ? realRecommendedMeals
                     .map((recipe) => enhanceRecipeForPreference(recipe, preferences, fallback.categories[1].image))
                 : fallback.recommendedRecipes,
-            dailyChallenge: autoChallenges.dailyChallenge
-                ? enhanceRecipeForPreference(autoChallenges.dailyChallenge, preferences, fallback.categories[0].image)
+            dailyChallenge: dailyChallengeRecipe
+                ? enhanceRecipeForPreference(dailyChallengeRecipe, preferences, fallback.categories[0].image)
                 : fallback.dailyChallenge,
             tip: getCookingTip(),
             preferences

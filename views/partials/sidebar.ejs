@@ -157,7 +157,7 @@
       const root = document.documentElement;
       let revealTimer = window.setTimeout(() => {
         root.classList.add('page-is-loading');
-      }, 220);
+      }, 700);
 
       const finish = () => {
         if (revealTimer) {
@@ -167,9 +167,10 @@
         root.classList.remove('page-is-loading');
       };
 
-      if (document.readyState === 'complete') {
+      if (document.readyState === 'interactive' || document.readyState === 'complete') {
         finish();
       } else {
+        document.addEventListener('DOMContentLoaded', finish, { once: true });
         window.addEventListener('load', finish, { once: true });
         window.addEventListener('pageshow', finish, { once: true });
       }
