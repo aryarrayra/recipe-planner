@@ -728,6 +728,14 @@ a {
   pointer-events: none;
 }
 
+.password-toggle .eye-slash {
+  opacity: 0;
+}
+
+.password-toggle.is-visible .eye-slash {
+  opacity: 1;
+}
+
 .auth-select {
   appearance: none;
   -webkit-appearance: none;
