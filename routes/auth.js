@@ -1099,7 +1099,7 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
         healthy: {
             categoryTerms: ['healthy', 'vegetarian', 'vegan', 'salad', 'light'],
             labelTerms: ['healthy', 'salad', 'vegan', 'vegetarian', 'low calorie', 'high protein', 'clean'],
-            excludeTerms: ['goreng', 'fried', 'crispy', 'kroket', 'popcorn', 'nasi goreng', 'mie goreng', 'burger', 'steak', 'cake', 'brownie', 'pudding', 'creamy', 'butter', 'cheesy']
+            excludeTerms: ['goreng', 'fried', 'crispy', 'kroket', 'popcorn', 'nasi goreng', 'mie goreng', 'burger', 'steak', 'cake', 'brownie', 'pudding', 'creamy', 'butter', 'cheesy', 'udon', 'yaki', 'falafel', 'mandi']
         }
     };
 
