@@ -12610,7 +12610,7 @@ body.history-page {
 
   .auth-page .eyebrow {
     margin: 0 0 8px;
-    color: #214f06;
+    color: var(--accent);
     font-size: 0.72rem;
     letter-spacing: 0.08em;
     text-align: center;
@@ -12657,8 +12657,8 @@ body.history-page {
     min-width: 0;
     margin-top: 2px;
     border-radius: 999px;
-    background: linear-gradient(180deg, #244f09 0%, #1d4307 100%);
-    box-shadow: none;
+    background: linear-gradient(180deg, #46afad 0%, #389c9a 100%);
+    box-shadow: 0 10px 16px rgba(56, 156, 154, 0.18);
     padding: 12px 18px;
     font-size: 0.9rem;
   }
@@ -12680,8 +12680,8 @@ body.history-page {
   .auth-page .social-btn {
     min-height: 42px;
     padding: 10px 14px;
-    border: 0;
-    background: #f4f6ec;
+    border: 1px solid rgba(56, 156, 154, 0.16);
+    background: rgba(255, 255, 255, 0.92);
     font-size: 0.84rem;
     font-weight: 700;
   }
