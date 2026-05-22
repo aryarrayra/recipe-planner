@@ -4188,6 +4188,7 @@ router.get('/recipe-menu', async (req, res) => {
         const pageSize = 12;
         const currentPage = Math.max(1, Number.parseInt(String(req.query.page || '1'), 10) || 1);
         const catalogFetchSize = Math.max(pageSize, Number(process.env.RECIPE_MENU_CATALOG_FETCH_SIZE || 240) || 240);
+        const groupedCatalogFilters = new Set(['dessert', 'drink', 'snack', 'healthy']);
         const buildPageUrl = (pageNumber) => {
             const params = new URLSearchParams();
             if (search) params.set('q', search);
@@ -4206,6 +4207,8 @@ router.get('/recipe-menu', async (req, res) => {
                 recipeList = await mealdb.searchMeals(search);
             } else if (selectedRegion) {
                 recipeList = await getRecipesForRegion(selectedRegion, catalogFetchSize);
+            } else if (groupedCatalogFilters.has(selectedIngredient)) {
+                recipeList = await mealdb.getFeedMeals(selectedIngredient, catalogFetchSize);
             } else if (selectedAlphabet) {
                 recipeList = await mealdb.searchMealsByLetter(selectedAlphabet);
             } else {
