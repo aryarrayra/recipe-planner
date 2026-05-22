@@ -2207,6 +2207,53 @@ function getFallbackRecipeCatalog(region = '') {
         return [];
     }
 
+    if (key === 'dessert') {
+        return [
+            mapRecipeCard({
+                id: 'fallback-dessert-1',
+                title: 'Chocolate Pudding',
+                description: 'Dessert lembut dan manis yang cocok untuk penutup makan.',
+                image_url: '/images/desserts.jpg',
+                cooking_time: 15,
+                difficulty: 'easy',
+                calories: 230,
+                category: 'dessert',
+                estimated_price: 12000,
+                likes_count: 77,
+                views_count: 305,
+                tags: ['dessert', 'pudding', 'chocolate']
+            }),
+            mapRecipeCard({
+                id: 'fallback-dessert-2',
+                title: 'Banana Pancake',
+                description: 'Pancake pisang manis yang simpel untuk dessert atau brunch.',
+                image_url: '/images/desserts.jpg',
+                cooking_time: 18,
+                difficulty: 'easy',
+                calories: 280,
+                category: 'dessert',
+                estimated_price: 14000,
+                likes_count: 69,
+                views_count: 254,
+                tags: ['dessert', 'banana', 'sweet']
+            }),
+            mapRecipeCard({
+                id: 'fallback-dessert-3',
+                title: 'Strawberry Tart',
+                description: 'Tart buah segar dengan rasa manis ringan dan tampilan cantik.',
+                image_url: '/images/desserts.jpg',
+                cooking_time: 25,
+                difficulty: 'medium',
+                calories: 260,
+                category: 'dessert',
+                estimated_price: 18000,
+                likes_count: 64,
+                views_count: 228,
+                tags: ['dessert', 'tart', 'strawberry']
+            })
+        ];
+    }
+
     if (key === 'drink') {
         return [
             mapRecipeCard({
@@ -2297,6 +2344,53 @@ function getFallbackRecipeCatalog(region = '') {
                 likes_count: 54,
                 views_count: 190,
                 tags: ['snack', 'toast', 'sweet']
+            })
+        ];
+    }
+
+    if (key === 'healthy') {
+        return [
+            mapRecipeCard({
+                id: 'fallback-healthy-1',
+                title: 'Greek Salad',
+                description: 'Salad segar dengan sayuran renyah untuk menu ringan.',
+                image_url: '/images/salads.jpg',
+                cooking_time: 10,
+                difficulty: 'easy',
+                calories: 190,
+                category: 'healthy',
+                estimated_price: 15000,
+                likes_count: 74,
+                views_count: 280,
+                tags: ['healthy', 'salad', 'fresh']
+            }),
+            mapRecipeCard({
+                id: 'fallback-healthy-2',
+                title: 'Avocado Toast',
+                description: 'Menu praktis yang ringan dan cocok untuk sarapan sehat.',
+                image_url: '/images/salads.jpg',
+                cooking_time: 8,
+                difficulty: 'easy',
+                calories: 210,
+                category: 'healthy',
+                estimated_price: 17000,
+                likes_count: 61,
+                views_count: 233,
+                tags: ['healthy', 'toast', 'avocado']
+            }),
+            mapRecipeCard({
+                id: 'fallback-healthy-3',
+                title: 'Fruit Yogurt Bowl',
+                description: 'Buah segar dan yogurt untuk pilihan yang lebih clean dan ringan.',
+                image_url: '/images/salads.jpg',
+                cooking_time: 7,
+                difficulty: 'easy',
+                calories: 180,
+                category: 'healthy',
+                estimated_price: 16000,
+                likes_count: 57,
+                views_count: 205,
+                tags: ['healthy', 'fruit', 'yogurt']
             })
         ];
     }
@@ -4217,11 +4311,15 @@ router.get('/recipe-menu', async (req, res) => {
             }
         } catch (apiError) {
             console.error('TheMealDB recipe menu fallback:', apiError.message);
-            recipeList = getFallbackRecipeCatalog(selectedRegion);
+            recipeList = getFallbackRecipeCatalog(selectedRegion || selectedIngredient);
         }
 
         if (selectedAlphabet && (!Array.isArray(recipeList) || !recipeList.length)) {
             recipeList = await mealdb.getCatalogMeals(catalogFetchSize).catch(() => []);
+        }
+
+        if (!Array.isArray(recipeList) || !recipeList.length) {
+            recipeList = getFallbackRecipeCatalog(selectedRegion || selectedIngredient);
         }
 
         if (!search && !selectedRegion && !selectedIngredient && !selectedAlphabet) {
