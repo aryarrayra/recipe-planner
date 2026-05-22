@@ -155,6 +155,11 @@ function getMailerTransport() {
     return mailerTransport;
 }
 
+function getMissingSmtpEnvKeys() {
+    const requiredKeys = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
+    return requiredKeys.filter((key) => !normalizeText(process.env[key]));
+}
+
 function getOtpSubject(purpose = '') {
     if (purpose === 'register') {
         return 'Kode verifikasi akun ResepKu';
@@ -279,19 +284,28 @@ async function sendAuthOtpEmail({ to, code, purpose }) {
     const subject = getOtpSubject(purpose);
     const text = getOtpMessage(purpose, code);
     const smtpHost = normalizeText(process.env.SMTP_HOST).toLowerCase();
+    const isProduction = normalizeText(process.env.NODE_ENV).toLowerCase() === 'production';
 
     if (!transport) {
+        const missingKeys = getMissingSmtpEnvKeys();
+        if (isProduction) {
+            throw new Error(`SMTP belum terkonfigurasi di production. Missing: ${missingKeys.join(', ') || 'unknown'}`);
+        }
+
         console.log(`[AUTH OTP DEV] to=${to} purpose=${purpose} code=${code}`);
         return { devMode: true };
     }
 
     const smtpUser = normalizeText(process.env.SMTP_USER);
     const configuredSenderEmail = normalizeText(process.env.SMTP_FROM);
-    const senderEmail = configuredSenderEmail || smtpUser || 'no-reply@example.com';
+    const isGmailSmtp = smtpHost.includes('gmail.com');
+    const senderEmail = isGmailSmtp
+        ? (smtpUser || configuredSenderEmail || 'no-reply@example.com')
+        : (configuredSenderEmail || smtpUser || 'no-reply@example.com');
     const senderName = normalizeText(process.env.SMTP_FROM_NAME) || 'ResepKu';
     
-    if (smtpHost.includes('gmail.com') && configuredSenderEmail && smtpUser && configuredSenderEmail.toLowerCase() !== smtpUser.toLowerCase()) {
-        console.warn('[AUTH OTP] Gmail SMTP digunakan dengan SMTP_FROM yang berbeda dari SMTP_USER. Pastikan alias sender sudah diverifikasi.');
+    if (isGmailSmtp && configuredSenderEmail && smtpUser && configuredSenderEmail.toLowerCase() !== smtpUser.toLowerCase()) {
+        console.warn('[AUTH OTP] Gmail SMTP mendeteksi SMTP_FROM berbeda dari SMTP_USER. Sistem akan memakai SMTP_USER sebagai sender untuk menjaga deliverability.');
     }
 
     await transport.sendMail({
