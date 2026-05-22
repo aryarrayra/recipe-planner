@@ -689,6 +689,7 @@ function getRecipeFilterGroups() {
         ],
         ingredients: [
             { value: '', label: 'Semua bahan', hint: 'Campuran semua bahan' },
+            { value: 'main-course', label: 'Makanan berat', hint: 'Menu utama' },
             { value: 'chicken', label: 'Ayam', hint: 'Unggas' },
             { value: 'beef', label: 'Daging sapi', hint: 'Protein merah' },
             { value: 'seafood', label: 'Seafood', hint: 'Ikan, udang, cumi' },
@@ -772,6 +773,10 @@ function normalizeRecipeRegionFilter(value = '') {
 
 function normalizeRecipeIngredientFilter(value = '') {
     const normalized = String(value || '').trim().toLowerCase();
+    if (['main course', 'main-course', 'makanan berat', 'main dish'].includes(normalized)) {
+        return 'main-course';
+    }
+
     if (['tahu/tempe', 'tahu-tempe', 'tofu/tempe', 'tofu-tempe'].includes(normalized)) {
         return 'tofu-tempe';
     }
@@ -1069,6 +1074,7 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
         .join(' ')
         .toLowerCase();
     const aliases = {
+        'main-course': ['main course', 'main dish', 'makanan berat', 'dinner', 'lunch', 'rice', 'pasta', 'chicken', 'beef', 'seafood'],
         chicken: ['chicken', 'ayam', 'poultry', 'dada ayam', 'paha ayam'],
         beef: ['beef', 'sapi', 'daging sapi', 'daging'],
         seafood: ['seafood', 'fish', 'ikan', 'udang', 'cumi', 'kerang', 'shrimp', 'prawn', 'salmon', 'tuna'],
@@ -1081,6 +1087,11 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
         dessert: ['dessert', 'manis', 'cake', 'pudding', 'chocolate', 'cookies', 'cookie', 'pastry']
     };
     const groupedAliases = {
+        'main-course': {
+            categoryTerms: ['main course', 'main dish', 'meal', 'dinner', 'lunch', 'rice', 'pasta', 'chicken', 'beef', 'seafood'],
+            labelTerms: ['rice', 'nasi', 'pasta', 'spaghetti', 'chicken', 'ayam', 'beef', 'fish', 'salmon', 'tuna', 'seafood', 'curry', 'steak', 'soup'],
+            excludeTerms: ['dessert', 'cake', 'cookie', 'pudding', 'brownie', 'drink', 'juice', 'coffee', 'tea', 'smoothie', 'snack', 'cemilan', 'camilan', 'gorengan', 'fritter']
+        },
         dessert: {
             categoryTerms: ['dessert', 'sweet', 'pastry', 'cake', 'cookie', 'pudding', 'ice cream'],
             labelTerms: ['dessert', 'cake', 'cookie', 'pudding', 'brownie', 'tart', 'pie', 'mousse', 'custard'],
@@ -1171,13 +1182,20 @@ async function getRecipesForGroupedCategory(category, count) {
     const key = String(category || '').trim().toLowerCase();
     const safeCount = Math.max(1, Number(count) || 12);
 
+    if (key === 'main-course') {
+        const catalogRecipes = await mealdb.getCatalogMeals(Math.max(safeCount * 3, 36)).catch(() => []);
+        return uniqueRecipesById(catalogRecipes.filter((recipe) => matchesRecipeIngredient(recipe, key))).slice(0, safeCount);
+    }
+
     if (key === 'dessert') {
-        const [dessertCategory, dessertFeed] = await Promise.all([
+        const [dessertCategory, dessertFeed, catalogRecipes] = await Promise.all([
             mealdb.getMealsByCategory('Dessert', safeCount).catch(() => []),
-            mealdb.getFeedMeals('dessert', safeCount).catch(() => [])
+            mealdb.getFeedMeals('dessert', safeCount).catch(() => []),
+            mealdb.getCatalogMeals(Math.max(safeCount * 2, 36)).catch(() => [])
         ]);
 
-        return uniqueRecipesById([...dessertCategory, ...dessertFeed]).slice(0, safeCount);
+        const matchedCatalog = catalogRecipes.filter((recipe) => matchesRecipeIngredient(recipe, 'dessert'));
+        return uniqueRecipesById([...dessertCategory, ...dessertFeed, ...matchedCatalog]).slice(0, safeCount);
     }
 
     if (key === 'snack' || key === 'healthy') {
@@ -2120,7 +2138,7 @@ function getFallbackDashboard(user) {
         firstName: getFirstName(user.username),
         searchPlaceholder: 'Cari makanan, bahan, atau kategori',
         categories: [
-            { label: 'Makanan berat', image: '/images/2.png', feedKey: 'indonesia' },
+            { label: 'Makanan berat', image: '/images/2.png', feedKey: 'main-course' },
             { label: 'Dessert', image: '/images/desserts.jpg', feedKey: 'dessert' },
             { label: 'Cemilan', image: '/images/cemilan.jpg', feedKey: 'snack' },
             { label: 'Healthy food', image: '/images/salads.jpg', feedKey: 'healthy' }
@@ -4305,7 +4323,7 @@ router.get('/recipe-menu', async (req, res) => {
         const categoryAsRegion = normalizeRecipeRegionFilter(categoryQuery);
         const categoryAsIngredient = normalizeRecipeIngredientFilter(categoryQuery);
         const regionKeys = new Set(['indonesia', 'asia', 'middle-east', 'europe', 'america', 'africa']);
-        const ingredientKeys = new Set(['chicken', 'beef', 'seafood', 'egg', 'tofu-tempe', 'vegetable', 'rice-noodle', 'dairy', 'spicy', 'dessert', 'drink', 'snack', 'healthy']);
+        const ingredientKeys = new Set(['main-course', 'chicken', 'beef', 'seafood', 'egg', 'tofu-tempe', 'vegetable', 'rice-noodle', 'dairy', 'spicy', 'dessert', 'drink', 'snack', 'healthy']);
         const selectedRegion = normalizeRecipeRegionFilter(
             explicitRegion || (!explicitIngredient && regionKeys.has(categoryAsRegion) ? categoryAsRegion : '')
         );
@@ -4316,7 +4334,7 @@ router.get('/recipe-menu', async (req, res) => {
         const pageSize = 12;
         const currentPage = Math.max(1, Number.parseInt(String(req.query.page || '1'), 10) || 1);
         const catalogFetchSize = Math.max(pageSize, Number(process.env.RECIPE_MENU_CATALOG_FETCH_SIZE || 240) || 240);
-        const groupedCatalogFilters = new Set(['dessert', 'drink', 'snack', 'healthy']);
+        const groupedCatalogFilters = new Set(['main-course', 'dessert', 'drink', 'snack', 'healthy']);
         const buildPageUrl = (pageNumber) => {
             const params = new URLSearchParams();
             if (search) params.set('q', search);
