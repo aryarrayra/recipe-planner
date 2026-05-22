@@ -657,6 +657,25 @@ function getRecipeIngredientBlob(recipe = {}) {
         .toLowerCase();
 }
 
+function isPorkRecipe(recipe = {}) {
+    const source = getRecipeSearchBlob(recipe);
+    const blockedTerms = [
+        'pork',
+        'babi',
+        'bacon',
+        'prosciutto',
+        'pepperoni',
+        'chashu',
+        'char siu',
+        'pork belly',
+        'pork loin',
+        'pork chop',
+        'ham hock'
+    ];
+
+    return blockedTerms.some((term) => source.includes(term));
+}
+
 function getRecipeFilterGroups() {
     return {
         regions: [
@@ -1062,11 +1081,13 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
     const groupedAliases = {
         dessert: {
             categoryTerms: ['dessert', 'sweet', 'pastry', 'cake', 'cookie', 'pudding', 'ice cream'],
-            labelTerms: ['dessert', 'cake', 'cookie', 'pudding', 'brownie', 'tart', 'pie', 'mousse', 'custard']
+            labelTerms: ['dessert', 'cake', 'cookie', 'pudding', 'brownie', 'tart', 'pie', 'mousse', 'custard'],
+            excludeTerms: ['beef', 'chicken', 'ayam', 'broccoli', 'rice', 'nasi', 'steak', 'goreng', 'kari', 'curry', 'salad', 'soup', 'mie', 'noodle']
         },
         drink: {
             categoryTerms: ['drink', 'beverage', 'minuman', 'juice', 'tea', 'coffee', 'smoothie'],
-            labelTerms: ['juice', 'tea', 'coffee', 'smoothie', 'latte', 'milkshake', 'mocktail', 'sirup', 'es ']
+            labelTerms: ['juice', 'tea', 'coffee', 'smoothie', 'latte', 'milkshake', 'mocktail', 'sirup', 'es '],
+            excludeTerms: ['beef', 'chicken', 'ayam', 'rice', 'nasi', 'steak', 'goreng', 'broccoli', 'mie', 'noodle']
         },
         snack: {
             categoryTerms: ['snack', 'cemilan', 'camilan', 'appetizer', 'starter', 'finger food', 'side'],
@@ -1079,7 +1100,11 @@ function matchesRecipeIngredient(recipe = {}, ingredient = '') {
     };
 
     if (groupedAliases[key]) {
-        const { categoryTerms = [], labelTerms = [] } = groupedAliases[key];
+        const { categoryTerms = [], labelTerms = [], excludeTerms = [] } = groupedAliases[key];
+        if (excludeTerms.some((term) => labelBlob.includes(term))) {
+            return false;
+        }
+
         return categoryTerms.some((term) => categoryBlob.includes(term))
             || labelTerms.some((term) => labelBlob.includes(term));
     }
@@ -1212,8 +1237,9 @@ function filterRecipesByPreferences(recipes, preferences = []) {
 }
 
 function filterRecipesForDisplay(recipes, preferences = []) {
-    const filteredRecipes = filterRecipesByPreferences(recipes, preferences);
-    return filteredRecipes.length ? filteredRecipes : recipes;
+    const baseRecipes = (Array.isArray(recipes) ? recipes : []).filter((recipe) => !isPorkRecipe(recipe));
+    const filteredRecipes = filterRecipesByPreferences(baseRecipes, preferences);
+    return filteredRecipes.length ? filteredRecipes : baseRecipes;
 }
 
 function getRecipeDedupKey(item = {}) {
