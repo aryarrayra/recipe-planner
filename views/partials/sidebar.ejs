@@ -5,22 +5,22 @@
     ? [
         { href: '/admin/dashboard', iconClass: 'fa-solid fa-house', label: 'Dashboard', active: 'dashboard' },
         { href: '/admin/users', iconClass: 'fa-solid fa-users', label: 'User', active: 'users' },
-        { href: '/admin/trending', iconClass: 'fa-solid fa-people-group', label: 'Community', active: 'community' },
-        { href: '/admin/reports', iconClass: 'fa-solid fa-flag', label: 'Reports', active: 'reports' }
+        { href: '/admin/trending', iconClass: 'fa-solid fa-people-group', label: 'Komunitas', active: 'community' },
+        { href: '/admin/reports', iconClass: 'fa-solid fa-flag', label: 'Laporan', active: 'reports' }
       ]
     : [
-        { href: '/dashboard', iconClass: 'fa-solid fa-house', label: 'Home', active: 'dashboard' },
-        { href: '/recipes', iconClass: 'fa-solid fa-compass', label: 'FYP', active: 'fyp' },
-        { href: '/chat-ai', iconClass: 'fa-solid fa-wand-magic-sparkles', label: 'AI Chat', active: 'chat' },
-        { href: '/community', iconClass: 'fa-solid fa-users', label: 'Community', active: 'community' }
+        { href: '/dashboard', iconClass: 'fa-solid fa-house', label: 'Beranda', active: 'dashboard' },
+        { href: '/recipes', iconClass: 'fa-solid fa-compass', label: 'Untukmu', active: 'fyp' },
+        { href: '/chat-ai', iconClass: 'fa-solid fa-wand-magic-sparkles', label: 'Chat AI', active: 'chat' },
+        { href: '/community', iconClass: 'fa-solid fa-users', label: 'Komunitas', active: 'community' }
       ];
 
   const mobileDrawerLinks = isAdmin
     ? []
     : [
         { href: '/recipe-menu', iconClass: 'fa-solid fa-bowl-food', label: 'Resep', active: 'recipes' },
-        { href: '/shopping-list', iconClass: 'fa-solid fa-cart-shopping', label: 'Shopping List', active: 'shopping-list' },
-        { href: '/profile', iconClass: 'fa-solid fa-user', label: 'Profile', active: 'profile' }
+        { href: '/shopping-list', iconClass: 'fa-solid fa-cart-shopping', label: 'Daftar Belanja', active: 'shopping-list' },
+        { href: '/profile', iconClass: 'fa-solid fa-user', label: 'Profil', active: 'profile' }
       ];
 %>
 
@@ -42,20 +42,20 @@
         </a>
         <a class="user-sidebar-link <%= activePage === 'community' ? 'is-active' : '' %>" href="/admin/trending">
           <span class="user-sidebar-icon"><i class="fa-solid fa-people-group"></i></span>
-          <span>Community</span>
+          <span>Komunitas</span>
         </a>
         <a class="user-sidebar-link <%= activePage === 'reports' ? 'is-active' : '' %>" href="/admin/reports">
           <span class="user-sidebar-icon"><i class="fa-solid fa-flag"></i></span>
-          <span>Reports</span>
+          <span>Laporan</span>
         </a>
       <% } else { %>
         <a class="user-sidebar-link <%= activePage === 'dashboard' ? 'is-active' : '' %>" href="/dashboard">
           <span class="user-sidebar-icon"><i class="fa-solid fa-house"></i></span>
-          <span>Home</span>
+          <span>Beranda</span>
         </a>
         <a class="user-sidebar-link <%= activePage === 'fyp' ? 'is-active' : '' %>" href="/recipes">
           <span class="user-sidebar-icon"><i class="fa-solid fa-compass"></i></span>
-          <span>FYP</span>
+          <span>Untukmu</span>
         </a>
         <a class="user-sidebar-link <%= activePage === 'recipes' ? 'is-active' : '' %>" href="/recipe-menu">
           <span class="user-sidebar-icon"><i class="fa-solid fa-bowl-food"></i></span>
@@ -63,27 +63,27 @@
         </a>
         <a class="user-sidebar-link <%= activePage === 'shopping-list' ? 'is-active' : '' %>" href="/shopping-list">
           <span class="user-sidebar-icon"><i class="fa-solid fa-cart-shopping"></i></span>
-          <span>Shopping List</span>
+          <span>Daftar Belanja</span>
         </a>
         <a class="user-sidebar-link <%= activePage === 'chat' ? 'is-active' : '' %>" href="/chat-ai">
           <span class="user-sidebar-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-          <span>AI Chat</span>
+          <span>Chat AI</span>
         </a>
         <a class="user-sidebar-link <%= activePage === 'community' ? 'is-active' : '' %>" href="/community">
           <span class="user-sidebar-icon"><i class="fa-solid fa-users"></i></span>
-          <span>Community</span>
+          <span>Komunitas</span>
         </a>
         <a class="user-sidebar-link <%= activePage === 'profile' ? 'is-active' : '' %>" href="/profile">
           <span class="user-sidebar-icon"><i class="fa-solid fa-user"></i></span>
-          <span>Profile</span>
+          <span>Profil</span>
         </a>
       <% } %>
     </nav>
 
     <form action="/logout" method="post" class="user-sidebar-logout">
-      <button type="submit" class="user-icon-button user-icon-button-soft" aria-label="Logout" title="Logout">
+      <button type="submit" class="user-icon-button user-icon-button-soft" aria-label="Keluar" title="Keluar">
         <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
-        <span class="sr-only">Logout</span>
+        <span class="sr-only">Keluar</span>
       </button>
     </form>
   </aside>
@@ -137,7 +137,7 @@
     <form action="/logout" method="post" class="mobile-bottom-nav-logout">
       <button type="submit" class="button button-secondary">
         <i class="fa-solid fa-right-from-bracket"></i>
-        <span>Logout</span>
+        <span>Keluar</span>
       </button>
     </form>
   </aside>

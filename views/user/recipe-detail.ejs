@@ -84,7 +84,7 @@
                     <h1><%= activeRecipe.title %></h1>
                   </div>
                   <div class="user-recipe-author">
-                    <span>Uploaded by <strong><%= activeRecipe.creatorName %></strong></span>
+                    <span>Dibuat oleh <strong><%= activeRecipe.creatorName %></strong></span>
                   </div>
                 </div>
 
@@ -133,7 +133,7 @@
                     </article>
 
                     <article class="user-recipe-mini-panel">
-                      <h3>Recipe summary</h3>
+                      <h3>Ringkasan resep</h3>
                       <div class="user-recipe-summary-list">
                         <span><strong>Perkiraan harga</strong> Rp <span id="recipeEstimatedPrice"><%= formatPrice(activeRecipe.estimatedPrice) %></span></span>
                         <span><strong>Waktu</strong> <%= activeRecipe.cookingTime %> menit</span>
@@ -143,7 +143,7 @@
                     </article>
 
                     <article class="user-recipe-mini-panel">
-                      <h3>Food info</h3>
+                      <h3>Info makanan</h3>
                       <div class="recipe-food-info-list">
                         <% activeRecipe.foodInfo.badges.forEach((badge) => { %>
                           <span class="recipe-food-info-badge is-<%= badge.tone %>"><%- badge.tone === 'safe' ? '&#10003;' : badge.tone === 'warn' ? '&#9888;' : '&#10060;' %> <%= badge.text %></span>
@@ -177,11 +177,11 @@
                     data-recipe-id="<%= activeRecipe.favoriteKey || activeRecipe.id %>"
                   >
                     <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Add to Shopping List</span>
+                    <span>Tambah ke daftar belanja</span>
                   </button>
                   <a class="user-recipe-action-btn" href="/shopping-list">
                     <i class="fa-solid fa-list-check"></i>
-                    <span>Lihat shopping list</span>
+                    <span>Lihat daftar belanja</span>
                   </a>
                   <a class="user-recipe-action-btn" href="/recipe-menu">
                     <i class="fa-solid fa-compass"></i>
@@ -189,7 +189,7 @@
                   </a>
                   <button type="button" class="user-recipe-action-btn" id="recipeDetailShare" data-action="share">
                     <i class="fa-solid fa-share-nodes"></i>
-                    <span>Share</span>
+                    <span>Bagikan</span>
                   </button>
                 </div>
               </article>
@@ -197,7 +197,7 @@
               <article class="user-panel user-recipe-steps-panel" id="recipeSteps">
                 <div class="user-panel-head">
                   <div>
-                    <p class="user-panel-kicker">Step by step</p>
+                    <p class="user-panel-kicker">Langkah demi langkah</p>
                     <h2>Masak pelan-pelan, lanjut per step</h2>
                   </div>
                   <span class="user-panel-meta" id="stepProgressLabel">1 / <%= activeRecipe.steps.length %></span>
@@ -206,7 +206,7 @@
                 <div class="user-recipe-step-list" id="recipeStepList">
                   <% activeRecipe.steps.forEach((step, index) => { %>
                     <article class="user-recipe-step-card <%= index === 0 ? 'is-visible' : '' %>" data-step-card data-step-index="<%= index %>">
-                      <strong>Step <%= step.step %></strong>
+                      <strong>Langkah <%= step.step %></strong>
                       <p><%= step.instruction %></p>
                     </article>
                   <% }) %>
@@ -217,10 +217,10 @@
                     type="button"
                     class="auth-button"
                     id="nextStepButton"
-                    data-finished-label="Done"
+                    data-finished-label="Selesai"
                     data-finish-url="/recipes/serve?recipeId=<%= encodeURIComponent(activeRecipe.id) %>"
                   >
-                    <%= activeRecipe.steps.length <= 1 ? 'Done' : 'Lanjut' %>
+                    <%= activeRecipe.steps.length <= 1 ? 'Selesai' : 'Lanjut' %>
                   </button>
                 </div>
               </article>
@@ -230,7 +230,7 @@
               <article class="user-panel">
                 <div class="user-panel-head">
                   <div>
-                    <p class="user-panel-kicker">Related recipes</p>
+                    <p class="user-panel-kicker">Resep terkait</p>
                     <h2>Cocok dibuka berikutnya</h2>
                   </div>
                 </div>
@@ -443,7 +443,7 @@
           }
 
           nextButton.textContent = visibleCount >= cards.length
-            ? (nextButton.dataset.finishedLabel || 'Done')
+            ? (nextButton.dataset.finishedLabel || 'Selesai')
             : 'Lanjut';
         };
 

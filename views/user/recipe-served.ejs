@@ -34,7 +34,7 @@
           </div>
 
           <div class="user-feed-topline">
-            <p class="user-panel-kicker">Cooking complete</p>
+            <p class="user-panel-kicker">Memasak selesai</p>
             <h1>Masakan siap dihidangkan</h1>
           </div>
         </header>
@@ -45,7 +45,7 @@
               <div class="user-recipe-served-copy">
                 <span class="user-recipe-served-badge">
                   <i class="fa-solid fa-cloche"></i>
-                  Ready to serve
+                  Siap disajikan
                 </span>
                 <h2><%= recipe.title %></h2>
                 <p>
@@ -64,7 +64,7 @@
                 <div class="user-ai-actions">
                   <a class="auth-button" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">Masak lagi</a>
                   <a class="auth-button auth-button-secondary" href="/recipe-menu">Lihat resep lain</a>
-                  <a class="auth-button auth-button-secondary" href="/community">Share ke community</a>
+                  <a class="auth-button auth-button-secondary" href="/community">Bagikan ke komunitas</a>
                 </div>
               </div>
 
@@ -75,7 +75,7 @@
                   <div class="user-recipe-visual-placeholder">
                     <i class="fa-regular fa-image"></i>
                     <strong>Resep ini belum punya gambar</strong>
-                    <span>Masakan tetap siap disajikan dan bisa kamu share ke community.</span>
+                    <span>Masakan tetap siap disajikan dan bisa kamu bagikan ke komunitas.</span>
                   </div>
                 <% } %>
               </div>
@@ -84,7 +84,7 @@
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Serving checklist</p>
+                  <p class="user-panel-kicker">Checklist penyajian</p>
                   <h2>Sebelum disajikan</h2>
                 </div>
               </div>
@@ -110,7 +110,7 @@
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Recipe summary</p>
+                  <p class="user-panel-kicker">Ringkasan resep</p>
                   <h2>Ringkasan hasil masak</h2>
                 </div>
               </div>
@@ -119,7 +119,7 @@
                 <span><strong>Nama resep</strong> <%= recipe.title %></span>
                 <span><strong>Porsi</strong> <%= recipe.servings %></span>
                 <span><strong>Kategori</strong> <%= recipe.category %></span>
-                <span><strong>Total step</strong> <%= recipe.steps.length %></span>
+                <span><strong>Total langkah</strong> <%= recipe.steps.length %></span>
                 <span><strong>Recook kamu</strong> <%= recookCountText %> kali</span>
               </div>
             </article>
@@ -127,7 +127,7 @@
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Related recipes</p>
+                  <p class="user-panel-kicker">Resep terkait</p>
                   <h2>Coba berikutnya</h2>
                 </div>
               </div>

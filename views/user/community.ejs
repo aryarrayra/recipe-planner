@@ -35,9 +35,9 @@
     commentsCount: Number(recipe.commentsCount || 0),
     sharesCount: Number(recipe.sharesCount || 0),
     likedByMe: Boolean(recipe.likedByMe),
-    category: recipe.category || 'recipe',
-    cuisine: recipe.originPlace || recipe.cuisine || 'Community',
-    creatorName: recipe.creatorName || 'Community user',
+    category: recipe.category || 'resep',
+    cuisine: recipe.originPlace || recipe.cuisine || 'Komunitas',
+    creatorName: recipe.creatorName || 'Pengguna komunitas',
     createdAt: recipe.createdAt || null,
     isDeleted: Boolean(recipe.isDeleted || recipe.is_deleted || recipe.postIsDeleted),
     deletedAt: recipe.deletedAt || recipe.postDeletedAt || null,
@@ -75,7 +75,7 @@
       <section class="user-dashboard-main community-main">
         <header class="user-dashboard-topbar">
           <div class="user-topbar-copy">
-            <p class="user-panel-kicker">Community kitchen</p>
+            <p class="user-panel-kicker">Dapur komunitas</p>
             <h1>Bagikan resep seperti halaman buku masak</h1>
           </div>
           <div class="community-compose-shell">
@@ -109,13 +109,13 @@
                     <div class="community-recipe-card-hero">
                       <img src="<%= recipe.imageUrl || '/images/1.png' %>" alt="<%= recipe.title %>" />
                       <% if (isDeletedPost) { %>
-                        <span class="community-recipe-card-badge is-deleted">DELETED</span>
+                        <span class="community-recipe-card-badge is-deleted">DIHAPUS</span>
                       <% } %>
                     </div>
                     <div class="community-recipe-card-body">
                       <div class="community-recipe-card-author">
                         <img
-                          src="<%= recipe.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipe.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true` %>"
+                          src="<%= recipe.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipe.creatorName || 'Pengguna komunitas')}&background=0f1419&color=ffffff&bold=true` %>"
                           alt="<%= recipe.creatorName %>"
                         />
                         <div>
@@ -143,7 +143,7 @@
             <% } else { %>
               <div class="community-feed-empty">
                 <i class="fa-solid fa-book-open-reader" aria-hidden="true"></i>
-                <strong>Belum ada postingan community</strong>
+                <strong>Belum ada postingan komunitas</strong>
               </div>
             <% } %>
           </section>
@@ -185,21 +185,21 @@
                   </div>
                 </label>
                 <label class="community-form-field">
-                  <span>Cuisine</span>
-                  <input type="text" name="cuisine" placeholder="Indonesia / Japanese / dll" />
+                  <span>Asal masakan</span>
+                  <input type="text" name="cuisine" placeholder="Indonesia / Jepang / dll" />
                 </label>
                 <label class="community-form-field">
                   <span>Kategori</span>
                   <select name="category">
-                    <option value="main course">Main course</option>
-                    <option value="dessert">Dessert</option>
-                    <option value="snack">Snack</option>
-                    <option value="drink">Drink</option>
-                    <option value="breakfast">Breakfast</option>
-                    <option value="lunch">Lunch</option>
-                    <option value="dinner">Dinner</option>
-                    <option value="side dish">Side dish</option>
-                    <option value="soup">Soup</option>
+                    <option value="main course">Hidangan utama</option>
+                    <option value="dessert">Pencuci mulut</option>
+                    <option value="snack">Camilan</option>
+                    <option value="drink">Minuman</option>
+                    <option value="breakfast">Sarapan</option>
+                    <option value="lunch">Makan siang</option>
+                    <option value="dinner">Makan malam</option>
+                    <option value="side dish">Lauk pendamping</option>
+                    <option value="soup">Sup</option>
                   </select>
                 </label>
                 <label class="community-form-field">
@@ -211,11 +211,11 @@
                   <input type="number" name="servings" min="1" placeholder="2" />
                 </label>
                 <label class="community-form-field">
-                  <span>Difficulty</span>
+                  <span>Tingkat kesulitan</span>
                   <select name="difficulty">
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
+                    <option value="easy">Mudah</option>
+                    <option value="medium">Sedang</option>
+                    <option value="hard">Sulit</option>
                   </select>
                 </label>
                 <label class="community-form-field">
@@ -251,7 +251,7 @@
                     </div>
                     <div class="community-upload-controls">
                       <input type="file" name="steps_image_file" accept="image/*" id="communityStepsImageInput" />
-                      <p>Preview akan muncul setelah memilih foto.</p>
+                      <p>Pratinjau akan muncul setelah memilih foto.</p>
                     </div>
                   </div>
                 </label>
@@ -262,8 +262,8 @@
               </div>
 
               <div class="community-form-actions">
-                <button type="submit" class="auth-button">Post ke community</button>
-                <p>Resep akan langsung tersimpan dan tampil di community.</p>
+                <button type="submit" class="auth-button">Posting ke komunitas</button>
+                <p>Resep akan langsung tersimpan dan tampil di komunitas.</p>
               </div>
             </form>
           </div>
@@ -343,15 +343,15 @@
       }
 
       function renderCommentItem(comment) {
-        const avatarUrl = comment.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true`;
+        const avatarUrl = comment.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Pengguna komunitas')}&background=0f1419&color=ffffff&bold=true`;
         return `
           <article class="community-detail-comment">
             <div class="community-detail-comment-avatar">
-              <img src="${avatarUrl}" alt="${escapeHtml(comment.creatorName || 'Community user')}" />
+              <img src="${avatarUrl}" alt="${escapeHtml(comment.creatorName || 'Pengguna komunitas')}" />
             </div>
             <div class="community-detail-comment-body">
               <div class="community-detail-comment-head">
-                <strong>${escapeHtml(comment.creatorName || 'Community user')}</strong>
+                <strong>${escapeHtml(comment.creatorName || 'Pengguna komunitas')}</strong>
                 <span>&bull; ${escapeHtml(formatRelativeTime(comment.createdAt))}</span>
               </div>
               <p>${escapeHtml(comment.content || '')}</p>
@@ -393,16 +393,16 @@
         activePost = post;
         activePostId = String(post.communityPostId || post.id || '');
         const isDeletedPost = Boolean(post.isDeleted || post.is_deleted);
-        const avatarUrl = post.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true`;
+        const avatarUrl = post.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.creatorName || 'Pengguna komunitas')}&background=0f1419&color=ffffff&bold=true`;
         const postComments = Array.isArray(post.comments) ? post.comments : [];
         const mediaUrl = post.imageUrl || '/images/1.png';
-        const cuisineText = post.originPlace || post.cuisine || 'Community';
-        const categoryText = post.category || 'recipe';
+        const cuisineText = post.originPlace || post.cuisine || 'Komunitas';
+        const categoryText = post.category || 'resep';
 
         if (detailAvatar) detailAvatar.src = avatarUrl;
-        if (detailAuthor) detailAuthor.textContent = post.creatorName || 'Community user';
+        if (detailAuthor) detailAuthor.textContent = post.creatorName || 'Pengguna komunitas';
         if (detailTime) detailTime.textContent = `• ${formatRelativeTime(post.createdAt)}`;
-        if (detailTitle) detailTitle.textContent = post.title || 'Postingan community';
+        if (detailTitle) detailTitle.textContent = post.title || 'Postingan komunitas';
         if (detailText) detailText.textContent = post.description || post.title || '';
         if (detailImage) {
           detailImage.src = mediaUrl;
@@ -416,7 +416,7 @@
             <span><i class="fa-solid fa-layer-group"></i> ${escapeHtml(categoryText)} / ${escapeHtml(cuisineText)}</span>
             <span><i class="fa-regular fa-clock"></i> ${escapeHtml(String(post.cookingTime || 0))} min</span>
             <span><i class="fa-solid fa-wallet"></i> Rp ${escapeHtml(String(post.estimatedPrice || 0).replace(/\B(?=(\d{3})+(?!\d))/g, '.'))}</span>
-            ${isDeletedPost ? '<span class="community-post-status-pill is-deleted"><i class="fa-solid fa-trash"></i> DELETED</span>' : ''}
+            ${isDeletedPost ? '<span class="community-post-status-pill is-deleted"><i class="fa-solid fa-trash"></i> DIHAPUS</span>' : ''}
           `;
         }
         if (detailLikeCount) detailLikeCount.textContent = String(post.likesCount || 0);

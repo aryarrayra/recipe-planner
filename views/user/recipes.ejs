@@ -31,13 +31,13 @@
       <section class="user-dashboard-main">
         <header class="user-dashboard-topbar">
           <div class="user-feed-topline">
-            <p class="user-panel-kicker">FYP</p>
+            <p class="user-panel-kicker">Untukmu</p>
             <h1><%= feedPreset.title %></h1>
           </div>
 
           <div class="user-topbar-actions">
             <a class="auth-button auth-button-secondary" href="/shopping-list">
-              Shopping List
+              Daftar Belanja
             </a>
             <div class="user-profile-pill">
               <strong><%= user.username %></strong>
@@ -56,14 +56,14 @@
                     <h1><%= activeRecipe.title %></h1>
                   </div>
                   <div class="user-fyp-author">
-                    <span>Uploaded by <strong><%= activeRecipe.creatorName %></strong></span>
+                    <span>Dibuat oleh <strong><%= activeRecipe.creatorName %></strong></span>
                   </div>
                 </div>
 
                 <div class="user-recipe-detail-tags user-fyp-metrics" id="selectedRecipeStats">
-                  <span><i class="fa-regular fa-clock"></i> <strong id="selectedRecipeTime"><%= activeRecipe.cookingTime %></strong> min</span>
-                  <span><i class="fa-solid fa-star"></i> <strong id="selectedRecipeLikes"><%= activeRecipe.likesCount %></strong> likes</span>
-                  <span><i class="fa-solid fa-bookmark"></i> <strong id="selectedRecipeSaves"><%= activeRecipe.savesCount %></strong> saves</span>
+                  <span><i class="fa-regular fa-clock"></i> <strong id="selectedRecipeTime"><%= activeRecipe.cookingTime %></strong> menit</span>
+                  <span><i class="fa-solid fa-star"></i> <strong id="selectedRecipeLikes"><%= activeRecipe.likesCount %></strong> suka</span>
+                  <span><i class="fa-solid fa-bookmark"></i> <strong id="selectedRecipeSaves"><%= activeRecipe.savesCount %></strong> simpan</span>
                   <span><i class="fa-solid fa-coins"></i> Perkiraan Rp <strong id="selectedRecipePrice"><%= formatPrice(activeRecipe.estimatedPrice) %></strong></span>
                   <span><i class="fa-solid fa-fire"></i> <strong id="selectedRecipeCalories"><%= activeRecipe.calories %></strong> kkal</span>
                   <span><i class="fa-solid fa-signal"></i> <strong id="selectedRecipeDifficulty"><%= activeRecipe.difficulty %></strong></span>
@@ -110,7 +110,7 @@
 
                   <div class="user-recipe-sidecards">
                     <article class="user-recipe-mini-panel">
-                      <h3>Ingredients</h3>
+                      <h3>Bahan-bahan</h3>
                       <div class="user-recipe-ingredient-list">
                         <% activeRecipe.ingredients.forEach((ingredient) => { %>
                           <label class="user-recipe-ingredient-item">
@@ -128,12 +128,12 @@
                     </article>
 
                     <article class="user-recipe-mini-panel">
-                      <h3>Recipe summary</h3>
+                      <h3>Ringkasan resep</h3>
                       <div class="user-recipe-summary-list">
                         <span><strong>Perkiraan harga</strong> Rp <%= formatPrice(activeRecipe.estimatedPrice) %></span>
                         <span><strong>Waktu</strong> <%= activeRecipe.cookingTime %> menit</span>
-                        <span><strong>Difficulty</strong> <%= activeRecipe.difficulty %></span>
-                        <span><strong>Servings</strong> <%= activeRecipe.servings %> porsi</span>
+                        <span><strong>Tingkat kesulitan</strong> <%= activeRecipe.difficulty %></span>
+                        <span><strong>Porsi</strong> <%= activeRecipe.servings %> porsi</span>
                       </div>
                     </article>
                   </div>
@@ -156,11 +156,11 @@
                   </a>
                   <a class="user-recipe-action-btn" href="/shopping-list">
                     <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Shopping list</span>
+                    <span>Daftar belanja</span>
                   </a>
                   <button type="button" class="user-recipe-action-btn is-primary" id="selectedRecipeShare" data-action="share">
                     <i class="fa-solid fa-share-nodes"></i>
-                    <span>Share</span>
+                    <span>Bagikan</span>
                   </button>
                 </div>
               </article>
@@ -177,17 +177,17 @@
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Active events</p>
-                  <h2>Activity di resep ini</h2>
+                  <p class="user-panel-kicker">Aktivitas aktif</p>
+                  <h2>Aktivitas di resep ini</h2>
                 </div>
-                <span class="user-panel-link">View all</span>
+                <span class="user-panel-link">Lihat semua</span>
               </div>
 
               <div class="user-stat-list">
                 <div class="user-stat-card">
                   <i class="fa-solid fa-users"></i>
                   <strong><%= activityData.viewsCount %> pembaca</strong>
-                  <span>Resep ini sedang ramai dibuka user lain.</span>
+                  <span>Resep ini sedang ramai dibuka pengguna lain.</span>
                 </div>
                 <div class="user-stat-card">
                   <i class="fa-solid fa-bookmark"></i>
@@ -196,8 +196,8 @@
                 </div>
                 <div class="user-stat-card">
                   <i class="fa-solid fa-heart"></i>
-                  <strong><%= activityData.likesCount %> likes</strong>
-                  <span>Engagement resep yang lagi naik.</span>
+                  <strong><%= activityData.likesCount %> suka</strong>
+                  <span>Interaksi resep yang sedang naik.</span>
                 </div>
               </div>
             </article>
@@ -205,8 +205,8 @@
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Reviews & ratings</p>
-                  <h2>Feedback user</h2>
+                  <p class="user-panel-kicker">Ulasan & penilaian</p>
+                  <h2>Masukan pengguna</h2>
                 </div>
               </div>
 
@@ -226,7 +226,7 @@
             <article class="user-panel user-ai-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Next step</p>
+                  <p class="user-panel-kicker">Langkah berikutnya</p>
                   <h2>Video resep vertikal</h2>
                 </div>
               </div>

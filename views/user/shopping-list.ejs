@@ -29,7 +29,7 @@
       <section class="user-dashboard-main">
         <header class="user-dashboard-topbar">
           <div class="user-feed-topline">
-            <p class="user-panel-kicker">Shopping list</p>
+            <p class="user-panel-kicker">Daftar belanja</p>
             <h1>Rekap bahan belanja</h1>
           </div>
 
@@ -44,10 +44,10 @@
           </div>
 
           <div class="shopping-budget-display">
-            <p class="shopping-budget-label">Budget minimal</p>
+            <p class="shopping-budget-label">Anggaran minimal</p>
             <strong class="shopping-budget-value">Rp <%= formatPrice(data.manualBudget) %></strong>
             <span class="shopping-budget-copy">
-              Budget ini hanya dihitung dari item yang kamu isi harganya sendiri. Item yang dikosongkan tidak ikut dihitung.
+              Anggaran ini hanya dihitung dari item yang kamu isi harganya sendiri. Item yang dikosongkan tidak ikut dihitung.
             </span>
           </div>
 
@@ -55,7 +55,7 @@
             <article class="user-stat-card">
               <i class="fa-solid fa-heart" aria-hidden="true"></i>
               <strong><%= data.totalRecipes %> resep dipilih</strong>
-              <span>Sumber bahan yang dipakai untuk shopping list ini</span>
+              <span>Sumber bahan yang dipakai untuk daftar belanja ini</span>
             </article>
             <article class="user-stat-card">
               <i class="fa-solid fa-basket-shopping" aria-hidden="true"></i>
@@ -71,7 +71,7 @@
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Shopping list</p>
+                  <p class="user-panel-kicker">Daftar belanja</p>
                   <h2>Daftar bahan gabungan</h2>
                 </div>
               </div>
@@ -84,7 +84,7 @@
                     { key: 'sayur', title: 'Sayur', icon: 'fa-seedling', empty: 'Belum ada sayur.' },
                     { key: 'protein', title: 'Protein', icon: 'fa-drumstick-bite', empty: 'Belum ada protein.' },
                     { key: 'bumbu', title: 'Bumbu', icon: 'fa-pepper-hot', empty: 'Belum ada bumbu.' },
-                    { key: 'dairy', title: 'Dairy', icon: 'fa-cheese', empty: 'Belum ada dairy.' },
+                    { key: 'dairy', title: 'Produk susu', icon: 'fa-cheese', empty: 'Belum ada produk susu.' },
                     { key: 'karbohidrat', title: 'Karbohidrat', icon: 'fa-bowl-rice', empty: 'Belum ada karbohidrat.' },
                     { key: 'saus', title: 'Saus & pelengkap', icon: 'fa-bottle-droplet', empty: 'Belum ada saus atau pelengkap.' },
                     { key: 'alat', title: 'Alat', icon: 'fa-kitchen-set', empty: 'Belum ada alat.' },
@@ -202,7 +202,7 @@
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Selected recipes</p>
+                  <p class="user-panel-kicker">Resep terpilih</p>
                   <h2>Resep sumber belanja</h2>
                 </div>
               </div>
@@ -226,7 +226,7 @@
                 <% if (!data.favoriteRecipes.length) { %>
                   <div class="user-empty-state">
                     <i class="fa-regular fa-heart"></i>
-                    <p>Resep yang ditambahkan lewat tombol Add to Shopping List akan muncul di sini.</p>
+                    <p>Resep yang ditambahkan lewat tombol Tambah ke daftar belanja akan muncul di sini.</p>
                   </div>
                 <% } %>
               </div>
@@ -236,7 +236,7 @@
               <div class="user-panel-head">
                 <div>
                   <p class="user-panel-kicker">Catatan</p>
-                  <h2>Shopping list dengan budget minimal</h2>
+                  <h2>Daftar belanja dengan budget minimal</h2>
                 </div>
               </div>
 

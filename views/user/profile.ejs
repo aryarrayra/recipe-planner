@@ -16,12 +16,12 @@
   />
   <link rel="stylesheet" href="/css/style.css" />
   <% const profileData = profile || {}; %>
-  <% const avatarUrl = profileData.avatarUrl || user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || 'User')}`; %>
+  <% const avatarUrl = profileData.avatarUrl || user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || 'Pengguna')}`; %>
   <% const hasCustomAvatar = Boolean(user.avatar_url && !String(user.avatar_url).includes('ui-avatars.com')); %>
-  <% const progress = profileData.progress || { level: 1, title: 'Starter Cook', progress: 0, activityPoints: 0, pointsIntoLevel: 0, pointsToNextLevel: 10 }; %>
+  <% const progress = profileData.progress || { level: 1, title: 'Koki Pemula', progress: 0, activityPoints: 0, pointsIntoLevel: 0, pointsToNextLevel: 10 }; %>
   <% const budgetValue = Number(profileData.budgetPerMeal || user.budget_per_meal || 0); %>
   <% const budgetText = budgetValue ? budgetValue.toLocaleString('id-ID') : '0'; %>
-  <% const skillLabel = profileData.skillLevel || 'Beginner'; %>
+  <% const skillLabel = profileData.skillLevel || 'Pemula'; %>
   <% const totalCooked = Number(profileData.cookingCount || user.total_recipes_cooked || 0); %>
   <% const totalSaved = Number(user.total_saved_recipes || 0); %>
   <% const totalShared = Number(user.total_recipes_shared || 0); %>
@@ -1171,17 +1171,17 @@
       <section class="user-dashboard-main">
         <header class="profile-topbar">
           <div class="profile-topbar-copy">
-            <p class="user-panel-kicker">Profile</p>
+            <p class="user-panel-kicker">Profil</p>
             <h1>Akun dan progres memasak</h1>
             <p class="profile-topbar-note">
-              Klik foto profile untuk ganti avatar. Pengaturan bio dan preferensi dibuka lewat tombol Settings.
+              Klik foto profil untuk ganti avatar. Pengaturan bio dan preferensi dibuka lewat tombol Pengaturan.
             </p>
           </div>
 
           <div class="profile-topbar-actions">
             <button type="button" class="profile-settings-button" id="openProfileSettings">
               <i class="fa-solid fa-gear"></i>
-              <span>Settings</span>
+              <span>Pengaturan</span>
             </button>
           </div>
         </header>
@@ -1209,9 +1209,9 @@
                     id="profileAvatarInput"
                     name="avatar_image"
                     accept="image/*"
-                    aria-label="Upload foto profile"
+                    aria-label="Upload foto profil"
                   />
-                  <button type="button" class="profile-avatar-button" id="profileAvatarButton" aria-label="Klik untuk ganti foto profile">
+                  <button type="button" class="profile-avatar-button" id="profileAvatarButton" aria-label="Klik untuk ganti foto profil">
                     <img src="<%= avatarUrl %>" alt="<%= user.username %>" />
                     <span class="profile-avatar-overlay" aria-hidden="true">
                       <i class="fa-solid <%= hasCustomAvatar ? 'fa-pen' : 'fa-plus' %>"></i>
@@ -1233,10 +1233,10 @@
                   </div>
 
                   <div class="profile-badges">
-                    <span class="profile-badge"><i class="fa-solid fa-fire-burner"></i> <%= totalCooked %> recook</span>
-                    <span class="profile-badge"><i class="fa-solid fa-bookmark"></i> <%= totalSaved %> saved</span>
-                    <span class="profile-badge"><i class="fa-solid fa-share-nodes"></i> <%= totalShared %> shared</span>
-                    <span class="profile-badge"><i class="fa-solid fa-heart"></i> <%= favoriteCount %> favorite</span>
+                    <span class="profile-badge"><i class="fa-solid fa-fire-burner"></i> <%= totalCooked %> masak ulang</span>
+                    <span class="profile-badge"><i class="fa-solid fa-bookmark"></i> <%= totalSaved %> tersimpan</span>
+                    <span class="profile-badge"><i class="fa-solid fa-share-nodes"></i> <%= totalShared %> dibagikan</span>
+                    <span class="profile-badge"><i class="fa-solid fa-heart"></i> <%= favoriteCount %> favorit</span>
                   </div>
                 </div>
               </div>
@@ -1244,9 +1244,9 @@
 
             <article class="profile-card">
               <div class="profile-section-head">
-                <p class="user-panel-kicker">Progress level</p>
+                <p class="user-panel-kicker">Progres level</p>
                 <h3><%= progress.title %></h3>
-                <p class="profile-muted">Semakin sering recook, save, dan share, level akun akan naik.</p>
+                <p class="profile-muted">Semakin sering recook, simpan, dan bagikan, level akun akan naik.</p>
               </div>
 
               <div class="profile-progress">
@@ -1260,7 +1260,7 @@
 
               <div class="profile-stats-grid" style="margin-top: 16px;">
                 <div class="profile-stat">
-                  <span>Total recook</span>
+                  <span>Total masak ulang</span>
                   <strong><%= totalCooked %></strong>
                 </div>
                 <div class="profile-stat">
@@ -1268,11 +1268,11 @@
                   <strong><%= totalSaved %></strong>
                 </div>
                 <div class="profile-stat">
-                  <span>Recipe shared</span>
+                  <span>Resep dibagikan</span>
                   <strong><%= totalShared %></strong>
                 </div>
                 <div class="profile-stat">
-                  <span>Budget / meal</span>
+                  <span>Anggaran / porsi</span>
                   <strong>Rp <%= budgetText %></strong>
                 </div>
               </div>
@@ -1281,9 +1281,9 @@
             <article class="profile-card">
               <div class="profile-section-head profile-community-header">
                 <div>
-                  <p class="user-panel-kicker">Community feed</p>
+                  <p class="user-panel-kicker">Feed komunitas</p>
                   <h3>Postingan dan komentar kamu</h3>
-                  <p class="profile-muted">Semua post community kamu tampil di sini. Komentar yang kamu kirim ke postingan orang lain juga muncul di bawahnya.</p>
+                  <p class="profile-muted">Semua posting komunitas kamu tampil di sini. Komentar yang kamu kirim ke postingan orang lain juga muncul di bawahnya.</p>
                 </div>
               </div>
 
@@ -1291,7 +1291,7 @@
                 <div class="profile-settings-section" style="padding: 18px;">
                   <div class="profile-section-head">
                     <p class="user-panel-kicker">Posting kamu</p>
-                    <h3>Feed upload terbaru</h3>
+                    <h3>Unggahan terbaru</h3>
                   </div>
 
                   <% if (communityPosts.length) { %>
@@ -1301,7 +1301,7 @@
                         <article class="profile-community-tweet">
                           <div class="profile-community-avatar">
                             <img
-                              src="<%= recipe.creatorAvatarUrl || user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipe.creatorName || user.username || 'Community user')}&background=0f1419&color=ffffff&bold=true` %>"
+                              src="<%= recipe.creatorAvatarUrl || user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(recipe.creatorName || user.username || 'Pengguna komunitas')}&background=0f1419&color=ffffff&bold=true` %>"
                               alt="<%= recipe.creatorName || user.username %>"
                             />
                           </div>
@@ -1311,7 +1311,7 @@
                                 <strong><%= recipe.creatorName || user.username %></strong>
                                 <span><%= formatRelativeTime(recipe.createdAt) %></span>
                               </div>
-                              <span class="community-status is-approved">Published</span>
+                              <span class="community-status is-approved">Diterbitkan</span>
                             </div>
                             <p class="profile-community-text"><%= recipe.title %></p>
                             <p class="profile-community-subtext"><%= recipe.category %> &bull; <%= recipe.cuisine %></p>
@@ -1319,7 +1319,7 @@
                               <img src="<%= recipe.imageUrl || '/images/1.png' %>" alt="<%= recipe.title %>" />
                             </div>
                             <div class="profile-community-meta">
-                              <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime || 0 %> min</span>
+                              <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime || 0 %> menit</span>
                               <span><i class="fa-solid fa-wallet"></i> Rp <%= Number(recipe.estimatedPrice || 0).toLocaleString('id-ID') %></span>
                             </div>
                           </div>
@@ -1329,7 +1329,7 @@
                     </div>
                   <% } else { %>
                     <div class="profile-community-empty">
-                      Belum ada posting community. Klik <strong>Post ke community</strong> untuk mulai membagikan resep kamu.
+                      Belum ada posting komunitas. Klik <strong>Posting ke komunitas</strong> untuk mulai membagikan resep kamu.
                     </div>
                   <% } %>
                 </div>
@@ -1347,7 +1347,7 @@
                         <article class="profile-community-reply">
                           <div class="profile-community-avatar">
                             <img
-                              src="<%= user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || user.username || 'Community user')}&background=0f1419&color=ffffff&bold=true` %>"
+                              src="<%= user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || user.username || 'Pengguna komunitas')}&background=0f1419&color=ffffff&bold=true` %>"
                               alt="<%= comment.creatorName || user.username %>"
                             />
                           </div>
@@ -1379,7 +1379,7 @@
           <aside class="profile-sidebar">
             <article class="profile-card">
               <div class="profile-section-head">
-                <p class="user-panel-kicker">Level progress</p>
+                <p class="user-panel-kicker">Progres level</p>
                 <h3>Ringkasan progres</h3>
               </div>
 
@@ -1392,7 +1392,7 @@
 
             <article class="profile-card">
               <div class="profile-section-head">
-                <p class="user-panel-kicker">Preference</p>
+                <p class="user-panel-kicker">Preferensi</p>
                 <h3>Yang sedang dihindari</h3>
               </div>
 
@@ -1407,7 +1407,7 @@
                 </div>
               <% } else { %>
                 <div class="profile-empty-state">
-                  Belum ada preference khusus. Semua resep akan tampil normal sampai kamu memilih yang ingin dihindari.
+                  Belum ada preferensi khusus. Semua resep akan tampil normal sampai kamu memilih yang ingin dihindari.
                 </div>
               <% } %>
             </article>
@@ -1418,10 +1418,10 @@
           <div class="profile-settings-modal" role="dialog" aria-modal="true" aria-labelledby="profileSettingsTitle">
             <div class="profile-settings-head">
               <div>
-                <p class="user-panel-kicker">Settings</p>
-                <h2 id="profileSettingsTitle">Edit profile dan preference</h2>
+                <p class="user-panel-kicker">Pengaturan</p>
+                <h2 id="profileSettingsTitle">Edit profil dan preferensi</h2>
               </div>
-              <button type="button" class="profile-settings-close" id="closeProfileSettings" aria-label="Tutup settings">
+              <button type="button" class="profile-settings-close" id="closeProfileSettings" aria-label="Tutup pengaturan">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             </div>
@@ -1430,9 +1430,9 @@
               <div class="profile-settings-column">
                 <article class="profile-settings-section">
                   <div class="profile-section-head">
-                    <p class="user-panel-kicker">Foto profile dan info akun</p>
-                    <h3>Edit profile</h3>
-                    <p class="profile-muted">Avatar diganti langsung dari foto profile di atas. Bio dan budget bisa diubah di sini.</p>
+                    <p class="user-panel-kicker">Foto profil dan info akun</p>
+                    <h3>Edit profil</h3>
+                    <p class="profile-muted">Avatar diganti langsung dari foto profil di atas. Bio dan anggaran bisa diubah di sini.</p>
                   </div>
 
                   <form action="/profile/details" method="post">
@@ -1446,7 +1446,7 @@
                       </label>
 
                       <label class="profile-field">
-                        <span>Budget per meal</span>
+                        <span>Budget per porsi</span>
                         <input
                           type="number"
                           min="0"
@@ -1459,14 +1459,14 @@
                     </div>
 
                     <div class="profile-section-actions">
-                      <button type="submit" class="profile-primary-button">Simpan profile</button>
+                      <button type="submit" class="profile-primary-button">Simpan profil</button>
                     </div>
                   </form>
                 </article>
 
                 <article class="profile-settings-section">
                   <div class="profile-section-head">
-                    <p class="user-panel-kicker">Preference makanan</p>
+                    <p class="user-panel-kicker">Preferensi makanan</p>
                     <h3>Alergi dan makanan yang dihindari</h3>
                     <p class="profile-muted">Preferensi ini akan dipakai untuk menyaring resep dan rekomendasi.</p>
                   </div>
@@ -1487,7 +1487,7 @@
                     </div>
 
                     <div class="profile-section-actions">
-                      <button type="submit" class="profile-primary-button">Simpan preference</button>
+                      <button type="submit" class="profile-primary-button">Simpan preferensi</button>
                     </div>
                   </form>
                 </article>
@@ -1555,11 +1555,11 @@
                 <article class="profile-settings-section">
                   <div class="profile-section-head">
                     <p class="user-panel-kicker">Panduan</p>
-                    <h3>Cara update foto profile</h3>
+                    <h3>Cara update foto profil</h3>
                   </div>
 
                   <div class="profile-note-box">
-                    <strong>Klik foto profile</strong><br />
+                    <strong>Klik foto profil</strong><br />
                     Upload gambar baru langsung dari kartu akun di atas.<br />
                     <span>Ikon <i class="fa-solid <%= hasCustomAvatar ? 'fa-pen' : 'fa-plus' %>"></i> akan berubah otomatis sesuai foto yang dipakai.</span>
                   </div>

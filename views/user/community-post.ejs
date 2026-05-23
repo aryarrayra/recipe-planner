@@ -56,7 +56,7 @@
               <div class="community-book-cover-copy">
                 <div class="community-book-author">
                   <img
-                    src="<%= post.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true` %>"
+                    src="<%= post.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.creatorName || 'Pengguna komunitas')}&background=0f1419&color=ffffff&bold=true` %>"
                     alt="<%= post.creatorName %>"
                   />
                   <div>
@@ -68,11 +68,11 @@
                 <% if (postIsDeleted) { %>
                   <div class="community-post-status-pill is-deleted">
                     <i class="fa-solid fa-trash"></i>
-                    <span>DELETED</span>
+                    <span>DIHAPUS</span>
                   </div>
                 <% } %>
 
-                <p class="community-book-kicker"><%= post.cuisine || post.originPlace || 'Community' %> &bull; <%= post.category || 'recipe' %></p>
+                <p class="community-book-kicker"><%= post.cuisine || post.originPlace || 'Komunitas' %> &bull; <%= post.category || 'resep' %></p>
                 <h2 class="community-book-title"><%= post.title %></h2>
                 <p class="community-book-description"><%= post.content || post.title %></p>
 
@@ -98,10 +98,10 @@
                     <span class="community-action-icon"><i class="fa-solid fa-list-check"></i></span>
                     <span>Lihat bahan</span>
                   </a>
-                  <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportContentButton" aria-label="Report content" title="Report content" <%= postIsDeleted ? 'disabled' : '' %>>
+                  <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportContentButton" aria-label="Laporkan konten" title="Laporkan konten" <%= postIsDeleted ? 'disabled' : '' %>>
                     <span class="community-action-icon"><i class="fa-regular fa-flag"></i></span>
                   </button>
-                  <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportUserButton" aria-label="Report user" title="Report user" <%= postIsDeleted ? 'disabled' : '' %>>
+                  <button type="button" class="community-tweet-action-button community-tweet-action-button-icon" id="reportUserButton" aria-label="Laporkan pengguna" title="Laporkan pengguna" <%= postIsDeleted ? 'disabled' : '' %>>
                     <span class="community-action-icon"><i class="fa-solid fa-user-slash"></i></span>
                   </button>
                   <% if (!postIsDeleted && String(post.creatorUserId || '') === String(user && user.id ? user.id : '')) { %>
@@ -118,7 +118,7 @@
               <article class="community-book-section" id="bahan">
                 <div class="community-book-section-head">
                   <div>
-                    <p class="community-detail-thread-kicker">Ingredients</p>
+                    <p class="community-detail-thread-kicker">Bahan-bahan</p>
                     <h3>Bahan</h3>
                   </div>
                 </div>
@@ -142,7 +142,7 @@
               <article class="community-book-section">
                 <div class="community-book-section-head">
                   <div>
-                    <p class="community-detail-thread-kicker">Method</p>
+                    <p class="community-detail-thread-kicker">Cara membuat</p>
                     <h3>Langkah memasak</h3>
                   </div>
                 </div>
@@ -151,7 +151,7 @@
                   <ol class="community-book-step-list">
                     <% recipeSteps.forEach((step) => { %>
                       <li>
-                        <strong>Step <%= step.step %></strong>
+                        <strong>Langkah <%= step.step %></strong>
                         <p><%= step.instruction %></p>
                         <% if (step.sectionImageUrl) { %>
                           <div class="community-book-step-media">
@@ -172,7 +172,7 @@
             <section class="community-detail-comments <%= postIsDeleted ? 'is-deleted' : '' %>" id="comments">
               <div class="community-detail-comments-head">
                 <div>
-                  <p class="community-detail-thread-kicker">Replies</p>
+                  <p class="community-detail-thread-kicker">Balasan</p>
                   <h3>Komentar pembaca</h3>
                 </div>
                 <span id="communityDetailCommentState"><%= comments.length ? `${comments.length} balasan` : 'Belum ada komentar' %></span>
@@ -184,7 +184,7 @@
                     <article class="community-thread-item">
                       <div class="community-thread-avatar">
                         <img
-                          src="<%= comment.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true` %>"
+                          src="<%= comment.creatorAvatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Pengguna komunitas')}&background=0f1419&color=ffffff&bold=true` %>"
                           alt="<%= comment.creatorName %>"
                         />
                       </div>
@@ -208,7 +208,7 @@
                 <textarea id="replyInput" rows="3" placeholder="<%= postIsDeleted ? 'Postingan sudah dihapus' : 'Tulis komentar...' %>" required <%= postIsDeleted ? 'disabled' : '' %>></textarea>
                 <div class="community-detail-reply-actions">
                   <span class="community-detail-reply-hint">Tulis komentar untuk membalas postingan ini.</span>
-                  <button type="submit" class="auth-button" id="replySubmit" <%= postIsDeleted ? 'disabled' : '' %>>Reply</button>
+                  <button type="submit" class="auth-button" id="replySubmit" <%= postIsDeleted ? 'disabled' : '' %>>Kirim balasan</button>
                 </div>
               </form>
             </section>
@@ -225,10 +225,10 @@
 
               <div class="community-book-summary-list">
                 <span><strong>Kategori</strong><%= post.category || 'community' %></span>
-                <span><strong>Cuisine</strong><%= post.cuisine || post.originPlace || 'Community' %></span>
+                <span><strong>Asal masakan</strong><%= post.cuisine || post.originPlace || 'Komunitas' %></span>
                 <span><strong>Waktu</strong><%= post.cookingTime || 0 %> menit</span>
                 <span><strong>Porsi</strong><%= post.servings || 1 %> porsi</span>
-                <span><strong>Difficulty</strong><%= post.difficulty || 'easy' %></span>
+                <span><strong>Tingkat kesulitan</strong><%= post.difficulty || 'easy' %></span>
                 <span><strong>Harga</strong>Rp <%= formatPrice(post.estimatedPrice) %></span>
               </div>
             </article>
@@ -260,8 +260,8 @@
           <div class="community-report-modal" role="dialog" aria-modal="true" aria-labelledby="communityReportTitle">
             <div class="community-composer-head">
               <div>
-                <p class="user-panel-kicker">Report</p>
-                <h2 id="communityReportTitle">Laporkan konten atau user</h2>
+                <p class="user-panel-kicker">Laporan</p>
+                <h2 id="communityReportTitle">Laporkan konten atau pengguna</h2>
               </div>
               <button type="button" class="community-composer-close" id="closeCommunityReport" aria-label="Tutup">
                 <i class="fa-solid fa-xmark"></i>
@@ -355,11 +355,11 @@
         return `
           <article class="community-thread-item" data-comment-id="${escapeHtml(comment.id || '')}" data-comment-user-id="${escapeHtml(comment.creatorUserId || '')}">
             <div class="community-thread-avatar">
-              <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Community user')}&background=0f1419&color=ffffff&bold=true" alt="${escapeHtml(comment.creatorName || 'Community user')}" />
+              <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(comment.creatorName || 'Pengguna komunitas')}&background=0f1419&color=ffffff&bold=true" alt="${escapeHtml(comment.creatorName || 'Pengguna komunitas')}" />
             </div>
             <div class="community-thread-body">
               <div class="community-thread-head">
-                <strong>${escapeHtml(comment.creatorName || 'Community user')}</strong>
+                <strong>${escapeHtml(comment.creatorName || 'Pengguna komunitas')}</strong>
                 <span>&bull; ${escapeHtml(formatRelativeTime(comment.createdAt))}</span>
               </div>
               <p>${escapeHtml(comment.content || '')}</p>
@@ -372,8 +372,8 @@
                   data-report-target-id="${escapeHtml(comment.id || '')}"
                   data-report-target-user-id="${escapeHtml(comment.creatorUserId || '')}"
                   data-report-title="${escapeHtml(commentTitle)}"
-                  aria-label="Report comment"
-                  title="Report comment"
+                  aria-label="Laporkan komentar"
+                  title="Laporkan komentar"
                 >
                   <i class="fa-regular fa-flag"></i>
                 </button>
@@ -422,7 +422,7 @@
         }
         const titleNode = document.getElementById('communityReportTitle');
         if (titleNode) {
-          titleNode.textContent = title || (targetType === 'user' ? 'Report user' : targetType === 'comment' ? 'Report comment' : 'Report content');
+          titleNode.textContent = title || (targetType === 'user' ? 'Laporkan pengguna' : targetType === 'comment' ? 'Laporkan komentar' : 'Laporkan konten');
         }
         setReportVisible(true);
       }
@@ -535,7 +535,7 @@
           targetType: 'post',
           targetId: postId,
           targetUserId: postCreatorUserId,
-          title: 'Report content'
+          title: 'Laporkan konten'
         });
       });
       reportUserButton?.addEventListener('click', () => {
@@ -544,7 +544,7 @@
           targetType: 'user',
           targetId: postCreatorUserId,
           targetUserId: postCreatorUserId,
-          title: 'Report user'
+          title: 'Laporkan pengguna'
         });
       });
 
@@ -580,7 +580,7 @@
           targetType: 'comment',
           targetId: reportCommentButton.getAttribute('data-report-target-id') || '',
           targetUserId: reportCommentButton.getAttribute('data-report-target-user-id') || '',
-          title: reportCommentButton.getAttribute('data-report-title') || 'Report comment'
+          title: reportCommentButton.getAttribute('data-report-title') || 'Laporkan komentar'
         });
       });
       reportForm?.addEventListener('submit', async (event) => {

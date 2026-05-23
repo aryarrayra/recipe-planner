@@ -604,12 +604,12 @@ function buildProfileProgress(user = {}, cookedCount = 0) {
         level,
         title:
             level >= 8
-                ? 'Recipe Maestro'
+                ? 'Maestro Resep'
                 : level >= 5
-                    ? 'Kitchen Explorer'
+                    ? 'Penjelajah Dapur'
                     : level >= 3
-                        ? 'Home Cook'
-                        : 'Starter Cook',
+                        ? 'Koki Rumahan'
+                        : 'Koki Pemula',
         progress,
         activityPoints,
         pointsIntoLevel,
@@ -698,11 +698,11 @@ function getRecipeFilterGroups() {
             { value: 'tofu-tempe', label: 'Tahu / Tempe', hint: 'Protein nabati' },
             { value: 'vegetable', label: 'Sayuran', hint: 'Menu hijau' },
             { value: 'rice-noodle', label: 'Nasi / Mi', hint: 'Karbo utama' },
-            { value: 'dairy', label: 'Susu / Keju', hint: 'Dairy' },
+            { value: 'dairy', label: 'Susu / Keju', hint: 'Produk susu' },
             { value: 'spicy', label: 'Pedas', hint: 'Cabai dan sambal' },
-            { value: 'dessert', label: 'Dessert', hint: 'Manis / penutup' },
+            { value: 'dessert', label: 'Pencuci mulut', hint: 'Manis / penutup' },
             { value: 'snack', label: 'Cemilan', hint: 'Snack ringan' },
-            { value: 'healthy', label: 'Healthy', hint: 'Ringan / fit' }
+            { value: 'healthy', label: 'Sehat', hint: 'Ringan / fit' }
         ],
         alphabet: [
             { value: '', label: 'Semua huruf', hint: 'Semua judul resep' },
@@ -889,7 +889,7 @@ function parseCommunityRecipePayload(body = {}, files = {}) {
         servings: Number.parseInt(body.servings, 10) || 1,
         difficulty: normalizeText(body.difficulty) || 'easy',
         category: normalizeText(body.category) || 'community',
-        cuisine: normalizeText(body.cuisine) || 'Community',
+        cuisine: normalizeText(body.cuisine) || 'Komunitas',
         estimated_price: Number.parseInt(String(body.estimated_price || '').replace(/[^\d]/g, ''), 10) || 0,
         price_rating: normalizeText(body.price_rating) || 'standard',
         ingredients,
@@ -905,11 +905,11 @@ function mapCommunityRecipeCard(recipe = {}, favoriteIds = new Set()) {
     return {
         ...mapped,
         source: COMMUNITY_RECIPE_SOURCE,
-        sourceLabel: 'Community',
-        creatorName: recipe.creator_name || recipe.username || 'Community user',
+        sourceLabel: 'Komunitas',
+        creatorName: recipe.creator_name || recipe.username || 'Pengguna komunitas',
         creatorAvatarUrl: recipe.creator_avatar_url || recipe.avatar_url || '',
         createdAt: recipe.created_at,
-        statusLabel: isDeleted ? 'DELETED' : (recipe.is_approved ? 'Published' : 'Draft'),
+        statusLabel: isDeleted ? 'DIHAPUS' : (recipe.is_approved ? 'Diterbitkan' : 'Draf'),
         communityPostId: recipe.community_post_id || recipe.post_id || recipe.communityPostId || null,
         likesCount: Number(recipe.post_likes_count ?? recipe.likes_count ?? mapped.likesCount ?? 0),
         commentsCount: Number(recipe.post_comments_count ?? recipe.comments_count ?? 0),
@@ -930,9 +930,9 @@ function mapCommunityCommentCard(comment = {}) {
     return {
         id: String(comment.id || '').trim(),
         type: 'comment',
-        title: normalizeText(comment.post_title) || 'Postingan community',
+        title: normalizeText(comment.post_title) || 'Postingan komunitas',
         content: normalizeText(comment.content),
-        creatorName: normalizeText(comment.creator_name) || 'Community user',
+        creatorName: normalizeText(comment.creator_name) || 'Pengguna komunitas',
         creatorAvatarUrl: normalizeText(comment.creator_avatar_url || comment.avatar_url) || '',
         createdAt: comment.created_at,
         postId: normalizeText(comment.post_id),
@@ -981,7 +981,7 @@ async function getCommunityRecipeById(recipeId, { approvedOnly = true } = {}) {
         `
             SELECT
                 r.*,
-                COALESCE(u.username, 'Community user') AS creator_name,
+                COALESCE(u.username, 'Pengguna komunitas') AS creator_name,
                 u.avatar_url AS creator_avatar_url
             FROM recipes r
             LEFT JOIN users u ON u.id = r.created_by
@@ -1378,6 +1378,80 @@ function getFirstName(username = '') {
         .filter(Boolean)[0] || 'Chef';
 }
 
+function isLikelyIndonesianText(text = '') {
+    const value = String(text || '').toLowerCase().trim();
+    if (!value) {
+        return false;
+    }
+
+    const indicators = [
+        'yang', 'dan', 'dengan', 'untuk', 'dari', 'ke', 'di', 'pada', 'cocok',
+        'lezat', 'gurih', 'manis', 'pedas', 'hangat', 'segar', 'mudah', 'cepat',
+        'resep', 'masakan', 'menu', 'rumahan', 'bahan', 'langkah', 'pilihan'
+    ];
+
+    return indicators.some((word) => value.includes(` ${word} `) || value.startsWith(`${word} `) || value.endsWith(` ${word}`) || value === word);
+}
+
+function getDifficultyLabel(value = '') {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (normalized === 'hard') return 'tingkat kesulitan tinggi';
+    if (normalized === 'medium') return 'tingkat kesulitan sedang';
+    return 'tingkat kesulitan mudah';
+}
+
+function getLocalizedCategoryLabel(value = '') {
+    const normalized = String(value || '').trim().toLowerCase();
+    const categoryMap = {
+        'main course': 'hidangan utama',
+        'main-course': 'hidangan utama',
+        dessert: 'pencuci mulut',
+        snack: 'camilan',
+        drink: 'minuman',
+        breakfast: 'sarapan',
+        lunch: 'makan siang',
+        dinner: 'makan malam',
+        soup: 'sup',
+        'side dish': 'lauk pendamping',
+        'side-dish': 'lauk pendamping',
+        healthy: 'menu sehat',
+        recipe: 'resep',
+        resep: 'resep'
+    };
+
+    return categoryMap[normalized] || String(value || 'resep').trim().toLowerCase() || 'resep';
+}
+
+function getLocalizedRecipeDescription(recipe = {}) {
+    const rawDescription = String(recipe.description || '').replace(/\s+/g, ' ').trim();
+    if (rawDescription && isLikelyIndonesianText(rawDescription)) {
+        return rawDescription;
+    }
+
+    const title = String(recipe.title || 'Resep ini').trim();
+    const origin = String(recipe.origin_place || recipe.originPlace || recipe.cuisine || '').trim();
+    const category = getLocalizedCategoryLabel(recipe.category || 'resep');
+    const cookingTime = Number(recipe.cooking_time || recipe.cookingTime || 0);
+    const difficultyLabel = getDifficultyLabel(recipe.difficulty);
+
+    const parts = [];
+    parts.push(`${title} adalah ${category} yang cocok untuk menu harian.`);
+
+    if (origin) {
+        parts.push(`Masakan ini terinspirasi dari cita rasa ${origin}.`);
+    }
+
+    if (cookingTime > 0) {
+        parts.push(`Waktu memasaknya sekitar ${cookingTime} menit dengan ${difficultyLabel}.`);
+    } else {
+        parts.push(`Resep ini punya ${difficultyLabel} dan mudah diikuti langkah demi langkah.`);
+    }
+
+    parts.push('Cocok disajikan saat kamu ingin masak praktis dengan rasa yang tetap enak.');
+
+    return parts.join(' ');
+}
+
 function mapRecipeCard(recipe, fallbackImage = '/images/1.png') {
     const tags = Array.isArray(recipe.tags) ? recipe.tags.slice(0, 2) : [];
     const recipeSource = String(recipe.source || '').trim().toLowerCase();
@@ -1390,7 +1464,7 @@ function mapRecipeCard(recipe, fallbackImage = '/images/1.png') {
     return {
         id: recipe.id,
         title: recipe.title,
-        description: recipe.description,
+        description: getLocalizedRecipeDescription(recipe),
         imageUrl,
         hasImage: Boolean(imageUrl),
         cookingTime: recipe.cooking_time || 0,
@@ -1575,14 +1649,14 @@ function mapRecipeDetail(recipe, fallbackImage = '/images/1.png', videoSource = 
     return {
         id: recipe.id,
         title: recipe.title,
-        description: recipe.description || 'Resep pilihan yang siap kamu masak langkah demi langkah.',
+        description: getLocalizedRecipeDescription(recipe),
         imageUrl: String(recipe.image_url || '').trim(),
         hasImage: Boolean(String(recipe.image_url || '').trim()),
         videoSource: videoSource && videoSource.kind ? videoSource : normalizeVideoUrl(recipe.video_url),
         creatorName: recipe.creator_name || 'ResepKu',
-        category: recipe.category || 'Recipe',
-        cuisine: recipe.cuisine || 'Home cooking',
-        originPlace: recipe.origin_place || recipe.originPlace || recipe.cuisine || 'Home cooking',
+        category: recipe.category || 'Resep',
+        cuisine: recipe.cuisine || 'Masakan rumahan',
+        originPlace: recipe.origin_place || recipe.originPlace || recipe.cuisine || 'Masakan rumahan',
         cookingTime: recipe.cooking_time || 0,
         estimatedPrice: recipe.estimated_price || 0,
         difficulty: recipe.difficulty || 'easy',
@@ -1976,7 +2050,7 @@ async function fetchCommunityPageData(userId, search = '') {
                         WHERE cpl.post_id = p.id
                           AND cpl.user_id = $1
                     ) AS liked_by_me,
-                    COALESCE(u.username, 'Community user') AS creator_name,
+                    COALESCE(u.username, 'Pengguna komunitas') AS creator_name,
                     u.avatar_url AS creator_avatar_url,
                     u.id AS creator_user_id
                 FROM recipes r
@@ -2005,7 +2079,7 @@ async function fetchCommunityPageData(userId, search = '') {
                         WHERE cpl.post_id = p.id
                           AND cpl.user_id = $1
                     ) AS liked_by_me,
-                    COALESCE(u.username, 'Community user') AS creator_name,
+                    COALESCE(u.username, 'Pengguna komunitas') AS creator_name,
                     u.avatar_url AS creator_avatar_url,
                     u.id AS creator_user_id
                 FROM recipes r
@@ -2079,7 +2153,7 @@ async function fetchCommunityCommentsByPostIds(postIds = []) {
                 c.created_at,
                 c.post_id,
                 c.user_id AS creator_user_id,
-                COALESCE(u.username, 'Community user') AS creator_name,
+                COALESCE(u.username, 'Pengguna komunitas') AS creator_name,
                 u.avatar_url AS creator_avatar_url
             FROM comments c
             LEFT JOIN users u ON u.id = c.user_id
@@ -2122,7 +2196,7 @@ async function getCommunityPostById(postId, userId = null) {
                     WHERE cpl.post_id = p.id
                       AND cpl.user_id = $2
                 ) AS liked_by_me,
-                COALESCE(u.username, 'Community user') AS creator_name,
+                COALESCE(u.username, 'Pengguna komunitas') AS creator_name,
                 u.avatar_url AS creator_avatar_url,
                 u.id AS creator_user_id
             FROM community_posts p
@@ -2152,7 +2226,7 @@ async function fetchCommunityPostDetailData(postId, userId) {
                 c.content,
                 c.created_at,
                 c.user_id AS creator_user_id,
-                COALESCE(u.username, 'Community user') AS creator_name,
+                COALESCE(u.username, 'Pengguna komunitas') AS creator_name,
                 u.avatar_url AS creator_avatar_url
             FROM comments c
             LEFT JOIN users u ON u.id = c.user_id
@@ -2171,7 +2245,7 @@ async function fetchCommunityPostDetailData(postId, userId) {
             likesCount: Number(post.likes_count || 0),
             commentsCount: Number(post.comments_count || 0),
             sharesCount: Number(post.shares_count || 0),
-            creatorName: post.creator_name || recipeCard?.creatorName || 'Community user',
+            creatorName: post.creator_name || recipeCard?.creatorName || 'Pengguna komunitas',
             creatorAvatarUrl: post.creator_avatar_url || recipeCard?.creatorAvatarUrl || '',
             creatorUserId: post.creator_user_id || post.user_id || null,
             createdAt: post.created_at || recipeCard?.createdAt || null,
@@ -2179,10 +2253,10 @@ async function fetchCommunityPostDetailData(postId, userId) {
             likedByMe: Boolean(post.liked_by_me),
             isDeleted: Boolean(post.is_deleted),
             deletedAt: post.deleted_at || null,
-            statusLabel: post.is_deleted ? 'DELETED' : 'Live',
-            category: recipeCard?.category || post.category || 'community',
-            cuisine: recipeCard?.originPlace || post.cuisine || 'Community',
-            originPlace: recipeCard?.originPlace || post.cuisine || 'Community',
+            statusLabel: post.is_deleted ? 'DIHAPUS' : 'Tayang',
+            category: recipeCard?.category || post.category || 'komunitas',
+            cuisine: recipeCard?.originPlace || post.cuisine || 'Komunitas',
+            originPlace: recipeCard?.originPlace || post.cuisine || 'Komunitas',
             cookingTime: recipeCard?.cookingTime || 0,
             servings: recipeCard?.servings || 1,
             difficulty: recipeCard?.difficulty || 'easy',
@@ -2220,7 +2294,7 @@ async function fetchProfileCommunityFeed(userId, limit = 8) {
                         WHERE cpl.post_id = p.id
                           AND cpl.user_id = $1
                     ) AS liked_by_me,
-                    COALESCE(u.username, 'Community user') AS creator_name,
+                    COALESCE(u.username, 'Pengguna komunitas') AS creator_name,
                     u.avatar_url AS creator_avatar_url
                 FROM recipes r
                 INNER JOIN community_posts p ON p.recipe_id = r.id
@@ -2241,7 +2315,7 @@ async function fetchProfileCommunityFeed(userId, limit = 8) {
                     c.user_id AS creator_user_id,
                     p.title AS post_title,
                     p.id AS post_id,
-                    COALESCE(u.username, 'Community user') AS creator_name
+                    COALESCE(u.username, 'Pengguna komunitas') AS creator_name
                 FROM comments c
                 LEFT JOIN community_posts p ON p.id = c.post_id
                 LEFT JOIN users u ON u.id = p.user_id
@@ -2278,11 +2352,11 @@ function getFallbackDashboard(user) {
         searchPlaceholder: 'Cari makanan, bahan, atau kategori',
         categories: [
             { label: 'Makanan berat', image: '/images/2.png', feedKey: 'main-course' },
-            { label: 'Dessert', image: '/images/desserts.jpg', feedKey: 'dessert' },
+            { label: 'Pencuci mulut', image: '/images/desserts.jpg', feedKey: 'dessert' },
             { label: 'Cemilan', image: '/images/cemilan.jpg', feedKey: 'snack' },
-            { label: 'Healthy food', image: '/images/salads.jpg', feedKey: 'healthy' }
+            { label: 'Makanan sehat', image: '/images/salads.jpg', feedKey: 'healthy' }
         ],
-        moods: ['Lagi pengen pedes?', 'Comfort food', 'Masak cepat', 'Menu hemat'],
+        moods: ['Lagi pengen pedas?', 'Masakan rumahan favorit', 'Masak cepat', 'Menu hemat'],
         trendingRecipes: [],
         recommendedRecipes: [],
         recentlyViewed: [],
@@ -2308,7 +2382,7 @@ function getFallbackDashboard(user) {
 
 function renderAuthError(res, view, message, values = {}) {
     return res.status(400).render(view, {
-        title: view === 'login' ? 'Login - AI Recipe Planner' : 'Register - AI Recipe Planner',
+        title: view === 'login' ? 'Masuk - AI Recipe Planner' : 'Daftar - AI Recipe Planner',
         error: message,
         values,
         allergyOptions: ALLERGY_OPTIONS
@@ -2330,7 +2404,7 @@ function getFallbackRecipeCatalog(region = '') {
             mapRecipeCard({
                 id: 'fallback-dessert-1',
                 title: 'Chocolate Pudding',
-                description: 'Dessert lembut dan manis yang cocok untuk penutup makan.',
+                description: 'Pencuci mulut lembut dan manis yang cocok untuk penutup makan.',
                 image_url: '/images/desserts.jpg',
                 cooking_time: 15,
                 difficulty: 'easy',
@@ -2550,7 +2624,7 @@ function getFallbackRecipeCatalog(region = '') {
             cooking_time: 10,
             difficulty: 'easy',
             calories: 220,
-            category: 'Dessert',
+            category: 'Pencuci mulut',
             estimated_price: 18000,
             likes_count: 76,
             views_count: 310,
@@ -2585,7 +2659,7 @@ router.get('/auth/google', (req, res) => {
         const { clientId, redirectUri } = getGoogleOAuthConfig(req);
         if (!clientId || !redirectUri) {
             return res.status(400).render(source, {
-                title: source === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+                title: source === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
                 error: 'Google login belum dikonfigurasi. Tambahkan GOOGLE_CLIENT_ID dan GOOGLE_REDIRECT_URI.',
                 values: {},
                 allergyOptions: ALLERGY_OPTIONS
@@ -2598,7 +2672,7 @@ router.get('/auth/google', (req, res) => {
             if (saveError) {
                 console.error('Google auth session error:', saveError.message);
                 return res.status(500).render(source, {
-                    title: source === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+                    title: source === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
                     error: 'Gagal memulai login Google. Coba lagi.',
                     values: {},
                     allergyOptions: ALLERGY_OPTIONS
@@ -2610,7 +2684,7 @@ router.get('/auth/google', (req, res) => {
     } catch (error) {
         console.error('Google auth start error:', error.message);
         return res.status(500).render(source, {
-            title: source === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+            title: source === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
             error: 'Gagal memulai login Google. Coba lagi.',
             values: {},
             allergyOptions: ALLERGY_OPTIONS
@@ -2628,7 +2702,7 @@ router.get('/auth/google/callback', async (req, res) => {
 
         if (!code || !state || !req.session.oauthState || state !== req.session.oauthState) {
             return res.status(400).render(errorView, {
-                title: errorView === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+                title: errorView === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
                 error: 'Sesi login Google tidak valid. Coba lagi.',
                 values: {},
                 allergyOptions: ALLERGY_OPTIONS
@@ -2640,7 +2714,7 @@ router.get('/auth/google/callback', async (req, res) => {
 
         if (profile.email_verified === false) {
             return res.status(400).render(errorView, {
-                title: errorView === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+                title: errorView === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
                 error: 'Akun Google harus punya email yang terverifikasi.',
                 values: {},
                 allergyOptions: ALLERGY_OPTIONS
@@ -2656,7 +2730,7 @@ router.get('/auth/google/callback', async (req, res) => {
     } catch (error) {
         console.error('Google auth callback error:', error.message);
         return res.status(400).render(errorView, {
-            title: errorView === 'register' ? 'Register - AI Recipe Planner' : 'Login - AI Recipe Planner',
+            title: errorView === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
             error: 'Gagal masuk dengan Google. Coba lagi.',
             values: {},
             allergyOptions: ALLERGY_OPTIONS
@@ -2822,7 +2896,7 @@ router.get('/forgot-password', (req, res) => {
     preventBack(req, res, () => {});
 
     return res.render('forgot-password', {
-        title: 'Forgot Password - AI Recipe Planner',
+        title: 'Lupa Password - AI Recipe Planner',
         error: null,
         notice: null,
         values: {}
@@ -2834,7 +2908,7 @@ router.post('/forgot-password', async (req, res) => {
 
     if (!email) {
         return res.status(400).render('forgot-password', {
-            title: 'Forgot Password - AI Recipe Planner',
+            title: 'Lupa Password - AI Recipe Planner',
             error: 'Email wajib diisi.',
             notice: null,
             values: { email }
@@ -2863,7 +2937,7 @@ router.post('/forgot-password', async (req, res) => {
     } catch (error) {
         console.error('Forgot password error:', error.message);
         return res.status(500).render('forgot-password', {
-            title: 'Forgot Password - AI Recipe Planner',
+            title: 'Lupa Password - AI Recipe Planner',
             error: 'Gagal memproses permintaan reset password.',
             notice: null,
             values: { email }
@@ -2884,7 +2958,7 @@ router.get('/forgot-password/verify', (req, res) => {
     preventBack(req, res, () => {});
 
     return res.render('forgot-password-verify', {
-        title: 'Verifikasi Reset Password - AI Recipe Planner',
+        title: 'Verifikasi Atur Ulang Password - AI Recipe Planner',
         error: null,
         notice: String(req.query.sent || '').toLowerCase() === '1' ? 'Kode OTP reset password sudah dikirim ke email kamu.' : null,
         email,
@@ -2903,7 +2977,7 @@ router.post('/forgot-password/verify', async (req, res) => {
 
     if (!code) {
         return res.status(400).render('forgot-password-verify', {
-            title: 'Verifikasi Reset Password - AI Recipe Planner',
+            title: 'Verifikasi Atur Ulang Password - AI Recipe Planner',
             error: 'Kode OTP wajib diisi.',
             notice: null,
             email,
@@ -2916,7 +2990,7 @@ router.post('/forgot-password/verify', async (req, res) => {
         const verification = await verifyAuthOtpCode(email, 'reset_password', code);
         if (!verification.ok) {
             return res.status(400).render('forgot-password-verify', {
-                title: 'Verifikasi Reset Password - AI Recipe Planner',
+                title: 'Verifikasi Atur Ulang Password - AI Recipe Planner',
                 error: verification.message || 'Kode OTP salah.',
                 notice: null,
                 email,
@@ -2939,7 +3013,7 @@ router.post('/forgot-password/verify', async (req, res) => {
     } catch (error) {
         console.error('Reset password verify error:', error.message);
         return res.status(500).render('forgot-password-verify', {
-            title: 'Verifikasi Reset Password - AI Recipe Planner',
+            title: 'Verifikasi Atur Ulang Password - AI Recipe Planner',
             error: 'Gagal memverifikasi OTP. Coba lagi.',
             notice: null,
             email,
@@ -2962,7 +3036,7 @@ router.get('/reset-password', (req, res) => {
     preventBack(req, res, () => {});
 
     return res.render('reset-password', {
-        title: 'Reset Password - AI Recipe Planner',
+        title: 'Atur Ulang Password - AI Recipe Planner',
         error: null,
         notice: String(req.query.verified || '').toLowerCase() === '1' ? 'OTP berhasil diverifikasi. Sekarang buat password baru.' : null,
         email,
@@ -2982,7 +3056,7 @@ router.post('/reset-password', async (req, res) => {
 
     if (!password || !confirmPassword) {
         return res.status(400).render('reset-password', {
-            title: 'Reset Password - AI Recipe Planner',
+            title: 'Atur Ulang Password - AI Recipe Planner',
             error: 'Semua field wajib diisi.',
             notice: null,
             email,
@@ -2993,7 +3067,7 @@ router.post('/reset-password', async (req, res) => {
 
     if (password !== confirmPassword) {
         return res.status(400).render('reset-password', {
-            title: 'Reset Password - AI Recipe Planner',
+            title: 'Atur Ulang Password - AI Recipe Planner',
             error: 'Password dan konfirmasi password tidak sama.',
             notice: null,
             email,
@@ -3004,7 +3078,7 @@ router.post('/reset-password', async (req, res) => {
 
     if (password.length < 6) {
         return res.status(400).render('reset-password', {
-            title: 'Reset Password - AI Recipe Planner',
+            title: 'Atur Ulang Password - AI Recipe Planner',
             error: 'Password minimal 6 karakter.',
             notice: null,
             email,
@@ -3029,7 +3103,7 @@ router.post('/reset-password', async (req, res) => {
     } catch (error) {
         console.error('Reset password error:', error.message);
         return res.status(500).render('reset-password', {
-            title: 'Reset Password - AI Recipe Planner',
+            title: 'Atur Ulang Password - AI Recipe Planner',
             error: 'Gagal mereset password. Coba lagi.',
             notice: null,
             email,
@@ -3047,7 +3121,7 @@ router.get('/login', (req, res) => {
     preventBack(req, res, () => {});
 
     res.render('login', {
-        title: 'Login - AI Recipe Planner',
+        title: 'Masuk - AI Recipe Planner',
         error: null,
         notice: String(req.query.reset || '').toLowerCase() === 'success' ? 'Password berhasil direset. Silakan login.' : null,
         values: {}
@@ -3062,7 +3136,7 @@ router.get('/register', (req, res) => {
     preventBack(req, res, () => {});
 
     res.render('register', {
-        title: 'Register - AI Recipe Planner',
+        title: 'Daftar - AI Recipe Planner',
         error: null,
         notice: String(req.query.reset || '').toLowerCase() === 'success' ? 'Password berhasil direset. Silakan login.' : null,
         values: {} ,
@@ -3267,7 +3341,7 @@ router.get('/profile', async (req, res) => {
         };
 
         res.render('user/profile', {
-            title: 'Profile - AI Recipe Planner',
+            title: 'Profil - AI Recipe Planner',
             user: req.session.user,
             allergyOptions: ALLERGY_OPTIONS,
             preferences,
@@ -3438,7 +3512,7 @@ router.get('/community', async (req, res) => {
         const data = await fetchCommunityPageData(req.session.user.id, search);
 
         res.render('user/community', {
-            title: 'Community - AI Recipe Planner',
+            title: 'Komunitas - AI Recipe Planner',
             user: req.session.user,
             preferences,
             ...data,
@@ -3448,7 +3522,7 @@ router.get('/community', async (req, res) => {
         });
     } catch (error) {
         console.error('Community page error:', error.message);
-        res.status(500).send('Gagal memuat halaman community.');
+        res.status(500).send('Gagal memuat halaman komunitas.');
     }
 });
 
@@ -3474,7 +3548,7 @@ router.get('/community/new', async (req, res) => {
         req.session.user.preferences = preferences;
 
         res.render('user/community-compose', {
-            title: 'Post resep - AI Recipe Planner',
+            title: 'Posting resep - AI Recipe Planner',
             user: req.session.user,
             preferences,
             notice: req.query.notice ? String(req.query.notice) : '',
@@ -3562,7 +3636,7 @@ router.post('/community', communityPostUpload, async (req, res) => {
                 JSON.stringify(payload.steps),
                 Number.parseInt(String(req.body.calories || '').replace(/[^\d]/g, ''), 10) || 0,
                 normalizeText(req.body.category) || 'community',
-                normalizeText(req.body.cuisine) || 'Community',
+                normalizeText(req.body.cuisine) || 'Komunitas',
                 JSON.stringify(parseRecipeFormList(req.body.tags)),
                 payload.estimated_price || 0,
                 payload.price_rating,
@@ -3600,10 +3674,10 @@ router.post('/community', communityPostUpload, async (req, res) => {
             );
         }
 
-        return res.redirect('/community?notice=Resep+berhasil+diposting+ke+community');
+        return res.redirect('/community?notice=Resep+berhasil+diposting+ke+komunitas');
     } catch (error) {
         console.error('Community submit error:', error.message);
-        return res.redirect('/community?error=Gagal+mengirim+resep+community');
+        return res.redirect('/community?error=Gagal+mengirim+resep+komunitas');
     }
 });
 
@@ -3898,7 +3972,7 @@ router.post('/community/posts/:postId/report', async (req, res) => {
                         c.user_id,
                         c.post_id,
                         c.content,
-                        COALESCE(u.username, 'Community user') AS creator_name,
+                        COALESCE(u.username, 'Pengguna komunitas') AS creator_name,
                         u.avatar_url AS creator_avatar_url
                     FROM comments c
                     LEFT JOIN users u ON u.id = c.user_id
@@ -4048,7 +4122,7 @@ router.get('/dashboard', async (req, res) => {
         };
 
         res.render('user/dashboard', {
-            title: 'Dashboard - AI Recipe Planner',
+            title: 'Beranda - AI Recipe Planner',
             user: req.session.user,
             dashboardData
         });
@@ -4056,7 +4130,7 @@ router.get('/dashboard', async (req, res) => {
         console.error('User dashboard error:', error.message);
 
         res.render('user/dashboard', {
-            title: 'Dashboard - AI Recipe Planner',
+            title: 'Beranda - AI Recipe Planner',
             user: req.session.user,
             dashboardData: fallback
         });
@@ -4082,7 +4156,7 @@ router.get('/shopping-list', async (req, res) => {
         const estimatedBudget = Number(summary.manualBudget || 0);
 
         res.render('user/shopping-list', {
-            title: 'Shopping List - AI Recipe Planner',
+            title: 'Daftar Belanja - AI Recipe Planner',
             user: req.session.user,
             shoppingRegion: summary.region || region,
             shoppingListData: {
@@ -4189,7 +4263,7 @@ function buildFeedPreset(feed) {
             terms: ['western', 'european', 'american', 'italian', 'french', 'mediterranean']
         },
         dessert: {
-            label: 'Dessert',
+            label: 'Pencuci mulut',
             title: 'Resep dessert',
             description: 'Kue, dessert box, minuman manis, dan camilan penutup.',
             terms: ['dessert', 'sweet', 'cake', 'cookie', 'pudding', 'drink']
@@ -4207,7 +4281,7 @@ function buildFeedPreset(feed) {
             terms: ['snack', 'cemilan', 'gorengan', 'crispy', 'roll', 'bite', 'fried', 'fritter']
         },
         healthy: {
-            label: 'Healthy',
+            label: 'Sehat',
             title: 'Resep sehat',
             description: 'Menu rendah kalori, high protein, dan lebih ringan.',
             terms: ['healthy', 'vegan', 'salad', 'low calorie', 'high protein', 'clean', 'fit']
@@ -4311,7 +4385,7 @@ router.post('/api/recipes/:recipeId/recook', async (req, res) => {
         if (!recipeId) {
             return res.status(400).json({
                 success: false,
-                error: 'Recipe id is required'
+                error: 'Id resep wajib diisi'
             });
         }
 
@@ -4346,7 +4420,7 @@ router.post('/api/recipes/:recipeId/recook', async (req, res) => {
         if (!recipe) {
             return res.status(404).json({
                 success: false,
-                error: 'Recipe not found'
+                error: 'Resep tidak ditemukan'
             });
         }
 
@@ -4577,7 +4651,7 @@ router.get('/recipe-detail', async (req, res) => {
                             `
                                 SELECT
                                     r.*,
-                                    COALESCE(u.username, 'Community user') AS creator_name
+                                    COALESCE(u.username, 'Pengguna komunitas') AS creator_name
                                 FROM recipes r
                                 LEFT JOIN users u ON u.id = r.created_by
                                 WHERE r.is_approved = true
@@ -4618,8 +4692,8 @@ router.get('/recipe-detail', async (req, res) => {
                     source: COMMUNITY_RECIPE_SOURCE,
                     sourceId: String(activeCommunityRecipe.source_id || activeCommunityRecipe.id),
                     recipeId: String(activeCommunityRecipe.id),
-                    creatorName: activeCommunityRecipe.creator_name || 'Community user',
-                    sourceLabel: 'Community',
+                    creatorName: activeCommunityRecipe.creator_name || 'Pengguna komunitas',
+                    sourceLabel: 'Komunitas',
                     favoriteKey: `${COMMUNITY_RECIPE_SOURCE}:${activeCommunityRecipe.id}`,
                     isFavorite: favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${activeCommunityRecipe.id}`)
                 }
@@ -4629,8 +4703,8 @@ router.get('/recipe-detail', async (req, res) => {
                         source: recipePool[0].source || 'themealdb',
                         sourceId: String(recipePool[0].sourceId || recipePool[0].id || ''),
                         recipeId: recipePool[0].source === COMMUNITY_RECIPE_SOURCE ? String(recipePool[0].id) : null,
-                        creatorName: recipePool[0].creator_name || 'Community user',
-                    sourceLabel: recipePool[0].source === COMMUNITY_RECIPE_SOURCE ? 'Community' : 'Recipe',
+                        creatorName: recipePool[0].creator_name || 'Pengguna komunitas',
+                    sourceLabel: recipePool[0].source === COMMUNITY_RECIPE_SOURCE ? 'Komunitas' : 'Resep',
                     favoriteKey: recipePool[0].source === COMMUNITY_RECIPE_SOURCE ? `${COMMUNITY_RECIPE_SOURCE}:${recipePool[0].id}` : String(recipePool[0].id),
                     isFavorite: recipePool[0].source === COMMUNITY_RECIPE_SOURCE
                             ? favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${recipePool[0].id}`)
@@ -4642,8 +4716,8 @@ router.get('/recipe-detail', async (req, res) => {
                             source: fallbackRecipe.source || 'themealdb',
                             sourceId: String(fallbackRecipe.sourceId || fallbackRecipe.id || ''),
                             recipeId: fallbackRecipe.source === COMMUNITY_RECIPE_SOURCE ? String(fallbackRecipe.id) : null,
-                            creatorName: fallbackRecipe.creator_name || 'Community user',
-                            sourceLabel: fallbackRecipe.source === COMMUNITY_RECIPE_SOURCE ? 'Community' : 'Recipe',
+                            creatorName: fallbackRecipe.creator_name || 'Pengguna komunitas',
+                            sourceLabel: fallbackRecipe.source === COMMUNITY_RECIPE_SOURCE ? 'Komunitas' : 'Resep',
                             favoriteKey: fallbackRecipe.source === COMMUNITY_RECIPE_SOURCE ? `${COMMUNITY_RECIPE_SOURCE}:${fallbackRecipe.id}` : String(fallbackRecipe.id),
                             isFavorite: fallbackRecipe.source === COMMUNITY_RECIPE_SOURCE
                                 ? favoriteIds.has(`${COMMUNITY_RECIPE_SOURCE}:${fallbackRecipe.id}`)
@@ -4686,7 +4760,7 @@ router.get('/recipe-detail', async (req, res) => {
 
         const recipeCards = filterRecipesByPreferences(recipes, preferences);
         res.render('user/recipe-detail', {
-            title: 'Recipe Detail - AI Recipe Planner',
+            title: 'Detail Resep - AI Recipe Planner',
             user: req.session.user,
             recipes: recipeCards,
             activeRecipe: activeRecipeData,
@@ -4701,9 +4775,9 @@ router.get('/recipe-detail', async (req, res) => {
                 { value: 'international', label: 'Luar Negeri', hint: 'Global' },
                 { value: 'asian', label: 'Asian', hint: 'Jepang/Korea/Thai' },
                 { value: 'western', label: 'Western', hint: 'Pasta/Steak' },
-                { value: 'dessert', label: 'Dessert', hint: 'Manis' },
+                { value: 'dessert', label: 'Pencuci mulut', hint: 'Manis' },
                 { value: 'snack', label: 'Cemilan', hint: 'Ringan' },
-                { value: 'healthy', label: 'Healthy', hint: 'Fit' }
+                { value: 'healthy', label: 'Sehat', hint: 'Fit' }
             ]
         });
     } catch (error) {
@@ -4832,7 +4906,7 @@ router.get('/recipes', async (req, res) => {
         ] : [];
 
         res.render('user/recipes', {
-            title: 'FYP - AI Recipe Planner',
+            title: 'Untukmu - AI Recipe Planner',
             user: req.session.user,
             recipes,
             activeRecipe,
@@ -4850,9 +4924,9 @@ router.get('/recipes', async (req, res) => {
                 { value: 'international', label: 'Luar Negeri', hint: 'Global' },
                 { value: 'asian', label: 'Asian', hint: 'Jepang/Korea/Thai' },
                 { value: 'western', label: 'Western', hint: 'Pasta/Steak' },
-                { value: 'dessert', label: 'Dessert', hint: 'Manis' },
+                { value: 'dessert', label: 'Pencuci mulut', hint: 'Manis' },
                 { value: 'snack', label: 'Cemilan', hint: 'Ringan' },
-                { value: 'healthy', label: 'Healthy', hint: 'Fit' }
+                { value: 'healthy', label: 'Sehat', hint: 'Fit' }
             ]
         });
     } catch (error) {

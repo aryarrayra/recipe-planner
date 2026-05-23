@@ -33,19 +33,19 @@
             <article class="user-panel user-recipe-menu-hero">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Recipe collection</p>
+                  <p class="user-panel-kicker">Koleksi resep</p>
                   <h1>Pilih resep yang mau dimasak</h1>
                 </div>
               </div>
 
               <p class="user-ai-copy">
-                Halaman ini khusus katalog resep. Pilih filter region dan bahan untuk mempersempit hasil, lalu tombol
-                `Cook` untuk masuk ke detail resep dan mulai ikuti step memasaknya.
+                Halaman ini khusus katalog resep. Pilih filter wilayah dan bahan untuk mempersempit hasil, lalu tombol
+                `Masak` untuk masuk ke detail resep dan mulai ikuti langkah memasaknya.
               </p>
 
               <form class="user-recipe-filter-form" action="/recipe-menu" method="get">
                 <label class="user-recipe-filter-field">
-                  <span>Region</span>
+                  <span>Wilayah</span>
                   <select name="region">
                     <% regionOptions.forEach((option) => { %>
                       <option value="<%= option.value %>" <%= String(selectedRegion || '') === String(option.value || '') ? 'selected' : '' %>>
@@ -67,7 +67,7 @@
                 </label>
 
                 <label class="user-recipe-filter-field">
-                  <span>Alphabet</span>
+                  <span>Abjad</span>
                   <select name="alphabet">
                     <% alphabetOptions.forEach((option) => { %>
                       <option value="<%= option.value %>" <%= String(selectedAlphabet || '') === String(option.value || '') ? 'selected' : '' %>>
@@ -89,7 +89,7 @@
 
                 <div class="user-recipe-filter-actions">
                   <button type="submit" class="auth-button">Terapkan filter</button>
-                  <a class="auth-button auth-button-secondary" href="/recipe-menu">Reset</a>
+                  <a class="auth-button auth-button-secondary" href="/recipe-menu">Atur ulang</a>
                 </div>
               </form>
             </article>
@@ -109,7 +109,7 @@
                     <h2><%= recipe.title %></h2>
                     <div class="user-recipe-menu-meta">
                       <span><i class="fa-solid fa-star"></i> 4.9</span>
-                      <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime %> min</span>
+                      <span><i class="fa-regular fa-clock"></i> <%= recipe.cookingTime %> menit</span>
                       <span><i class="fa-solid fa-signal"></i> <%= recipe.difficulty %></span>
                     </div>
 
@@ -120,7 +120,7 @@
                           <span><%= recipe.warning %></span>
                         </div>
                       <% } %>
-                      <a class="user-recipe-menu-cta" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">Cook</a>
+                      <a class="user-recipe-menu-cta" href="/recipe-detail?recipeId=<%= encodeURIComponent(recipe.id) %>">Masak</a>
                     </div>
                   </div>
                 </article>
@@ -139,12 +139,12 @@
                 <% if (currentPage <= 1) { %>
                   <span class="user-recipe-pagination-link is-disabled" aria-disabled="true" tabindex="-1">
                     <i class="fa-solid fa-chevron-left"></i>
-                    Prev
+                    Sebelumnya
                   </span>
                 <% } else { %>
                   <a class="user-recipe-pagination-link" href="<%= prevPageUrl %>">
                     <i class="fa-solid fa-chevron-left"></i>
-                    Prev
+                    Sebelumnya
                   </a>
                 <% } %>
 
@@ -162,12 +162,12 @@
 
                 <% if (currentPage >= totalPages) { %>
                   <span class="user-recipe-pagination-link is-disabled" aria-disabled="true" tabindex="-1">
-                    Next
+                    Berikutnya
                     <i class="fa-solid fa-chevron-right"></i>
                   </span>
                 <% } else { %>
                   <a class="user-recipe-pagination-link" href="<%= nextPageUrl %>">
-                    Next
+                    Berikutnya
                     <i class="fa-solid fa-chevron-right"></i>
                   </a>
                 <% } %>

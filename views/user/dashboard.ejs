@@ -26,17 +26,17 @@
           <section class="user-dashboard-left">
             <article class="user-panel user-panel-banner">
               <div class="user-banner-copy">
-                <p class="user-panel-kicker">Dashboard</p>
+                <p class="user-panel-kicker">Beranda</p>
                 <h1><%= dashboardData.greeting %>, <%= dashboardData.firstName %></h1>
                 <p class="user-banner-description">
-                  Temukan resep favorit, menu hemat, comfort food, sampai ide masak cepat
+                  Temukan resep favorit, menu hemat, makanan rumahan favorit, sampai ide masak cepat
                   tanpa harus scroll terlalu jauh.
                 </p>
 
                 <div class="user-banner-actions">
                   <a class="auth-button" href="/recipe-menu">Mulai pilih resep</a>
                   <a class="auth-button auth-button-secondary" href="/shopping-list">Siapkan belanja</a>
-                  <a class="auth-button auth-button-secondary" href="/community">Share ke community</a>
+                  <a class="auth-button auth-button-secondary" href="/community">Bagikan ke komunitas</a>
                 </div>
 
                 <div class="user-mood-row">
@@ -47,7 +47,7 @@
               </div>
 
               <div class="user-banner-card">
-                <p class="user-banner-label">Daily challenge / menu hari ini</p>
+                <p class="user-banner-label">Tantangan harian / menu hari ini</p>
                 <h2>Hari ini coba masak <%= dashboardData.dailyChallenge.title %></h2>
                 <div class="user-recipe-tags">
                   <span><i class="fa-regular fa-clock"></i> <%= dashboardData.dailyChallenge.cookingTime %> menit</span>
@@ -134,7 +134,7 @@
               <article class="user-panel">
                 <div class="user-panel-head">
                   <div>
-                    <p class="user-panel-kicker">Favorite recipes</p>
+                    <p class="user-panel-kicker">Resep favorit</p>
                     <h2>Resep yang disimpan user</h2>
                   </div>
                 </div>
@@ -165,7 +165,7 @@
               <article class="user-panel">
                 <div class="user-panel-head">
                   <div>
-                    <p class="user-panel-kicker">Recently viewed</p>
+                    <p class="user-panel-kicker">Baru dilihat</p>
                     <h2>Resep terakhir yang dibuka</h2>
                   </div>
                 </div>
@@ -199,18 +199,18 @@
             <article class="user-panel">
               <div class="user-panel-head">
                 <div>
-                  <p class="user-panel-kicker">Community</p>
+                  <p class="user-panel-kicker">Komunitas</p>
                   <h2>Bagikan resep buatanmu</h2>
                 </div>
               </div>
 
               <p class="user-ai-copy">
-                Kirim resep original atau hasil recook kamu ke community. Resep akan menunggu approval
+                Kirim resep original atau hasil recook kamu ke komunitas. Resep akan menunggu persetujuan
                 sebelum tampil di feed publik.
               </p>
 
               <div class="user-ai-actions">
-                <a class="auth-button" href="/community">Buka community</a>
+                <a class="auth-button" href="/community">Buka komunitas</a>
                 <a class="auth-button auth-button-secondary" href="/chat-ai">Minta ide AI</a>
               </div>
             </article>
