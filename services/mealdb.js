@@ -197,6 +197,54 @@ function numberSeed(value) {
         .reduce((sum, char) => sum + char.charCodeAt(0), 0);
 }
 
+function getLocalizedCategoryLabel(value = '') {
+    const normalized = String(value || '').trim().toLowerCase();
+    const categoryMap = {
+        beef: 'olahan daging sapi',
+        breakfast: 'sarapan',
+        chicken: 'olahan ayam',
+        dessert: 'pencuci mulut',
+        goat: 'olahan daging kambing',
+        lamb: 'olahan daging domba',
+        misc: 'hidangan spesial',
+        pasta: 'pasta',
+        pork: 'olahan daging babi',
+        seafood: 'hidangan laut',
+        side: 'lauk pendamping',
+        starter: 'hidangan pembuka',
+        vegan: 'menu vegan',
+        vegetarian: 'menu vegetarian'
+    };
+
+    return categoryMap[normalized] || (String(value || 'resep').trim().toLowerCase() || 'resep');
+}
+
+function getDifficultyLabel(value = '') {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (normalized === 'hard') return 'tingkat kesulitan tinggi';
+    if (normalized === 'medium') return 'tingkat kesulitan sedang';
+    return 'tingkat kesulitan mudah';
+}
+
+function buildLocalizedMealDescription(meal = {}, cookingTime = 0, difficulty = 'easy') {
+    const title = String(meal.strMeal || 'Resep ini').trim();
+    const category = getLocalizedCategoryLabel(meal.strCategory || 'resep');
+    const area = String(meal.strArea || 'internasional').trim();
+    const difficultyLabel = getDifficultyLabel(difficulty);
+    const parts = [
+        `${title} adalah ${category} dengan cita rasa khas ${area}.`
+    ];
+
+    if (Number(cookingTime) > 0) {
+        parts.push(`Waktu memasaknya sekitar ${Number(cookingTime)} menit dengan ${difficultyLabel}.`);
+    } else {
+        parts.push(`Resep ini punya ${difficultyLabel} dan cocok diikuti langkah demi langkah.`);
+    }
+
+    parts.push('Cocok untuk menu harian saat kamu ingin masak enak dengan cara yang lebih praktis.');
+    return parts.join(' ');
+}
+
 function sleep(ms = 0) {
     return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
 }
@@ -235,6 +283,7 @@ function mapMealToRecipe(meal = {}) {
         .map((item) => item.trim())
         .filter(Boolean);
     const cookingTime = 12 + (seed % 4) * 8 + Math.max(0, steps.length - 3) * 2;
+    const difficulty = estimateDifficulty(steps.length, ingredients.length);
 
     return {
         id: meal.idMeal,
@@ -242,9 +291,7 @@ function mapMealToRecipe(meal = {}) {
         source: 'themealdb',
         sourceId: meal.idMeal,
         title: meal.strMeal,
-        description: meal.strInstructions
-            ? `${meal.strInstructions.slice(0, 140).trim()}${meal.strInstructions.length > 140 ? '...' : ''}`
-            : `${meal.strCategory || 'Recipe'} khas ${meal.strArea || 'global'}.`,
+        description: buildLocalizedMealDescription(meal, cookingTime, difficulty),
         image_url: meal.strMealThumb,
         video_url: meal.strYoutube || '',
         cooking_time: cookingTime,
@@ -254,7 +301,7 @@ function mapMealToRecipe(meal = {}) {
         category: meal.strCategory || 'Recipe',
         cuisine: meal.strArea || 'International',
         origin_place: meal.strArea || 'International',
-        difficulty: estimateDifficulty(steps.length, ingredients.length),
+        difficulty,
         calories: 180 + ingredients.length * 28 + (seed % 90),
         estimated_price: estimateRecipePrice(ingredients, {
             title: meal.strMeal,

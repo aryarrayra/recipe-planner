@@ -138,6 +138,54 @@ function estimateDifficulty(readyInMinutes = 0, stepCount = 0, ingredientCount =
     return 'easy';
 }
 
+function getLocalizedCategoryLabel(value = '') {
+    const normalized = toText(value).toLowerCase();
+    const categoryMap = {
+        'main course': 'hidangan utama',
+        'side dish': 'lauk pendamping',
+        dessert: 'pencuci mulut',
+        appetizer: 'hidangan pembuka',
+        salad: 'salad',
+        bread: 'roti',
+        breakfast: 'sarapan',
+        soup: 'sup',
+        beverage: 'minuman',
+        drink: 'minuman',
+        sauce: 'saus',
+        marinade: 'marinasi',
+        fingerfood: 'camilan',
+        snack: 'camilan'
+    };
+
+    return categoryMap[normalized] || (normalized || 'resep');
+}
+
+function getDifficultyLabel(value = '') {
+    const normalized = toText(value).toLowerCase();
+    if (normalized === 'hard') return 'tingkat kesulitan tinggi';
+    if (normalized === 'medium') return 'tingkat kesulitan sedang';
+    return 'tingkat kesulitan mudah';
+}
+
+function buildLocalizedRecipeDescription({ title = '', category = '', cuisine = '', cookingTime = 0, difficulty = 'easy' } = {}) {
+    const safeTitle = toText(title || 'Resep ini');
+    const safeCategory = getLocalizedCategoryLabel(category);
+    const safeCuisine = toText(cuisine || 'internasional');
+    const difficultyLabel = getDifficultyLabel(difficulty);
+    const parts = [
+        `${safeTitle} adalah ${safeCategory} dengan gaya masakan ${safeCuisine}.`
+    ];
+
+    if (Number(cookingTime) > 0) {
+        parts.push(`Waktu memasaknya sekitar ${Number(cookingTime)} menit dengan ${difficultyLabel}.`);
+    } else {
+        parts.push(`Resep ini punya ${difficultyLabel} dan cocok diikuti langkah demi langkah.`);
+    }
+
+    parts.push('Cocok untuk kamu yang ingin mencoba menu praktis dengan rasa yang tetap menarik.');
+    return parts.join(' ');
+}
+
 function normalizeRecipe(recipe = {}) {
     const ingredients = Array.isArray(recipe.extendedIngredients) ? recipe.extendedIngredients.map(normalizeIngredient) : [];
     const steps = parseSteps(recipe.analyzedInstructions || []);
@@ -151,6 +199,12 @@ function normalizeRecipe(recipe = {}) {
         recipe.calories ||
         0
     ) || 0;
+    const cookingTime = Number(recipe.readyInMinutes || recipe.cookingTime || recipe.prepTime || 0) || 0;
+    const difficulty = estimateDifficulty(
+        cookingTime,
+        steps.length,
+        ingredients.length
+    );
 
     return {
         id: `spoonacular:${String(recipe.id || recipe.spoonacularRecipeId || '').trim()}`,
@@ -158,21 +212,23 @@ function normalizeRecipe(recipe = {}) {
         sourceId: String(recipe.id || recipe.spoonacularRecipeId || '').trim(),
         idMeal: String(recipe.id || recipe.spoonacularRecipeId || '').trim(),
         title,
-        description: stripHtml(recipe.summary || recipe.instructions || `${title} recipe from Spoonacular.`) || `${title} recipe from Spoonacular.`,
+        description: buildLocalizedRecipeDescription({
+            title,
+            category,
+            cuisine,
+            cookingTime,
+            difficulty
+        }),
         image_url: toText(recipe.image || recipe.imageUrl || recipe.image_url),
         video_url: '',
-        cooking_time: Number(recipe.readyInMinutes || recipe.cookingTime || recipe.prepTime || 0) || 0,
+        cooking_time: cookingTime,
         servings: Number(recipe.servings || 1) || 1,
         ingredients,
         steps,
         category,
         cuisine,
         origin_place: cuisine,
-        difficulty: estimateDifficulty(
-            Number(recipe.readyInMinutes || recipe.cookingTime || 0) || 0,
-            steps.length,
-            ingredients.length
-        ),
+        difficulty,
         calories,
         estimated_price: estimateRecipePrice(ingredients, {
             title,

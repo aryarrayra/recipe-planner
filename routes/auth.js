@@ -2418,7 +2418,7 @@ function getFallbackRecipeCatalog(region = '') {
             mapRecipeCard({
                 id: 'fallback-dessert-2',
                 title: 'Banana Pancake',
-                description: 'Pancake pisang manis yang simpel untuk dessert atau brunch.',
+                description: 'Pancake pisang manis yang simpel untuk pencuci mulut atau sarapan santai.',
                 image_url: '/images/desserts.jpg',
                 cooking_time: 18,
                 difficulty: 'easy',
@@ -2465,7 +2465,7 @@ function getFallbackRecipeCatalog(region = '') {
             mapRecipeCard({
                 id: 'fallback-drink-2',
                 title: 'Jus Jeruk Segar',
-                description: 'Minuman simpel yang fresh dan cepat dibuat.',
+                description: 'Minuman simpel yang segar dan cepat dibuat.',
                 image_url: '/images/drinks.jpg',
                 cooking_time: 5,
                 difficulty: 'easy',
@@ -2479,7 +2479,7 @@ function getFallbackRecipeCatalog(region = '') {
             mapRecipeCard({
                 id: 'fallback-drink-3',
                 title: 'Smoothie Pisang',
-                description: 'Pilihan minuman creamy untuk menu yang lebih ringan.',
+                description: 'Pilihan minuman lembut dan creamy untuk menu yang lebih ringan.',
                 image_url: '/images/drinks.jpg',
                 cooking_time: 7,
                 difficulty: 'easy',
@@ -2512,7 +2512,7 @@ function getFallbackRecipeCatalog(region = '') {
             mapRecipeCard({
                 id: 'fallback-snack-2',
                 title: 'Tahu Crispy',
-                description: 'Snack gurih renyah yang cepat dibuat.',
+                description: 'Camilan gurih renyah yang cepat dibuat.',
                 image_url: '/images/cemilan.jpg',
                 cooking_time: 15,
                 difficulty: 'easy',
@@ -2573,7 +2573,7 @@ function getFallbackRecipeCatalog(region = '') {
             mapRecipeCard({
                 id: 'fallback-healthy-3',
                 title: 'Fruit Yogurt Bowl',
-                description: 'Buah segar dan yogurt untuk pilihan yang lebih clean dan ringan.',
+                description: 'Buah segar dan yogurt untuk pilihan yang lebih ringan dan terasa segar.',
                 image_url: '/images/salads.jpg',
                 cooking_time: 7,
                 difficulty: 'easy',
@@ -2619,7 +2619,7 @@ function getFallbackRecipeCatalog(region = '') {
         mapRecipeCard({
             id: 'fallback-3',
             title: 'Fruit Salad',
-            description: 'Pilihan segar dan ringan untuk dessert atau snack sehat.',
+            description: 'Pilihan segar dan ringan untuk pencuci mulut atau camilan sehat.',
             image_url: '/images/5.png',
             cooking_time: 10,
             difficulty: 'easy',
@@ -4247,19 +4247,19 @@ function buildFeedPreset(feed) {
         international: {
             label: 'Luar Negeri',
             title: 'Resep makanan luar negeri',
-            description: 'Pilihan video resep dari makanan Asia, Barat, dan internasional.',
+            description: 'Pilihan video resep dari makanan Asia, Barat, dan berbagai masakan internasional.',
             terms: ['asian', 'japanese', 'korean', 'chinese', 'thai', 'western', 'european', 'american', 'italian', 'french']
         },
         asian: {
             label: 'Asian',
             title: 'Resep Asia',
-            description: 'Sushi, ramen, stir-fry, dan menu Asian populer lainnya.',
+            description: 'Sushi, ramen, tumisan, dan menu Asia populer lainnya.',
             terms: ['asian', 'japanese', 'korean', 'chinese', 'thai']
         },
         western: {
             label: 'Western',
             title: 'Resep Barat',
-            description: 'Pasta, steak, sandwich, dan menu western favorit.',
+            description: 'Pasta, steak, sandwich, dan menu Barat favorit.',
             terms: ['western', 'european', 'american', 'italian', 'french', 'mediterranean']
         },
         dessert: {
@@ -4277,13 +4277,13 @@ function buildFeedPreset(feed) {
         snack: {
             label: 'Cemilan',
             title: 'Resep cemilan',
-            description: 'Cemilan ringan, gorengan, dan snack sederhana untuk teman santai.',
+            description: 'Cemilan ringan, gorengan, dan camilan sederhana untuk teman santai.',
             terms: ['snack', 'cemilan', 'gorengan', 'crispy', 'roll', 'bite', 'fried', 'fritter']
         },
         healthy: {
             label: 'Sehat',
             title: 'Resep sehat',
-            description: 'Menu rendah kalori, high protein, dan lebih ringan.',
+            description: 'Menu rendah kalori, tinggi protein, dan terasa lebih ringan.',
             terms: ['healthy', 'vegan', 'salad', 'low calorie', 'high protein', 'clean', 'fit']
         }
     };
