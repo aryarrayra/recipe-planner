@@ -2047,6 +2047,10 @@ html.page-is-loading .page-load-overlay {
   line-height: 1.7;
 }
 
+.user-dashboard-inline-tip-top {
+  margin: 0 0 18px;
+}
+
 .user-banner-actions {
   display: flex;
   flex-wrap: wrap;
