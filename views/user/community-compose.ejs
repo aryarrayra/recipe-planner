@@ -55,8 +55,15 @@
                 <span>Foto resep</span>
                 <div class="community-upload-card">
                   <label class="community-upload-preview" id="communityRecipeImagePreview">
-                    <img class="community-upload-preview-image" id="communityRecipeImagePreviewImg" hidden />
-                    <div class="community-upload-preview-empty" id="communityRecipeImagePreviewEmpty" aria-hidden="true"></div>
+                    <button type="button" class="community-upload-remove" id="communityRecipeImageRemove" hidden aria-label="Hapus foto resep" title="Hapus foto resep">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <img class="community-upload-preview-image" id="communityRecipeImagePreviewImg" alt="" hidden />
+                    <div class="community-upload-preview-empty" id="communityRecipeImagePreviewEmpty">
+                      <i class="fa-regular fa-image"></i>
+                      <strong>[Opsional] Foto Resep</strong>
+                      <span>Tambahkan foto akhir masakan</span>
+                    </div>
                     <input type="file" name="image_file" accept="image/*" id="communityRecipeImageInput" class="community-upload-input" />
                   </label>
                 </div>
@@ -182,6 +189,9 @@
           <span>Foto langkah</span>
           <div class="community-upload-card community-upload-card--compact">
             <label class="community-upload-preview community-upload-preview--compact">
+              <button type="button" class="community-upload-remove" hidden aria-label="Hapus foto langkah" title="Hapus foto langkah">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
               <img class="community-upload-preview-image" alt="" hidden />
               <div class="community-upload-preview-empty">
                 <i class="fa-regular fa-image"></i>
@@ -214,6 +224,7 @@
       const recipeImageInput = document.getElementById('communityRecipeImageInput');
       const recipePreviewImage = document.getElementById('communityRecipeImagePreviewImg');
       const recipePreviewEmpty = document.getElementById('communityRecipeImagePreviewEmpty');
+      const recipeImageRemove = document.getElementById('communityRecipeImageRemove');
       const ingredientList = document.getElementById('ingredientCardList');
       const addIngredientButton = document.getElementById('addIngredientButton');
       const stepList = document.getElementById('stepCardList');
@@ -225,7 +236,7 @@
       const ingredientPreviewUrls = new WeakMap();
       const stepPreviewUrls = new WeakMap();
 
-      function syncPreview(input, previewImage, previewEmpty, objectUrlRef) {
+      function syncPreview(input, previewImage, previewEmpty, removeButton, objectUrlRef) {
         const file = input && input.files && input.files[0] ? input.files[0] : null;
         if (objectUrlRef.current) {
           URL.revokeObjectURL(objectUrlRef.current);
@@ -234,8 +245,15 @@
 
         if (!file) {
           previewImage.hidden = true;
+          previewImage.style.display = 'none';
+          previewImage.src = '';
           previewImage.removeAttribute('src');
           previewEmpty.hidden = false;
+          previewEmpty.style.display = 'grid';
+          if (removeButton) {
+            removeButton.hidden = true;
+            removeButton.style.display = 'none';
+          }
           return;
         }
 
@@ -243,7 +261,24 @@
         objectUrlRef.current = objectUrl;
         previewImage.src = objectUrl;
         previewImage.hidden = false;
+        previewImage.style.display = 'block';
         previewEmpty.hidden = true;
+        previewEmpty.style.display = 'none';
+        if (removeButton) {
+          removeButton.hidden = false;
+          removeButton.style.display = 'inline-flex';
+        }
+      }
+
+      function bindPreviewRemoval(input, previewImage, previewEmpty, removeButton, objectUrlRef) {
+        removeButton?.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (input) {
+            input.value = '';
+          }
+          syncPreview(input, previewImage, previewEmpty, removeButton, objectUrlRef);
+        });
       }
 
       function renumberIngredients() {
@@ -298,13 +333,15 @@
         const fileInput = fragment.querySelector('input[type="file"]');
         const previewImage = fragment.querySelector('.community-upload-preview-image');
         const previewEmpty = fragment.querySelector('.community-upload-preview-empty');
+        const removePreviewButton = fragment.querySelector('.community-upload-remove');
         const removeButton = fragment.querySelector('.community-step-remove');
 
         const objectUrlRef = { current: '' };
 
         fileInput?.addEventListener('change', () => {
-          syncPreview(fileInput, previewImage, previewEmpty, objectUrlRef);
+          syncPreview(fileInput, previewImage, previewEmpty, removePreviewButton, objectUrlRef);
         });
+        bindPreviewRemoval(fileInput, previewImage, previewEmpty, removePreviewButton, objectUrlRef);
 
         removeButton?.addEventListener('click', () => {
           if (stepList.children.length <= 1) {
@@ -324,7 +361,7 @@
       }
 
       recipeImageInput?.addEventListener('change', () => {
-        syncPreview(recipeImageInput, recipePreviewImage, recipePreviewEmpty, {
+        syncPreview(recipeImageInput, recipePreviewImage, recipePreviewEmpty, recipeImageRemove, {
           get current() {
             return recipePreviewObjectUrl;
           },
@@ -332,6 +369,14 @@
             recipePreviewObjectUrl = nextValue;
           }
         });
+      });
+      bindPreviewRemoval(recipeImageInput, recipePreviewImage, recipePreviewEmpty, recipeImageRemove, {
+        get current() {
+          return recipePreviewObjectUrl;
+        },
+        set current(nextValue) {
+          recipePreviewObjectUrl = nextValue;
+        }
       });
 
       addIngredientButton?.addEventListener('click', () => {

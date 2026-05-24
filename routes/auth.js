@@ -1024,9 +1024,9 @@ function getRegionSourceOrigins(region = '') {
         indonesia: ['Indonesia'],
         asia: ['Chinese', 'Japanese', 'Indian', 'Thai', 'Malaysian', 'Korean', 'Vietnamese', 'Filipino'],
         'middle-east': ['Turkish', 'Saudi Arabian', 'Arabic', 'Persian'],
-        europe: ['Italian', 'French', 'British', 'Spanish', 'German', 'Greek', 'Dutch', 'Portuguese', 'Mediterranean'],
-        america: ['American', 'Mexican', 'Canadian', 'Caribbean', 'Brazilian', 'Latin American', 'South American', 'North American'],
-        africa: ['African', 'Moroccan', 'Egyptian', 'Ethiopian', 'Tunisian']
+        europe: ['Italian', 'French', 'British', 'Spanish', 'German', 'Greek', 'Dutch', 'Portuguese', 'Mediterranean', 'Croatian', 'Irish', 'Polish', 'Russian'],
+        america: ['American', 'Mexican', 'Canadian', 'Caribbean', 'Jamaican', 'Brazilian', 'Latin American', 'South American', 'North American'],
+        africa: ['African', 'Moroccan', 'Egyptian', 'Kenyan', 'Ethiopian', 'Tunisian']
     };
 
     return regionMap[key] || [];
@@ -1043,9 +1043,9 @@ function matchesRecipeRegion(recipe = {}, region = '') {
         indonesia: ['indonesia', 'nusantara', 'jawa', 'padang', 'sunda', 'betawi', 'bali', 'makassar', 'aceh', 'medan', 'sumatra', 'indonesian'],
         asia: ['japan', 'japanese', 'korea', 'korean', 'thai', 'thailand', 'china', 'chinese', 'malaysia', 'malaysian', 'india', 'indian', 'vietnam', 'vietnamese', 'philippines', 'filipino'],
         'middle-east': ['saudi', 'saudi arabia', 'saudi arabian', 'arab', 'arabic', 'arabian', 'turkey', 'turkish', 'persian'],
-        europe: ['italy', 'italian', 'france', 'french', 'british', 'england', 'english', 'spain', 'spanish', 'germany', 'german', 'greek', 'mediterranean'],
-        america: ['american', 'mexican', 'canadian', 'caribbean', 'brazilian', 'latin american', 'south american', 'north american', 'usa', 'united states', 'tex-mex'],
-        africa: ['african', 'moroccan', 'egyptian', 'ethiopian', 'tunisian', 'north african', 'west african']
+        europe: ['italy', 'italian', 'france', 'french', 'british', 'england', 'english', 'ireland', 'irish', 'croatia', 'croatian', 'poland', 'polish', 'russia', 'russian', 'spain', 'spanish', 'germany', 'german', 'greece', 'greek', 'netherlands', 'dutch', 'portugal', 'portuguese', 'mediterranean', 'european'],
+        america: ['american', 'mexican', 'canadian', 'caribbean', 'jamaica', 'jamaican', 'brazil', 'brazilian', 'latin american', 'south american', 'north american', 'usa', 'united states', 'tex-mex', 'puerto rico', 'cuban'],
+        africa: ['african', 'morocco', 'moroccan', 'egypt', 'egyptian', 'kenya', 'kenyan', 'ethiopian', 'tunisia', 'tunisian', 'north african', 'west african']
     };
 
     const terms = aliases[key] || [key];
@@ -1229,14 +1229,16 @@ function hasKeyword(source, keywords) {
 
 function getRecipeFoodInfo(recipe) {
     const source = getRecipeSearchBlob(recipe);
-    const containsNuts = recipe.contains_nuts === true || hasKeyword(source, ['kacang', 'peanut', 'almond', 'cashew', 'hazelnut']);
-    const containsMilk = recipe.contains_milk === true || hasKeyword(source, ['susu', 'milk', 'cheese', 'keju', 'cream', 'yogurt', 'butter']);
-    const containsEgg = recipe.contains_egg === true || hasKeyword(source, ['telur', 'egg', 'mayonnaise', 'mayo']);
-    const containsSeafood = recipe.contains_seafood === true || hasKeyword(source, ['seafood', 'ikan', 'fish', 'salmon', 'tuna', 'cumi', 'kerang', 'kepiting', 'udang', 'shrimp']);
-    const containsShrimp = recipe.contains_shrimp === true || hasKeyword(source, ['udang', 'shrimp', 'ebi']);
+    const ingredientBlob = JSON.stringify(recipe.ingredients || []).toLowerCase();
+    const titleBlob = [recipe.title, recipe.category, recipe.cuisine].filter(Boolean).join(' ').toLowerCase();
+    const containsNuts = recipe.contains_nuts === true || hasKeyword(ingredientBlob, ['kacang', 'peanut', 'almond', 'cashew', 'hazelnut']);
+    const containsMilk = recipe.contains_milk === true || hasKeyword(ingredientBlob, ['susu', 'milk', 'cheese', 'keju', 'cream', 'yogurt', 'butter']);
+    const containsEgg = recipe.contains_egg === true || hasKeyword(ingredientBlob, ['telur', 'egg', 'mayonnaise', 'mayo']);
+    const containsSeafood = recipe.contains_seafood === true || hasKeyword(ingredientBlob, ['seafood', 'ikan', 'fish', 'salmon', 'tuna', 'cumi', 'kerang', 'kepiting', 'udang', 'shrimp', 'prawn']);
+    const containsShrimp = recipe.contains_shrimp === true || hasKeyword(ingredientBlob, ['udang', 'shrimp', 'prawn', 'ebi']);
     const isSpicy = recipe.is_spicy === true || hasKeyword(source, ['pedas', 'cabai', 'chili', 'sambal', 'lada']);
     const hasGluten = hasKeyword(source, ['tepung terigu', 'terigu', 'mie', 'noodle', 'pasta', 'bread', 'roti', 'soy sauce', 'kecap']);
-    const isVegetarian = recipe.is_vegetarian === true || !hasKeyword(source, ['ayam', 'chicken', 'daging', 'beef', 'sapi', 'ikan', 'fish', 'seafood', 'udang', 'shrimp']);
+    const isVegetarian = recipe.is_vegetarian === true || !hasKeyword(`${ingredientBlob} ${titleBlob}`, ['ayam', 'chicken', 'daging', 'beef', 'sapi', 'ikan', 'fish', 'seafood', 'udang', 'shrimp', 'prawn']);
 
     return {
         containsNuts,
@@ -2333,16 +2335,71 @@ async function fetchProfileCommunityFeed(userId, limit = 8) {
         comments: commentsResult.rows.map(mapCommunityCommentCard)
     };
 }
-function getCookingTip() {
-    const tips = [
+function getCookingTipsPool() {
+    return [
         'Panaskan wajan dulu sebelum menumis supaya bumbu lebih harum.',
         'Tambahkan garam sedikit demi sedikit agar rasa lebih terkontrol.',
         'Simpan bahan yang sudah dipotong di wadah terpisah biar proses masak lebih cepat.',
         'Kalau masak pedas, tambahkan sedikit gula untuk menyeimbangkan rasa.',
-        'Cicipi di akhir proses masak supaya level asin dan pedas pas.'
+        'Cicipi di akhir proses masak supaya level asin dan pedas pas.',
+        'Siapkan semua bahan sebelum mulai masak agar proses di dapur lebih tenang dan rapi.',
+        'Gunakan api sedang untuk menumis bawang supaya tidak cepat gosong tapi tetap manis aromanya.',
+        'Masukkan sayuran yang cepat layu di tahap akhir agar warna dan teksturnya tetap segar.',
+        'Kalau membuat sup atau kuah, koreksi rasa setelah mendidih karena rasa akan lebih stabil.',
+        'Simpan bawang, cabai, dan bumbu dasar dalam porsi kecil supaya mudah dipakai kapan saja.',
+        'Pisahkan talenan untuk bahan mentah dan bahan siap santap agar dapur tetap higienis.',
+        'Untuk lauk goreng, tiriskan di rak atau tisu setelah matang supaya hasilnya tidak terlalu berminyak.'
     ];
+}
 
-    return tips[Math.floor(Math.random() * tips.length)];
+function getJakartaDateKey() {
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Jakarta',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(new Date());
+}
+
+function getDailyCookingTips(count = 4) {
+    const tips = getCookingTipsPool();
+    if (!tips.length) {
+        return [];
+    }
+
+    const safeCount = Math.max(1, Math.min(Number(count) || 1, tips.length));
+    const dateKey = getJakartaDateKey();
+    let seed = 0;
+
+    for (const char of dateKey) {
+        seed += char.charCodeAt(0);
+    }
+
+    const startIndex = seed % tips.length;
+    return Array.from({ length: safeCount }, (_, offset) => tips[(startIndex + offset) % tips.length]);
+}
+
+function getCookingTip() {
+    return getDailyCookingTips(1)[0] || '';
+}
+
+let userProfileColumnsReady = null;
+
+async function ensureUserProfileColumns() {
+    if (!userProfileColumnsReady) {
+        userProfileColumnsReady = (async () => {
+            await pool.query(`
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS birth_date DATE,
+                ADD COLUMN IF NOT EXISTS region_origin VARCHAR(120)
+            `);
+        })().catch((error) => {
+            userProfileColumnsReady = null;
+            throw error;
+        });
+    }
+
+    return userProfileColumnsReady;
 }
 
 function getFallbackDashboard(user) {
@@ -2376,7 +2433,8 @@ function getFallbackDashboard(user) {
             views_count: 342,
             tags: ['challenge']
         }),
-        tip: getCookingTip()
+        tip: getCookingTip(),
+        dailyTips: getDailyCookingTips(4)
     };
 }
 
@@ -3261,6 +3319,8 @@ router.get('/profile', async (req, res) => {
     preventBack(req, res, () => {});
 
     try {
+        await ensureUserProfileColumns();
+
         const [userResult, preferencesResult, cookingHistoryResult, favoriteCountResult, communityFeed] = await Promise.all([
             pool.query(
                 `
@@ -3271,6 +3331,8 @@ router.get('/profile', async (req, res) => {
                         role,
                         avatar_url,
                         bio,
+                        birth_date,
+                        region_origin,
                         budget_per_meal,
                         cooking_skill_level,
                         total_recipes_cooked,
@@ -3317,6 +3379,13 @@ router.get('/profile', async (req, res) => {
                 year: 'numeric'
             })
             : '-';
+        const birthDateDisplay = profileUser.birth_date
+            ? new Date(profileUser.birth_date).toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            })
+            : '';
         const latestCookedAt = cookingHistory.latest_cooked_at
             ? new Date(cookingHistory.latest_cooked_at).toLocaleDateString('id-ID', {
                 day: '2-digit',
@@ -3332,6 +3401,8 @@ router.get('/profile', async (req, res) => {
             role: profileUser.role,
             avatar_url: profileUser.avatar_url,
             bio: profileUser.bio,
+            birth_date: profileUser.birth_date,
+            region_origin: profileUser.region_origin,
             budget_per_meal: profileUser.budget_per_meal,
             cooking_skill_level: profileUser.cooking_skill_level,
             total_recipes_cooked: profileUser.total_recipes_cooked,
@@ -3348,6 +3419,11 @@ router.get('/profile', async (req, res) => {
             profile: {
                 avatarUrl: profileUser.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.username || 'User')}`,
                 bio: profileUser.bio || 'Belum ada bio profile.',
+                birthDate: birthDateDisplay,
+                birthDateValue: profileUser.birth_date
+                    ? new Date(profileUser.birth_date).toISOString().slice(0, 10)
+                    : '',
+                regionOrigin: profileUser.region_origin || '',
                 budgetPerMeal: profileUser.budget_per_meal,
                 skillLevel: getCookingSkillLabel(progress.activityPoints),
                 joinedAt,
@@ -3387,9 +3463,11 @@ router.post('/profile/details', profileUpload.single('avatar_image'), async (req
     }
 
     try {
+        await ensureUserProfileColumns();
+
         const currentUserResult = await pool.query(
             `
-                SELECT avatar_url, bio, budget_per_meal
+                SELECT avatar_url, bio, budget_per_meal, birth_date, region_origin
                 FROM users
                 WHERE id = $1
                 LIMIT 1
@@ -3400,9 +3478,11 @@ router.post('/profile/details', profileUpload.single('avatar_image'), async (req
         const uploadedAvatar = fileToPublicUrl(req.file);
         const avatarUrl = uploadedAvatar || String(req.session.user.avatar_url || currentUser.avatar_url || '').trim();
         const rawBio = String(req.body.bio || '').trim();
-        const budgetRaw = String(req.body.budget_per_meal || '').replace(/[^\d.]/g, '');
-        const budgetPerMeal = budgetRaw ? Number(budgetRaw) : (currentUser.budget_per_meal ?? null);
         const bio = rawBio ? rawBio.slice(0, 240) : String(currentUser.bio || '').trim();
+        const rawBirthDate = String(req.body.birth_date || '').trim();
+        const birthDate = /^\d{4}-\d{2}-\d{2}$/.test(rawBirthDate) ? rawBirthDate : (currentUser.birth_date || null);
+        const rawRegionOrigin = String(req.body.region_origin || '').trim();
+        const regionOrigin = rawRegionOrigin ? rawRegionOrigin.slice(0, 120) : String(currentUser.region_origin || '').trim();
 
         const result = await pool.query(
             `
@@ -3410,12 +3490,13 @@ router.post('/profile/details', profileUpload.single('avatar_image'), async (req
                 SET
                     avatar_url = COALESCE(NULLIF($1, ''), avatar_url),
                     bio = $2,
-                    budget_per_meal = COALESCE($3, budget_per_meal),
+                    birth_date = $3,
+                    region_origin = $4,
                     updated_at = CURRENT_TIMESTAMP
-                WHERE id = $4
-                RETURNING id, username, email, role, avatar_url, bio, budget_per_meal, cooking_skill_level
+                WHERE id = $5
+                RETURNING id, username, email, role, avatar_url, bio, birth_date, region_origin, budget_per_meal, cooking_skill_level
             `,
-            [avatarUrl, bio, budgetPerMeal, req.session.user.id]
+            [avatarUrl, bio, birthDate, regionOrigin || null, req.session.user.id]
         );
 
         const updatedUser = result.rows[0];
@@ -4118,6 +4199,7 @@ router.get('/dashboard', async (req, res) => {
                 ? enhanceRecipeForPreference(dailyChallengeRecipe, preferences, recipeCardFallbackImage)
                 : fallback.dailyChallenge,
             tip: getCookingTip(),
+            dailyTips: getDailyCookingTips(4),
             preferences
         };
 
@@ -4812,14 +4894,23 @@ router.get('/recipes', async (req, res) => {
             feedMeals = [];
         }
 
+        if (!Array.isArray(feedMeals) || !feedMeals.length) {
+            const localFallback = getFallbackRecipeCatalog(feed);
+            feedMeals = localFallback.length
+                ? localFallback
+                : await mealdb.getCatalogMeals(12).catch(() => getFallbackRecipeCatalog('random'));
+        }
+
         const selectedMeal = selectedRecipeId
             ? await mealdb.lookupMealById(selectedRecipeId).catch(() => null)
             : null;
         const recipePool = selectedMeal
             ? uniqueRecipesById([selectedMeal, ...feedMeals])
             : feedMeals;
+        const filteredRecipePool = filterRecipesForDisplay(recipePool, preferences);
+        const displayRecipePool = filteredRecipePool.length ? filteredRecipePool : recipePool;
 
-        const recipes = filterRecipesForDisplay(recipePool, preferences).map((recipe) => {
+        const recipes = displayRecipePool.map((recipe) => {
             const directVideoSource = normalizeVideoUrl(recipe.video_url);
             const foodInfo = getRecipeFoodInfo(recipe);
             const conflicts = getRecipeConflicts(foodInfo, preferences);

@@ -35,20 +35,12 @@
 
         </header>
 
-        <section class="user-panel user-panel-hero">
+        <section class="user-panel user-panel-hero" id="shoppingSummaryPanel">
           <div class="user-panel-head">
             <div>
               <p class="user-panel-kicker">Ringkasan</p>
               <h2>Belanja dari resep favorit lebih rapi</h2>
             </div>
-          </div>
-
-          <div class="shopping-budget-display">
-            <p class="shopping-budget-label">Anggaran minimal</p>
-            <strong class="shopping-budget-value">Rp <%= formatPrice(data.manualBudget) %></strong>
-            <span class="shopping-budget-copy">
-              Anggaran ini hanya dihitung dari item yang kamu isi harganya sendiri. Item yang dikosongkan tidak ikut dihitung.
-            </span>
           </div>
 
           <div class="user-dashboard-stats">
@@ -63,7 +55,6 @@
               <span>Daftar bahan, bumbu, alat, dan item lain yang perlu dicek</span>
             </article>
           </div>
-
         </section>
 
         <div class="user-feed-layout user-shopping-layout">
@@ -74,6 +65,11 @@
                   <p class="user-panel-kicker">Daftar belanja</p>
                   <h2>Daftar bahan gabungan</h2>
                 </div>
+                <% if (data.totalIngredients) { %>
+                  <button type="button" class="shopping-recipe-link" id="shoppingToggleAll">
+                    Check all
+                  </button>
+                <% } %>
               </div>
 
               <% const shoppingSections = data.sections || { sayur: [], protein: [], bumbu: [], dairy: [], karbohidrat: [], saus: [], alat: [], lainnya: [] }; %>
@@ -147,8 +143,8 @@
                                     <%= item.checked ? 'checked' : '' %>
                                   />
                                   <span class="shopping-item-copy">
-                                    <strong><%= itemQuantityText %></strong>
-                                    <span><%= item.name %></span>
+                                    <strong><%= item.name %></strong>
+                                    <span><%= itemQuantityText %></span>
                                     <small>Item manual</small>
                                   </span>
                                   <button
@@ -172,9 +168,9 @@
                                     <%= item.checked ? 'checked' : '' %>
                                   />
                                   <span class="shopping-item-copy">
-                                    <strong><%= itemQuantityText %></strong>
-                                    <span><%= item.name %></span>
-                                    <small><%= item.recipes.length %> resep ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ <%= item.recipes.join(', ') %></small>
+                                    <strong><%= item.name %></strong>
+                                    <span><%= itemQuantityText %></span>
+                                    <small><%= item.recipes.length %> resep • <%= item.recipes.join(', ') %></small>
                                   </span>
                                 </label>
                               <% } %>
@@ -198,8 +194,8 @@
             </article>
           </section>
 
-          <aside class="user-feed-sidebar">
-            <article class="user-panel">
+          <aside class="user-feed-sidebar" id="shoppingSelectedRecipesRail">
+            <article class="user-panel shopping-selected-recipes-panel" id="shoppingSelectedRecipesPanel">
               <div class="user-panel-head">
                 <div>
                   <p class="user-panel-kicker">Resep terpilih</p>
@@ -231,19 +227,6 @@
                 <% } %>
               </div>
             </article>
-
-            <article class="user-panel user-ai-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Catatan</p>
-                  <h2>Daftar belanja dengan budget minimal</h2>
-                </div>
-              </div>
-
-              <p class="user-ai-copy">
-                Daftar ini tetap fokus ke item, kuantitas, dan checklist. Nominal harga tidak muncul per item, tapi total budget minimal tetap bisa dihitung dari harga yang kamu isi sendiri.
-              </p>
-            </article>
           </aside>
         </div>
       </section>
@@ -251,10 +234,108 @@
   </main>
   <script>
     (() => {
+      const sanitizeMojibake = (value = '') => String(value || '')
+        .replace(/ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢|ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢|â€¢/g, ' • ')
+        .replace(/\s+•\s+/g, ' • ')
+        .trim();
+
+      document.querySelectorAll('.shopping-item-copy small').forEach((node) => {
+        const cleaned = sanitizeMojibake(node.textContent);
+        if (cleaned) {
+          node.textContent = cleaned;
+        }
+      });
+
       const syncCheckedStyle = (checkbox) => {
         const wrapper = checkbox.closest('.shopping-item');
         if (wrapper) {
           wrapper.classList.toggle('is-checked', checkbox.checked);
+        }
+      };
+
+      const syncSelectedRecipesPanel = () => {
+        const rail = document.getElementById('shoppingSelectedRecipesRail');
+        const panel = document.getElementById('shoppingSelectedRecipesPanel');
+        const summary = document.getElementById('shoppingSummaryPanel');
+
+        if (!rail || !panel) {
+          return;
+        }
+
+        if (window.innerWidth < 1024) {
+          rail.style.removeProperty('--shopping-recipes-rail-height');
+          panel.style.removeProperty('--shopping-recipes-top');
+          panel.style.removeProperty('--shopping-recipes-left');
+          panel.style.removeProperty('--shopping-recipes-width');
+          return;
+        }
+
+        const railRect = rail.getBoundingClientRect();
+        const summaryRect = summary?.getBoundingClientRect();
+        const nextTop = summaryRect ? Math.max(20, summaryRect.bottom + 20) : 20;
+
+        panel.style.setProperty('--shopping-recipes-top', `${nextTop}px`);
+        panel.style.setProperty('--shopping-recipes-left', `${railRect.left}px`);
+        panel.style.setProperty('--shopping-recipes-width', `${railRect.width}px`);
+        rail.style.setProperty('--shopping-recipes-rail-height', `${panel.offsetHeight}px`);
+      };
+
+      const closeSectionWithAnimation = (details, form) => {
+        if (!details || !details.open || details.dataset.closing === 'true') {
+          return;
+        }
+
+        details.dataset.closing = 'true';
+        details.classList.add('is-closing');
+
+        if (form) {
+          form.reset();
+        }
+
+        window.setTimeout(() => {
+          details.open = false;
+          details.classList.remove('is-closing');
+          details.dataset.closing = 'false';
+        }, 280);
+      };
+
+      const getShoppingCheckboxes = () => Array.from(
+        document.querySelectorAll('.shopping-item input[type="checkbox"]')
+      );
+
+      const updateToggleAllButton = () => {
+        const toggleButton = document.getElementById('shoppingToggleAll');
+        if (!toggleButton) {
+          return;
+        }
+
+        const checkboxes = getShoppingCheckboxes();
+        const hasItems = checkboxes.length > 0;
+        const allChecked = hasItems && checkboxes.every((checkbox) => checkbox.checked);
+
+        toggleButton.disabled = !hasItems;
+        toggleButton.textContent = allChecked ? 'Uncheck all' : 'Check all';
+      };
+
+      const updateCheckboxState = async (checkbox, checked) => {
+        const response = await fetch(`/api/recipes/shopping-list/items/${encodeURIComponent(checkbox.dataset.itemKey || '')}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            checked,
+            itemName: checkbox.dataset.itemName,
+            unit: checkbox.dataset.itemUnit,
+            category: checkbox.dataset.itemCategory,
+            quantity: checkbox.dataset.itemQuantity,
+            estimatedPrice: checkbox.dataset.itemEstimatedPrice || 0
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Gagal memperbarui checklist.');
         }
       };
 
@@ -312,35 +393,58 @@
         syncCheckedStyle(checkbox);
         checkbox.addEventListener('change', async () => {
           try {
-            const response = await fetch(`/api/recipes/shopping-list/items/${encodeURIComponent(checkbox.dataset.itemKey || '')}`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                checked: checkbox.checked,
-                itemName: checkbox.dataset.itemName,
-                unit: checkbox.dataset.itemUnit,
-                category: checkbox.dataset.itemCategory,
-                quantity: checkbox.dataset.itemQuantity,
-                estimatedPrice: checkbox.dataset.itemEstimatedPrice || 0
-              })
-            });
-
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-              throw new Error(result.error || 'Gagal memperbarui checklist.');
-            }
-
+            await updateCheckboxState(checkbox, checkbox.checked);
             syncCheckedStyle(checkbox);
+            updateToggleAllButton();
+            syncSelectedRecipesPanel();
           } catch (error) {
             console.error(error);
             checkbox.checked = !checkbox.checked;
             syncCheckedStyle(checkbox);
+            updateToggleAllButton();
+            syncSelectedRecipesPanel();
             alert(error.message || 'Gagal memperbarui checklist.');
           }
         });
       });
+
+      document.getElementById('shoppingToggleAll')?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        const checkboxes = getShoppingCheckboxes();
+        if (!checkboxes.length) {
+          return;
+        }
+
+        const shouldCheckAll = checkboxes.some((checkbox) => !checkbox.checked);
+        button.disabled = true;
+
+        try {
+          for (const checkbox of checkboxes) {
+            if (checkbox.checked === shouldCheckAll) {
+              continue;
+            }
+
+            checkbox.checked = shouldCheckAll;
+            await updateCheckboxState(checkbox, shouldCheckAll);
+            syncCheckedStyle(checkbox);
+          }
+
+          updateToggleAllButton();
+          syncSelectedRecipesPanel();
+        } catch (error) {
+          console.error(error);
+          window.location.reload();
+        } finally {
+          updateToggleAllButton();
+          syncSelectedRecipesPanel();
+        }
+      });
+
+      updateToggleAllButton();
+      syncSelectedRecipesPanel();
+
+      window.addEventListener('resize', syncSelectedRecipesPanel, { passive: true });
+      window.addEventListener('scroll', syncSelectedRecipesPanel, { passive: true });
 
       document.querySelectorAll('[data-section-cancel]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -351,8 +455,20 @@
             return;
           }
 
-          form.reset();
-          details.open = false;
+          closeSectionWithAnimation(details, form);
+        });
+      });
+
+      document.querySelectorAll('.shopping-section-toggle').forEach((summary) => {
+        summary.addEventListener('click', (event) => {
+          const details = summary.closest('details.shopping-section');
+          if (!details || !details.open || details.dataset.closing === 'true') {
+            return;
+          }
+
+          event.preventDefault();
+          const form = details.querySelector('.shopping-section-form');
+          closeSectionWithAnimation(details, form);
         });
       });
 

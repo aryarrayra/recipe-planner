@@ -108,6 +108,114 @@ function textToHtml(value) {
     return escapeHtml(value).replace(/\n/g, '<br>');
 }
 
+function normalizeRecipeReplyText(value = '') {
+    let text = String(value || '').replace(/\r/g, '').trim();
+
+    if (!text) {
+        return '';
+    }
+
+    if (!/\n/.test(text) && /(resep praktisnya:|cara membuat:|langkah(?:-langkah)?(?: membuat)?:)/i.test(text)) {
+        const match = text.match(/^(.*?(?:resep praktisnya:|cara membuat:|langkah(?:-langkah)?(?: membuat)?:))\s*(.*)$/i);
+        if (match && match[2]) {
+            const intro = match[1].trim();
+            const sentences = match[2]
+                .split(/(?<=[.!?])\s+(?=[A-ZÀ-ÿ])/)
+                .map((item) => item.trim())
+                .filter(Boolean);
+
+            if (sentences.length >= 2) {
+                text = `${intro}\n${sentences.map((item, index) => `${index + 1}. ${item}`).join('\n')}`;
+            }
+        }
+    }
+
+    return text;
+}
+
+function structuredTextToHtml(value = '') {
+    const normalized = normalizeRecipeReplyText(value);
+    if (!normalized) {
+        return '';
+    }
+
+    const lines = normalized.split('\n');
+    const blocks = [];
+    let paragraphLines = [];
+    let listType = null;
+    let listItems = [];
+
+    const flushParagraph = () => {
+        if (!paragraphLines.length) {
+            return;
+        }
+
+        blocks.push(`<p>${paragraphLines.map((line) => escapeHtml(line)).join('<br>')}</p>`);
+        paragraphLines = [];
+    };
+
+    const flushList = () => {
+        if (!listType || !listItems.length) {
+            listType = null;
+            listItems = [];
+            return;
+        }
+
+        blocks.push(
+            `<${listType}>${listItems.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</${listType}>`
+        );
+        listType = null;
+        listItems = [];
+    };
+
+    lines.forEach((rawLine) => {
+        const line = String(rawLine || '').trim();
+
+        if (!line) {
+            flushParagraph();
+            flushList();
+            return;
+        }
+
+        const numbered = line.match(/^\d+[.)]\s+(.+)$/);
+        if (numbered) {
+            flushParagraph();
+            if (listType && listType !== 'ol') {
+                flushList();
+            }
+            listType = 'ol';
+            listItems.push(numbered[1].trim());
+            return;
+        }
+
+        const bulleted = line.match(/^[-*•]\s+(.+)$/);
+        if (bulleted) {
+            flushParagraph();
+            if (listType && listType !== 'ul') {
+                flushList();
+            }
+            listType = 'ul';
+            listItems.push(bulleted[1].trim());
+            return;
+        }
+
+        flushList();
+
+        if (/^(bahan|cara membuat|langkah|langkah-langkah|tips)\b[:]?$/i.test(line)) {
+            flushParagraph();
+            blocks.push(`<p><strong>${escapeHtml(line)}</strong></p>`);
+            return;
+        }
+
+        paragraphLines.push(line);
+    });
+
+    flushParagraph();
+    flushList();
+
+    return blocks.join('');
+}
+
 function buildPhotoAttachment(file) {
     if (!file) {
         return null;
@@ -134,6 +242,27 @@ async function getChatHistory(sessionId, limit = 20) {
             LIMIT $2
         `,
         [sessionId, limit]
+    );
+
+    return result.rows;
+}
+
+async function getUserChatSessions(userId) {
+    const result = await pool.query(
+        `
+            SELECT
+                s.session_id,
+                s.title,
+                s.created_at,
+                s.updated_at,
+                COUNT(m.id) AS message_count
+            FROM ai_chat_sessions s
+            LEFT JOIN ai_chat_messages m ON m.session_id = s.session_id
+            WHERE s.user_id = $1
+            GROUP BY s.session_id, s.title, s.created_at, s.updated_at
+            ORDER BY s.updated_at DESC, s.created_at DESC
+        `,
+        [userId]
     );
 
     return result.rows;
@@ -412,21 +541,35 @@ function describeChatError(error) {
     };
 }
 
-function toGeminiContents(history, message) {
+function toGeminiContents(history, message, photo = null) {
     const contents = history.map((item) => ({
         role: item.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: item.content }]
     }));
 
+    const finalParts = [];
+    if (message) {
+        finalParts.push({ text: message });
+    }
+
+    if (photo?.dataUrl && photo?.mimeType) {
+        finalParts.push({
+            inlineData: {
+                mimeType: photo.mimeType,
+                data: String(photo.dataUrl).split(',')[1] || ''
+            }
+        });
+    }
+
     contents.push({
         role: 'user',
-        parts: [{ text: message }]
+        parts: finalParts.length ? finalParts : [{ text: message || 'Foto terlampir.' }]
     });
 
     return contents;
 }
 
-async function callGemini(history, message) {
+async function callGemini(history, message, photo = null) {
     if (!GEMINI_API_KEY) {
         throw new Error('GEMINI_API_KEY belum diisi di .env');
     }
@@ -440,13 +583,16 @@ async function callGemini(history, message) {
                         text:
                             'Kamu adalah asisten AI untuk aplikasi meal planner. ' +
                             'Jawab dalam Bahasa Indonesia, ringkas, praktis, dan fokus pada resep, budget meal, shopping list, dan meal prep. ' +
+                            'Jika pengguna melampirkan foto, analisis isi foto tersebut secara langsung. ' +
+                            'Jika jawaban berupa resep, tulis dengan format yang rapi: pembuka singkat, lalu bagian "Bahan" dan "Cara membuat". ' +
+                            'Untuk bahan gunakan bullet list, untuk cara membuat gunakan numbered list. ' +
                             'Balas hanya dalam JSON valid dengan format: ' +
                             '{"title":"string","reply":"string","tips":["string"],"followUps":["string"]}. ' +
                             'Jangan gunakan markdown code fence.'
                     }
                 ]
             },
-            contents: toGeminiContents(history, message),
+            contents: toGeminiContents(history, message, photo),
             generationConfig: {
                 responseMimeType: 'application/json',
                 temperature: 0.7
@@ -509,7 +655,44 @@ router.get('/chat-ai', async (req, res) => {
 });
 
 router.get('/chat-history', async (req, res) => {
-    return res.redirect('/profile');
+    const userId = req.session.user?.id || null;
+    const requestedSessionId = String(req.query.session || '').trim();
+    let sessions = [];
+    let selectedSessionId = requestedSessionId;
+    let messages = [];
+
+    try {
+        sessions = userId ? await getUserChatSessions(userId) : [];
+
+        if (!selectedSessionId) {
+            selectedSessionId = sessions[0]?.session_id || req.sessionID;
+        }
+
+        const history = selectedSessionId ? await getChatHistory(selectedSessionId, 100) : [];
+        messages = history.map((item) => ({
+            role: item.role === 'assistant' ? 'ai' : 'user',
+            label: item.role === 'assistant' ? 'AI' : 'You',
+            text: item.content,
+            html: item.metadata?.html || structuredTextToHtml(item.content),
+            attachment: item.metadata?.attachment || null,
+            tips: item.metadata?.tips || [],
+            followUps: item.metadata?.followUps || [],
+            createdAt: item.created_at || null
+        }));
+    } catch (error) {
+        console.error('Failed to load full chat history:', error.message);
+    }
+
+    res.render('chat-history', {
+        title: 'History Chat - AI Recipe Planner',
+        user: req.session.user || null,
+        chatHistoryData: {
+            sessionId: selectedSessionId,
+            totalMessages: messages.length,
+            messages,
+            sessions
+        }
+    });
 });
 
 router.delete('/api/chat/history', async (req, res) => {
@@ -561,15 +744,15 @@ router.post('/api/chat', upload.single('photo'), async (req, res) => {
 
         const history = await getChatHistory(sessionId, 20);
         const aiMessage = photo
-            ? `${messageText ? `${messageText}\n\n` : ''}[Pengguna melampirkan foto: ${photo.name}. Model ini tidak dapat melihat isi foto, jadi akui foto tersebut dan minta deskripsi bila perlu.]`
+            ? `${messageText ? `${messageText}\n\n` : ''}Pengguna melampirkan foto "${photo.name}". Gunakan foto tersebut sebagai konteks utama jawaban.`
             : messageText;
-        const aiResult = await callGemini(history, aiMessage);
+        const aiResult = await callGemini(history, aiMessage, photo);
 
         await saveChatMessage(sessionId, 'assistant', aiResult.reply, {
             title: aiResult.title,
             tips: aiResult.tips,
             followUps: aiResult.followUps,
-            html: textToHtml(aiResult.reply),
+            html: structuredTextToHtml(aiResult.reply),
             model: GEMINI_MODEL,
             provider: 'gemini'
         });
@@ -587,7 +770,7 @@ router.post('/api/chat', upload.single('photo'), async (req, res) => {
                 reply: aiResult.reply,
                 tips: aiResult.tips,
                 followUps: aiResult.followUps,
-                html: textToHtml(aiResult.reply)
+                html: structuredTextToHtml(aiResult.reply)
             }
         });
     } catch (error) {
@@ -601,7 +784,7 @@ router.post('/api/chat', upload.single('photo'), async (req, res) => {
                 title: fallback.title,
                 tips: fallback.tips,
                 followUps: fallback.followUps,
-                html: textToHtml(fallback.reply),
+                html: structuredTextToHtml(fallback.reply),
                 provider: 'fallback',
                 fallbackReason
             });
@@ -626,7 +809,7 @@ router.post('/api/chat', upload.single('photo'), async (req, res) => {
                 reply: fallback.reply,
                 tips: fallback.tips,
                 followUps: fallback.followUps,
-                html: textToHtml(fallback.reply),
+                html: structuredTextToHtml(fallback.reply),
                 fallback: true,
                 fallbackReason
             }

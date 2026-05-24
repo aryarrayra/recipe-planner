@@ -16,17 +16,37 @@
   />
   <link rel="stylesheet" href="/css/style.css" />
   <style>
+    html,
     body.chat-page {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body.chat-page {
+      min-height: 100dvh;
+      margin: 0;
       background:
         radial-gradient(circle at top left, rgba(56, 156, 154, 0.16), transparent 28%),
         radial-gradient(circle at bottom right, rgba(254, 219, 113, 0.2), transparent 24%),
         linear-gradient(180deg, #f5f7f4 0%, #eef3ee 100%);
     }
 
+    .chat-dashboard {
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    .chat-dashboard-shell {
+      height: 100dvh;
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+
     .chat-dashboard .user-dashboard-main {
       display: grid;
-      gap: 18px;
-      padding: 20px;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 14px;
+      padding: 16px;
       border-radius: 34px;
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 248, 0.92)),
@@ -34,6 +54,9 @@
       border: 1px solid rgba(29, 29, 29, 0.06);
       box-shadow: 0 24px 70px rgba(29, 29, 29, 0.08);
       min-width: 0;
+      min-height: 0;
+      height: calc(100dvh - 28px);
+      overflow: hidden;
     }
 
     .chat-dashboard-topbar {
@@ -41,8 +64,8 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 18px;
-      padding: 24px 26px;
-      border-radius: 28px;
+      padding: 18px 20px;
+      border-radius: 24px;
       background: rgba(255, 255, 255, 0.82);
       border: 1px solid rgba(29, 29, 29, 0.06);
       box-shadow: 0 18px 36px rgba(29, 29, 29, 0.08);
@@ -51,22 +74,22 @@
 
     .chat-topbar-copy {
       display: grid;
-      gap: 10px;
+      gap: 8px;
       max-width: 780px;
     }
 
     .chat-topbar-copy h1 {
       margin: 0;
       font-family: "Space Grotesk", sans-serif;
-      font-size: clamp(1.8rem, 2.7vw, 2.8rem);
-      line-height: 1.05;
+      font-size: clamp(1.55rem, 2.3vw, 2.35rem);
+      line-height: 1;
       letter-spacing: -0.04em;
     }
 
     .chat-topbar-note {
       margin: 0;
       color: var(--muted);
-      line-height: 1.65;
+      line-height: 1.5;
       max-width: 78ch;
     }
 
@@ -105,6 +128,11 @@
       gap: 12px;
       justify-content: flex-end;
       align-items: center;
+      align-self: start;
+    }
+
+    .chat-action-label {
+      display: inline;
     }
 
     .chat-dashboard .button {
@@ -112,8 +140,8 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      min-height: 48px;
-      padding: 0 18px;
+      min-height: 42px;
+      padding: 0 16px;
       border-radius: 999px;
       text-decoration: none;
       font: inherit;
@@ -136,8 +164,9 @@
       overflow: hidden;
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
-      min-height: calc(100vh - 150px);
-      border-radius: 28px;
+      min-height: 0;
+      height: 100%;
+      border-radius: 24px;
       background: rgba(255, 255, 255, 0.86);
       border: 1px solid rgba(29, 29, 29, 0.06);
       box-shadow: 0 18px 36px rgba(29, 29, 29, 0.08);
@@ -149,7 +178,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: 16px 18px;
+      padding: 14px 16px;
       border-bottom: 1px solid rgba(29, 29, 29, 0.06);
       background: linear-gradient(180deg, rgba(245, 249, 246, 0.96), rgba(255, 255, 255, 0.9));
     }
@@ -192,7 +221,7 @@
       gap: 12px;
       align-content: start;
       overflow-y: auto;
-      min-height: 50vh;
+      min-height: 0;
       background:
         linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.18)),
         radial-gradient(circle at 20% 20%, rgba(56, 156, 154, 0.05), transparent 0 18%),
@@ -497,18 +526,26 @@
     }
 
     @media (max-width: 1024px) {
+      html,
+      body.chat-page {
+        overflow: hidden;
+      }
+
       .chat-dashboard {
         padding: 0;
       }
 
       .chat-dashboard-shell {
         width: 100%;
+        height: 100dvh;
+        min-height: 100dvh;
         margin: 0;
-        padding: 0 0 112px;
+        padding: 0;
         background: transparent;
         border: 0;
         border-radius: 0;
         box-shadow: none;
+        overflow: hidden;
       }
 
       .composer-body {
@@ -522,7 +559,6 @@
       }
 
       .chat-dashboard .user-dashboard-main,
-      .chat-dashboard-topbar,
       .chat-window-shell,
       .chat-topbar,
       .chat-feed,
@@ -535,40 +571,33 @@
       }
 
       .chat-dashboard .user-dashboard-main {
-        padding: 0;
-        gap: 0;
+        padding: 12px 0 0;
+        gap: 10px;
+        height: 100dvh;
         background: #fff;
         border: 0;
-      }
-
-      .chat-dashboard-topbar {
-        padding: 18px 16px 14px;
-        background: #fff;
-        border-top: 0;
+        overflow: hidden;
       }
 
       .chat-window-shell {
-        min-height: auto;
+        min-height: 0;
+        height: 100%;
         margin-bottom: 0;
         background: #fff;
         border-bottom: 0;
       }
 
       .chat-feed {
-        min-height: 280px;
+        min-height: 0;
       }
 
       .chat-composer {
-        padding: 14px 16px calc(92px + env(safe-area-inset-bottom));
+        padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
         background: #fff;
       }
     }
 
     @media (max-width: 700px) {
-      .chat-window-shell {
-        min-height: auto;
-      }
-
       .chat-feed,
       .chat-composer {
         padding: 14px;
@@ -591,21 +620,26 @@
 
     @media (max-width: 560px) {
       .chat-dashboard .user-dashboard-main {
-        padding: 0;
+        padding-top: 0;
         gap: 0;
       }
 
-      .chat-dashboard-topbar {
-        padding: 16px 14px 12px;
-        gap: 12px;
+      .chat-topbar-actions {
+        display: none;
       }
 
-      .chat-topbar-copy h1 {
-        font-size: clamp(1.5rem, 8vw, 2rem);
+      .chat-topbar-actions .button {
+        width: 42px;
+        min-width: 42px;
+        min-height: 42px;
+        height: 42px;
+        padding: 0;
+        border-radius: 999px;
+        box-shadow: 0 10px 22px rgba(29, 29, 29, 0.08);
       }
 
-      .chat-topbar-note {
-        line-height: 1.55;
+      .chat-action-label {
+        display: none;
       }
 
       .chat-quick-actions {
@@ -615,17 +649,39 @@
 
       .chat-quick-chip {
         width: 100%;
-        justify-content: flex-start;
-        padding-inline: 16px;
+        justify-content: center;
+        padding-inline: 14px;
+        min-height: 34px;
+        font-size: 0.84rem;
+        line-height: 1.25;
+        text-align: center;
       }
 
       .chat-window-shell {
-        min-height: auto;
+        min-height: 0;
         border-radius: 0;
       }
 
       .chat-topbar {
-        padding: 12px 14px 10px;
+        padding: 10px 14px;
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+
+      .chat-topbar .chat-topbar-actions {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+        padding: 0;
+      }
+
+      .chat-topbar .chat-topbar-actions .button {
+        width: 38px !important;
+        min-width: 38px;
+        min-height: 38px;
+        height: 38px;
+        box-shadow: 0 8px 18px rgba(29, 29, 29, 0.08);
       }
 
       .chat-feed,
@@ -635,19 +691,38 @@
 
       .chat-feed {
         min-height: 220px;
-        padding-top: 10px;
-        padding-bottom: 12px;
+        padding-top: 8px;
+        padding-bottom: 10px;
+        gap: 10px;
       }
 
       .chat-composer {
-        padding-top: 12px;
-        padding-bottom: calc(94px + env(safe-area-inset-bottom));
+        padding-top: 10px;
+        padding-bottom: calc(92px + env(safe-area-inset-bottom));
       }
 
       .chat-bubble {
         max-width: 100%;
         padding: 11px 12px 10px;
         border-radius: 18px;
+      }
+
+      .chat-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 14px;
+      }
+
+      .chat-peer {
+        gap: 10px;
+      }
+
+      .chat-peer strong {
+        font-size: 1rem;
+      }
+
+      .chat-peer span {
+        font-size: 0.82rem;
       }
 
       .composer-input {
@@ -657,31 +732,85 @@
       }
 
       .composer-body {
-        gap: 10px;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 8px;
       }
 
       .attachment-chip,
       .send-button {
         min-height: 42px;
         border-radius: 14px;
+        width: auto;
       }
 
       .send-button {
         justify-content: center;
+        min-width: 88px;
+        padding-inline: 16px;
+      }
+
+      .attachment-chip {
+        min-width: 84px;
+        padding-inline: 12px;
+        gap: 6px;
+        box-shadow: none;
+      }
+
+      .attachment-chip span:first-child {
+        width: 24px;
+        height: 24px;
+        border-radius: 8px;
+      }
+
+      .composer-input-wrap {
+        gap: 8px;
       }
 
       .attachment-preview {
-        padding: 10px;
-        gap: 10px;
+        grid-template-columns: 44px minmax(0, 1fr);
+        padding: 9px 10px;
+        gap: 8px;
       }
 
       .attachment-preview-thumb {
-        width: 48px;
-        height: 48px;
+        width: 44px;
+        height: 44px;
+      }
+
+      .attachment-remove {
+        grid-column: 1 / -1;
+        justify-self: start;
+        min-height: 32px;
+        padding: 0 10px;
+        font-size: 0.8rem;
+      }
+
+      .follow-up {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        padding: 10px 12px;
       }
 
       .chat-dashboard .button {
         width: 100%;
+        min-height: 38px;
+        padding-inline: 12px;
+        font-size: 0.9rem;
+      }
+
+      .chat-topbar-actions .button {
+        width: 42px !important;
+        min-width: 42px;
+        min-height: 42px;
+        height: 42px;
+        padding: 0 !important;
+        display: inline-flex;
+      }
+
+      .message-attachment img {
+        max-height: 220px;
       }
     }
   </style>
@@ -694,22 +823,6 @@
       <%- include('partials/sidebar', { mode: 'user', activePage: 'chat', user }) %>
 
       <section class="user-dashboard-main chat-main">
-        <header class="user-dashboard-topbar chat-dashboard-topbar">
-          <div class="chat-topbar-copy">
-            <p class="user-panel-kicker">AI chat</p>
-            <h1>Chat AI model WhatsApp</h1>
-            <p class="chat-topbar-note">Kirim bahan, budget, tujuan makan, atau foto makanan.</p>
-            <div class="chat-quick-actions" aria-label="Aksi cepat">
-              <button type="button" class="chat-quick-chip" data-preset="Bantu pilih resep dari bahan yang ada">Pilih resep</button>
-              <button type="button" class="chat-quick-chip" data-preset="Cek bahan yang harus dibeli supaya bisa recook resep ini">Cek bahan</button>
-              <button type="button" class="chat-quick-chip" data-preset="Buat recook dari foto masakan ini">Recook dari foto</button>
-            </div>
-          </div>
-          <div class="user-topbar-actions chat-topbar-actions">
-            <button type="button" class="button button-secondary" id="clearChat">Clear chat</button>
-          </div>
-        </header>
-
         <section class="chat-window-shell">
           <div class="chat-topbar">
             <div class="chat-peer">
@@ -718,6 +831,16 @@
                 <strong>Recipe Assistant</strong>
                 <span>online</span>
               </div>
+            </div>
+            <div class="user-topbar-actions chat-topbar-actions">
+              <a href="/chat-history" class="button button-secondary" aria-label="History chat">
+                <i class="fa-regular fa-clock-rotate-left" aria-hidden="true"></i>
+                <span class="chat-action-label">History chat</span>
+              </a>
+              <button type="button" class="button button-secondary" id="clearChat" aria-label="Clear chat">
+                <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                <span class="chat-action-label">Clear chat</span>
+              </button>
             </div>
           </div>
 

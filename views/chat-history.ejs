@@ -23,7 +23,7 @@
         linear-gradient(180deg, #f5f7f4 0%, #eef3ee 100%);
     }
 
-    .history-dashboard .user-dashboard-main {
+    .chat-history-main {
       display: grid;
       gap: 18px;
       padding: 20px;
@@ -36,128 +36,50 @@
       min-width: 0;
     }
 
-    .history-topbar {
+    .chat-history-topbar {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 18px;
-      padding: 24px 26px;
+      padding: 20px 22px;
       border-radius: 28px;
       background: rgba(255, 255, 255, 0.82);
       border: 1px solid rgba(29, 29, 29, 0.06);
       box-shadow: 0 18px 36px rgba(29, 29, 29, 0.08);
-      backdrop-filter: blur(18px);
     }
 
-    .history-topbar-copy {
-      display: grid;
-      gap: 10px;
-      max-width: 760px;
-    }
-
-    .history-topbar-copy h1 {
-      margin: 0;
+    .chat-history-topbar h1 {
+      margin: 6px 0 0;
       font-family: "Space Grotesk", sans-serif;
-      font-size: clamp(1.7rem, 2.4vw, 2.6rem);
-      line-height: 1.05;
+      font-size: clamp(1.7rem, 2.4vw, 2.5rem);
       letter-spacing: -0.04em;
+      line-height: 1.02;
     }
 
-    .history-topbar-note {
+    .chat-history-topbar p {
       margin: 0;
       color: var(--muted);
-      line-height: 1.65;
+      line-height: 1.6;
       max-width: 72ch;
     }
 
-    .history-quick-actions {
+    .chat-history-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 6px;
-    }
-
-    .history-quick-chip {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 38px;
-      padding: 0 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(56, 156, 154, 0.18);
-      background: rgba(56, 156, 154, 0.08);
-      color: var(--accent-dark);
-      text-decoration: none;
-      font: inherit;
-      font-size: 0.88rem;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 8px 18px rgba(56, 156, 154, 0.08);
-    }
-
-    .history-quick-chip:hover {
-      background: rgba(56, 156, 154, 0.14);
-      border-color: rgba(56, 156, 154, 0.28);
-    }
-
-    .history-search {
-      min-width: min(320px, 100%);
-      padding: 14px 18px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(29, 29, 29, 0.06);
-      box-shadow: 0 10px 26px rgba(29, 29, 29, 0.05);
-    }
-
-    .history-search input {
-      width: 100%;
-      border: 0;
-      outline: none;
-      background: transparent;
-      font: inherit;
-      color: var(--text);
-    }
-
-    .history-dashboard .user-topbar-actions {
-      display: flex;
-      align-items: center;
       gap: 12px;
-      flex-wrap: wrap;
       justify-content: flex-end;
     }
 
-    .history-dashboard .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      min-height: 48px;
-      padding: 0 18px;
-      border-radius: 999px;
-      text-decoration: none;
-      font: inherit;
-      font-weight: 800;
-      cursor: pointer;
-      border: 0;
-    }
-
-    .history-dashboard .button-secondary {
-      background: rgba(255, 255, 255, 0.92);
-      color: var(--text);
-      border: 1px solid rgba(29, 29, 29, 0.08);
-      box-shadow: 0 10px 26px rgba(29, 29, 29, 0.05);
-    }
-
-    .history-summary-grid {
+    .chat-history-summary {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 16px;
     }
 
-    .history-summary-card,
-    .history-activity-panel,
-    .history-side-card,
-    .history-empty-state {
+    .chat-history-summary-card,
+    .chat-history-panel,
+    .chat-history-sessions,
+    .chat-history-empty {
       padding: 22px;
       border-radius: 24px;
       background: rgba(255, 255, 255, 0.92);
@@ -165,147 +87,166 @@
       box-shadow: 0 14px 34px rgba(29, 29, 29, 0.06);
     }
 
-    .history-summary-card {
+    .chat-history-summary-card {
       display: grid;
-      gap: 14px;
+      gap: 8px;
       background:
         radial-gradient(circle at top left, rgba(56, 156, 154, 0.12), transparent 30%),
         linear-gradient(135deg, rgba(254, 219, 113, 0.16), rgba(255, 255, 255, 0.96));
     }
 
-    .history-summary-card h2 {
-      margin: 6px 0 0;
+    .chat-history-summary-card h2 {
+      margin: 0;
       font-family: "Space Grotesk", sans-serif;
       font-size: clamp(1.5rem, 2vw, 2.2rem);
-      letter-spacing: -0.04em;
       line-height: 1;
+      letter-spacing: -0.04em;
     }
 
-    .history-summary-note {
-      margin: 0;
+    .chat-history-summary-card span {
       color: var(--muted);
       line-height: 1.6;
     }
 
-    .history-layout {
+    .chat-history-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.28fr) 360px;
-      gap: 20px;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 18px;
       align-items: start;
     }
 
-    .history-primary,
-    .history-sidebar {
-      display: grid;
-      gap: 18px;
-    }
-
-    .history-detail-head h3 {
-      margin: 6px 0 0;
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 1.35rem;
-      letter-spacing: -0.03em;
-    }
-
-    .history-recook-list {
+    .chat-history-list {
       display: grid;
       gap: 14px;
     }
 
-    .history-recook-card {
+    .chat-history-session-list {
       display: grid;
-      grid-template-columns: 180px minmax(0, 1fr);
-      gap: 18px;
-      padding: 16px;
-      border-radius: 22px;
-      background: linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
-      border: 1px solid rgba(29, 29, 29, 0.06);
-      box-shadow: 0 12px 28px rgba(29, 29, 29, 0.06);
+      gap: 10px;
     }
 
-    .history-recook-card img {
-      width: 100%;
-      height: 100%;
-      min-height: 180px;
-      object-fit: cover;
+    .chat-history-session-link {
+      display: grid;
+      gap: 6px;
+      padding: 14px 16px;
       border-radius: 18px;
-      background: #f4f4f4;
+      background: #faf9f6;
+      border: 1px solid rgba(29, 29, 29, 0.06);
+      color: inherit;
+      text-decoration: none;
+      box-shadow: 0 8px 18px rgba(29, 29, 29, 0.04);
     }
 
-    .history-recook-copy {
+    .chat-history-session-link.is-active {
+      background: rgba(56, 156, 154, 0.1);
+      border-color: rgba(56, 156, 154, 0.22);
+    }
+
+    .chat-history-session-link strong {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .chat-history-session-link span {
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.88rem;
+    }
+
+    .chat-history-item {
       display: grid;
       gap: 12px;
-      align-content: start;
+      max-width: min(860px, 100%);
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 10px 22px rgba(29, 29, 29, 0.06);
     }
 
-    .history-recook-head {
+    .chat-history-item.user {
+      justify-self: end;
+      background: linear-gradient(180deg, #dcf8e4 0%, #c7efd2 100%);
+    }
+
+    .chat-history-item.ai {
+      justify-self: start;
+    }
+
+    .chat-history-item-head {
       display: flex;
-      align-items: start;
+      align-items: center;
       justify-content: space-between;
       gap: 12px;
     }
 
-    .history-recook-head h3 {
-      margin: 4px 0 0;
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 1.25rem;
-      letter-spacing: -0.03em;
+    .chat-history-item-head strong {
+      color: var(--accent-dark);
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
-    .history-summary-meta,
-    .history-chip-list {
+    .chat-history-item-head span {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .chat-history-body {
+      line-height: 1.75;
+      word-break: break-word;
+    }
+
+    .chat-history-body p,
+    .chat-history-body ul,
+    .chat-history-body ol {
+      margin: 0 0 10px;
+    }
+
+    .chat-history-body p:last-child,
+    .chat-history-body ul:last-child,
+    .chat-history-body ol:last-child {
+      margin-bottom: 0;
+    }
+
+    .chat-history-body ul,
+    .chat-history-body ol {
+      padding-left: 20px;
+    }
+
+    .chat-history-attachment img {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 18px;
+      display: block;
+      border: 1px solid rgba(29, 29, 29, 0.08);
+    }
+
+    .chat-history-followups {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .history-summary-meta span,
-    .history-chip-list span {
+    .chat-history-followups span {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
       padding: 8px 12px;
       border-radius: 999px;
-      background: rgba(56, 156, 154, 0.08);
+      background: rgba(56, 156, 154, 0.1);
+      color: var(--accent-dark);
+      font-size: 0.86rem;
       font-weight: 700;
     }
 
-    .history-recook-review,
-    .history-recook-note,
-    .history-detail-empty,
-    .history-side-item span,
-    .history-summary-note {
-      color: var(--muted);
-      line-height: 1.65;
-    }
-
-    .history-side-list {
-      display: grid;
-      gap: 12px;
-    }
-
-    .history-side-item {
-      display: grid;
-      gap: 5px;
-      padding: 14px 16px;
-      border-radius: 18px;
-      background: #faf9f6;
-      border: 1px solid rgba(29, 29, 29, 0.05);
-    }
-
-    .history-side-item strong,
-    .history-detail-head h3 {
-      font-family: "Space Grotesk", sans-serif;
-    }
-
-    .history-empty-state {
+    .chat-history-empty {
       display: grid;
       gap: 12px;
       justify-items: start;
-      text-align: left;
     }
 
-    .history-empty-state i {
+    .chat-history-empty i {
       width: 48px;
       height: 48px;
       display: grid;
@@ -316,46 +257,178 @@
       font-size: 1.1rem;
     }
 
-    .history-empty-state h3 {
+    .chat-history-empty h3 {
       margin: 0;
       font-family: "Space Grotesk", sans-serif;
       letter-spacing: -0.03em;
     }
 
-    @media (max-width: 1100px) {
-      .history-summary-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .history-layout {
-        grid-template-columns: 1fr;
-      }
+    .chat-history-session-drawer-toggle {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
     }
 
-    @media (max-width: 700px) {
-      .history-dashboard .user-dashboard-main {
-        padding: 16px;
+    .chat-history-session-drawer-button,
+    .chat-history-session-drawer-backdrop {
+      display: none;
+    }
+
+    @media (max-width: 860px) {
+      .chat-history-summary {
+        grid-template-columns: 1fr;
       }
 
-      .history-topbar {
-        padding: 18px;
+      .chat-history-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .chat-history-topbar {
         flex-direction: column;
       }
 
-      .history-summary-grid {
-        grid-template-columns: 1fr;
+      .chat-history-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .chat-history-main {
+        padding: 14px;
+        gap: 14px;
+        border-radius: 0;
+        border: 0;
+        box-shadow: none;
       }
 
-      .history-recook-card {
-        grid-template-columns: 1fr;
+      .chat-history-topbar,
+      .chat-history-summary-card,
+      .chat-history-panel,
+      .chat-history-empty {
+        padding: 16px;
+        border-radius: 20px;
       }
 
-      .history-recook-card img {
-        min-height: 220px;
+      .chat-history-topbar h1 {
+        font-size: clamp(1.45rem, 8vw, 1.9rem);
       }
 
-      .history-search {
+      .chat-history-topbar p {
+        font-size: 0.94rem;
+        line-height: 1.5;
+      }
+
+      .chat-history-actions {
         width: 100%;
+      }
+
+      .chat-history-actions .button {
+        width: 100%;
+      }
+
+      .chat-history-summary {
+        gap: 12px;
+      }
+
+      .chat-history-layout {
+        gap: 12px;
+      }
+
+      .chat-history-session-drawer-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 46px;
+        padding: 0 16px;
+        border-radius: 999px;
+        background: rgba(56, 156, 154, 0.12);
+        color: var(--accent-dark);
+        font-weight: 800;
+        box-shadow: 0 10px 22px rgba(56, 156, 154, 0.08);
+        cursor: pointer;
+      }
+
+      .chat-history-layout > .chat-history-sessions:not(.chat-history-session-drawer) {
+        display: none;
+      }
+
+      .chat-history-session-drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        display: block;
+        background: rgba(15, 23, 20, 0.34);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease;
+        z-index: 79;
+      }
+
+      .chat-history-session-drawer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 80;
+        padding: 18px 14px calc(108px + env(safe-area-inset-bottom));
+        border-radius: 26px 26px 0 0;
+        background: rgba(255, 255, 255, 0.98);
+        border: 1px solid rgba(29, 29, 29, 0.08);
+        box-shadow: 0 -20px 40px rgba(29, 29, 29, 0.16);
+        transform: translateY(calc(100% + 24px));
+        transition: transform 220ms ease;
+        max-height: min(72vh, 640px);
+        overflow-y: auto;
+      }
+
+      .chat-history-session-drawer-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .chat-history-session-drawer-head strong {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.05rem;
+        letter-spacing: -0.03em;
+      }
+
+      .chat-history-session-drawer-close {
+        display: inline-grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        background: rgba(29, 29, 29, 0.06);
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      .chat-history-session-drawer-toggle:checked ~ .chat-history-layout .chat-history-session-drawer {
+        transform: translateY(0);
+      }
+
+      .chat-history-session-drawer-toggle:checked ~ .chat-history-layout .chat-history-session-drawer-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .chat-history-item {
+        padding: 14px;
+        border-radius: 18px;
+      }
+
+      .chat-history-item-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .chat-history-body {
+        line-height: 1.65;
       }
     }
   </style>
@@ -363,221 +436,145 @@
 <body class="history-page">
   <div class="page-bg"></div>
 
-  <% const recookItems = Array.isArray(activityData?.recookedRecipes) ? activityData.recookedRecipes : []; %>
-  <% const recookTimeline = Array.isArray(sidebarData?.recookTimeline) ? sidebarData.recookTimeline : []; %>
-  <% const summaryData = historySummary || {}; %>
-  <% const latestRecook = summaryData.latestRecook || null; %>
-  <% const averageRatingText = recookItems.length ? Number(summaryData.averageRating || 0).toFixed(1) : '-'; %>
-  <% const formatDateTime = (value) => value ? new Date(value).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; %>
-  <% const formatDateOnly = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
-  <% const formatModifiedIngredients = (value) => {
-       if (Array.isArray(value)) {
-         return value.map((item) => {
-           if (!item) return '';
-           if (typeof item === 'string') return item.trim();
-           if (typeof item === 'object') {
-             return String(item.name || item.label || item.ingredient || item.title || '').trim();
-           }
-           return String(item).trim();
-         }).filter(Boolean);
-       }
-
-       if (value && typeof value === 'object') {
-         return Object.entries(value)
-           .map(([key, item]) => {
-             if (Array.isArray(item)) {
-               return `${key}: ${item.join(', ')}`;
-             }
-             if (item && typeof item === 'object') {
-               return `${key}: ${String(item.name || item.label || item.title || '').trim()}`;
-             }
-             return `${key}: ${String(item || '').trim()}`;
-           })
-           .filter((item) => item && !item.endsWith(':'));
-       }
-
-       return [];
-     }; %>
+  <% const data = chatHistoryData || { sessionId: '', totalMessages: 0, messages: [], sessions: [] }; %>
+  <% const formatDateTime = (value) => value ? new Date(value).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; %>
+  <% const selectedSession = (data.sessions || []).find((item) => item.session_id === data.sessionId) || null; %>
 
   <main class="user-dashboard history-dashboard">
     <div class="user-dashboard-shell history-dashboard-shell">
-      <%- include('partials/sidebar', { mode: 'user', activePage: 'history', user }) %>
+      <%- include('partials/sidebar', { mode: 'user', activePage: 'chat', user }) %>
 
-      <section class="user-dashboard-main history-main">
-        <header class="user-dashboard-topbar history-topbar">
-          <div class="history-topbar-copy">
-            <p class="user-panel-kicker">Recook history</p>
-            <h1>Riwayat masakan yang sudah di-recook</h1>
-            <p class="history-topbar-note">
-              Semua resep yang pernah kamu masak ulang tersimpan di sini, lengkap dengan tanggal,
-              rating, review, dan catatan perubahan bahan.
-            </p>
-            <div class="history-quick-actions" aria-label="Aksi cepat history">
-              <a class="history-quick-chip" href="/chat-ai">Buka chat sumber</a>
-              <a class="history-quick-chip" href="#historyTimeline">Lihat timeline</a>
-              <a class="history-quick-chip" href="#historySidebar">Lihat ringkasan</a>
-            </div>
+      <section class="user-dashboard-main chat-history-main">
+        <header class="user-dashboard-topbar chat-history-topbar">
+          <div>
+            <p class="user-panel-kicker">History chat</p>
+            <h1>Riwayat percakapan AI</h1>
+            <p>Semua pesan dari sesi chat aktif tersimpan di sini, termasuk lampiran foto dan balasan AI.</p>
           </div>
 
-          <div class="user-topbar-actions history-topbar-actions">
-            <div class="user-search history-search">
-              <i class="fa-solid fa-magnifying-glass user-search-icon" aria-hidden="true"></i>
-              <input type="text" placeholder="Cari resep recook..." />
-            </div>
-            <a class="button button-secondary" href="/chat-ai">Buka chat sumber</a>
+          <div class="chat-history-actions">
+            <a href="/chat-ai" class="button button-secondary">Kembali ke chat</a>
           </div>
         </header>
 
-        <section class="history-summary-grid" aria-label="Ringkasan recook">
-          <article class="history-summary-card">
-            <div class="history-summary-copy">
-              <p class="user-panel-kicker">Total recook</p>
-              <h2><%= summaryData.recookCount || 0 %></h2>
-              <p class="history-summary-note">Resep yang sudah pernah dimasak ulang.</p>
-            </div>
+        <section class="chat-history-summary" aria-label="Ringkasan history chat">
+          <article class="chat-history-summary-card">
+            <p class="user-panel-kicker">Sesi terpilih</p>
+            <h2><%= selectedSession?.title || 'Sesi chat' %></h2>
+            <span><%= data.sessionId || 'Belum ada sesi terpilih.' %></span>
           </article>
 
-          <article class="history-summary-card">
-            <div class="history-summary-copy">
-              <p class="user-panel-kicker">Resep berbeda</p>
-              <h2><%= summaryData.uniqueRecookedCount || 0 %></h2>
-              <p class="history-summary-note">Jumlah menu unik di history.</p>
-            </div>
+          <article class="chat-history-summary-card">
+            <p class="user-panel-kicker">Total pesan</p>
+            <h2><%= data.totalMessages || 0 %></h2>
+            <span>Jumlah pesan user dan AI dalam sesi ini.</span>
           </article>
 
-          <article class="history-summary-card">
-            <div class="history-summary-copy">
-              <p class="user-panel-kicker">Rating rata-rata</p>
-              <h2><%= averageRatingText %></h2>
-              <p class="history-summary-note">Rata-rata rating dari semua recook.</p>
-            </div>
-          </article>
-
-          <article class="history-summary-card">
-            <div class="history-summary-copy">
-              <p class="user-panel-kicker">Recook terbaru</p>
-              <h2><%= latestRecook ? latestRecook.title : '-' %></h2>
-              <p class="history-summary-note"><%= latestRecook ? formatDateOnly(latestRecook.cooking_date) : 'Belum ada recook tersimpan' %></p>
-            </div>
+          <article class="chat-history-summary-card">
+            <p class="user-panel-kicker">Total sesi</p>
+            <h2><%= (data.sessions || []).length %></h2>
+            <span>Jumlah sesi chat yang tersimpan untuk akun ini.</span>
           </article>
         </section>
 
-        <div class="history-layout">
-          <section class="history-primary">
-            <section class="history-activity-panel" id="historyTimeline">
-              <div class="history-detail-head">
-                <p class="user-panel-kicker">Recook timeline</p>
-                <h3>Daftar masakan yang sudah dimasak ulang</h3>
-              </div>
+        <input type="checkbox" class="chat-history-session-drawer-toggle" id="chatHistorySessionDrawer" />
+        <div class="chat-history-layout">
+          <label class="chat-history-session-drawer-button" for="chatHistorySessionDrawer">
+            <i class="fa-regular fa-message" aria-hidden="true"></i>
+            <span>Pilih sesi</span>
+          </label>
 
-              <% if (recookItems.length) { %>
-                <div class="history-recook-list">
-                  <% recookItems.forEach(function(recipe, index) { %>
-                    <% const modifiedIngredients = formatModifiedIngredients(recipe.modified_ingredients); %>
-                    <article class="history-recook-card">
-                      <img src="<%= recipe.image_url || '/images/1.png' %>" alt="<%= recipe.title %>" />
-                      <div class="history-recook-copy">
-                        <div class="history-recook-head">
-                          <div>
-                            <p class="user-panel-kicker">Recook #<%= index + 1 %></p>
-                            <h3><%= recipe.title %></h3>
-                          </div>
-                          <span class="admin-status is-approved"><%= recipe.category || 'Uncategorized' %></span>
-                        </div>
-
-                        <div class="history-summary-meta">
-                          <span><i class="fa-regular fa-calendar"></i> <%= formatDateTime(recipe.cooking_date) %></span>
-                          <span><i class="fa-regular fa-clock"></i> <%= recipe.cooking_time || 0 %> min</span>
-                          <span><i class="fa-solid fa-star"></i> <%= recipe.rating ? `${recipe.rating}/5` : 'Belum dinilai' %></span>
-                        </div>
-
-                        <% if (recipe.review) { %>
-                          <p class="history-recook-review"><i class="fa-solid fa-quote-left"></i> <%= recipe.review %></p>
-                        <% } %>
-
-                        <% if (recipe.notes) { %>
-                          <p class="history-recook-note"><strong>Catatan:</strong> <%= recipe.notes %></p>
-                        <% } %>
-
-                        <% if (modifiedIngredients.length) { %>
-                          <div class="history-chip-list">
-                            <% modifiedIngredients.slice(0, 6).forEach(function(item) { %>
-                              <span><%= item %></span>
-                            <% }) %>
-                          </div>
-                        <% } %>
-                      </div>
-                    </article>
-                  <% }) %>
-                </div>
+          <aside class="chat-history-sessions">
+            <div class="chat-history-session-list">
+              <% if ((data.sessions || []).length) { %>
+                <% data.sessions.forEach((session) => { %>
+                  <a
+                    href="/chat-history?session=<%= encodeURIComponent(session.session_id) %>"
+                    class="chat-history-session-link <%= session.session_id === data.sessionId ? 'is-active' : '' %>"
+                  >
+                    <strong><%= session.title || 'Sesi chat tanpa judul' %></strong>
+                    <span><%= session.message_count || 0 %> pesan</span>
+                    <span><%= formatDateTime(session.updated_at || session.created_at) %></span>
+                  </a>
+                <% }) %>
               <% } else { %>
-                <div class="empty-state history-empty-state">
-                  <i class="fa-solid fa-fire-burner"></i>
-                  <h3>Belum ada history recook</h3>
-                  <p>Setiap resep yang kamu masak ulang akan tersimpan di sini sebagai riwayat masakan.</p>
-                  <a class="button button-secondary" href="/chat-ai">Mulai dari AI Chat</a>
+                <div class="chat-history-empty">
+                  <i class="fa-regular fa-message"></i>
+                  <h3>Belum ada sesi chat</h3>
+                  <p>Mulai percakapan baru di AI Chat, lalu sesinya akan muncul di sini.</p>
                 </div>
               <% } %>
-            </section>
-          </section>
-
-          <aside class="history-sidebar" id="historySidebar">
-            <article class="history-side-card">
-              <div class="history-detail-head">
-                <p class="user-panel-kicker">Sesi sumber</p>
-                <h3>Chat yang memicu recook</h3>
-              </div>
-
-              <div class="history-side-list">
-                <div class="history-side-item">
-                  <strong><%= session.title || 'Chat session' %></strong>
-                  <span><%= session.session_id %></span>
-                </div>
-                <div class="history-side-item">
-                  <strong><%= insights.category %></strong>
-                  <span><%= insights.totalMessages %> pesan - <%= insights.createdDate %></span>
-                </div>
-              </div>
-            </article>
-
-            <article class="history-side-card">
-              <div class="history-detail-head">
-                <p class="user-panel-kicker">Recook terbaru</p>
-                <h3>3 resep terakhir</h3>
-              </div>
-
-              <% if (recookTimeline.length) { %>
-                <div class="history-side-list">
-                  <% recookTimeline.forEach(function(recipe) { %>
-                    <div class="history-side-item">
-                      <strong><%= recipe.title %></strong>
-                      <span><%= formatDateOnly(recipe.cooking_date) %> - <%= recipe.category || 'Uncategorized' %></span>
-                    </div>
-                  <% }) %>
-                </div>
-              <% } else { %>
-                <p class="history-detail-empty">Belum ada recook terbaru.</p>
-              <% } %>
-            </article>
-
-            <article class="history-side-card">
-              <div class="history-detail-head">
-                <p class="user-panel-kicker">Ringkasan sesi</p>
-                <h3>Data percakapan terkait</h3>
-              </div>
-
-              <div class="history-side-list">
-                <div class="history-side-item">
-                  <strong><%= insights.recipeSummary ? insights.recipeSummary.name : 'Belum ada resep utama' %></strong>
-                  <span><%= insights.recipeSummary ? `${insights.recipeSummary.duration} menit` : 'Tambahkan prompt resep' %></span>
-                </div>
-                <div class="history-side-item">
-                  <strong><%= insights.recipeSummary ? insights.recipeSummary.budget : 'Rp0' %></strong>
-                  <span>Estimasi budget resep</span>
-                </div>
-              </div>
-            </article>
+            </div>
           </aside>
+
+          <label class="chat-history-session-drawer-backdrop" for="chatHistorySessionDrawer" aria-hidden="true"></label>
+
+          <aside class="chat-history-sessions chat-history-session-drawer">
+            <div class="chat-history-session-drawer-head">
+              <strong>Pilih sesi chat</strong>
+              <label class="chat-history-session-drawer-close" for="chatHistorySessionDrawer" aria-label="Tutup daftar sesi">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </label>
+            </div>
+            <div class="chat-history-session-list">
+              <% if ((data.sessions || []).length) { %>
+                <% data.sessions.forEach((session) => { %>
+                  <a
+                    href="/chat-history?session=<%= encodeURIComponent(session.session_id) %>"
+                    class="chat-history-session-link <%= session.session_id === data.sessionId ? 'is-active' : '' %>"
+                  >
+                    <strong><%= session.title || 'Sesi chat tanpa judul' %></strong>
+                    <span><%= session.message_count || 0 %> pesan</span>
+                    <span><%= formatDateTime(session.updated_at || session.created_at) %></span>
+                  </a>
+                <% }) %>
+              <% } else { %>
+                <div class="chat-history-empty">
+                  <i class="fa-regular fa-message"></i>
+                  <h3>Belum ada sesi chat</h3>
+                  <p>Mulai percakapan baru di AI Chat, lalu sesinya akan muncul di sini.</p>
+                </div>
+              <% } %>
+            </div>
+          </aside>
+
+          <section class="chat-history-panel">
+            <div class="chat-history-list">
+              <% if (data.messages.length) { %>
+                <% data.messages.forEach((message) => { %>
+                  <article class="chat-history-item <%= message.role === 'ai' ? 'ai' : 'user' %>">
+                    <div class="chat-history-item-head">
+                      <strong><%= message.label || (message.role === 'ai' ? 'AI' : 'You') %></strong>
+                      <span><%= formatDateTime(message.createdAt) %></span>
+                    </div>
+
+                    <% if (message.attachment && message.attachment.dataUrl) { %>
+                      <figure class="chat-history-attachment">
+                        <img src="<%= message.attachment.dataUrl %>" alt="<%= message.attachment.name || 'Lampiran chat' %>" />
+                      </figure>
+                    <% } %>
+
+                    <div class="chat-history-body"><%- message.html %></div>
+
+                    <% if (message.followUps && message.followUps.length) { %>
+                      <div class="chat-history-followups">
+                        <% message.followUps.forEach((item) => { %>
+                          <span><%= item %></span>
+                        <% }) %>
+                      </div>
+                    <% } %>
+                  </article>
+                <% }) %>
+              <% } else { %>
+                <div class="chat-history-empty">
+                  <i class="fa-regular fa-message"></i>
+                  <h3>Belum ada history chat</h3>
+                  <p>Belum ada pesan di sesi ini. Coba pilih sesi lain atau mulai percakapan baru.</p>
+                  <a href="/chat-ai" class="button button-secondary">Buka AI chat</a>
+                </div>
+              <% } %>
+            </div>
+          </section>
         </div>
       </section>
     </div>

@@ -18,7 +18,12 @@ if (chatWindow && chatForm && chatInput) {
     role: 'ai',
     label: 'AI',
     text: 'Kirim bahan, budget, tujuan makan, atau foto makanan.',
-    html: '<p>Kirim bahan, budget, tujuan makan, atau foto makanan.</p>'
+    html: '<p>Kirim bahan, budget, tujuan makan, atau foto makanan.</p>',
+    followUps: [
+      'Bantu pilih resep dari bahan yang ada',
+      'Cek bahan yang harus dibeli supaya bisa recook resep ini',
+      'Buat recook dari foto masakan ini'
+    ]
   };
 
   let attachmentFile = null;

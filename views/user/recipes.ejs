@@ -18,10 +18,7 @@
 </head>
 <body>
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
-  <% const formatDate = (value) => value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; %>
   <% const serializedRecipes = JSON.stringify(recipes || []).replace(/</g, '\\u003c'); %>
-  <% const activeRecipeId = activeRecipe ? String(activeRecipe.id) : ''; %>
-  <% const activeRecipeUrl = activeRecipe ? `/recipes?feed=${encodeURIComponent(feed || 'random')}&recipeId=${encodeURIComponent(activeRecipe.id)}` : '/recipes'; %>
   <% const activeRecipeDetailUrl = activeRecipe ? `/recipe-detail?feed=${encodeURIComponent(feed || 'random')}&recipeId=${encodeURIComponent(activeRecipe.id)}` : '/recipe-detail'; %>
 
   <main class="user-dashboard user-feed-page user-fyp-page">
@@ -52,21 +49,12 @@
               <article class="user-panel user-fyp-feature">
                 <div class="user-panel-head user-fyp-feature-head">
                   <div>
-                    <p class="user-panel-kicker"><%= activeRecipe.originPlace || activeRecipe.cuisine %> • <%= activeRecipe.category %></p>
+                    <p class="user-panel-kicker"><%= activeRecipe.originPlace || activeRecipe.cuisine %> &bull; <%= activeRecipe.category %></p>
                     <h1><%= activeRecipe.title %></h1>
                   </div>
                   <div class="user-fyp-author">
                     <span>Dibuat oleh <strong><%= activeRecipe.creatorName %></strong></span>
                   </div>
-                </div>
-
-                <div class="user-recipe-detail-tags user-fyp-metrics" id="selectedRecipeStats">
-                  <span><i class="fa-regular fa-clock"></i> <strong id="selectedRecipeTime"><%= activeRecipe.cookingTime %></strong> menit</span>
-                  <span><i class="fa-solid fa-star"></i> <strong id="selectedRecipeLikes"><%= activeRecipe.likesCount %></strong> suka</span>
-                  <span><i class="fa-solid fa-bookmark"></i> <strong id="selectedRecipeSaves"><%= activeRecipe.savesCount %></strong> simpan</span>
-                  <span><i class="fa-solid fa-coins"></i> Perkiraan Rp <strong id="selectedRecipePrice"><%= formatPrice(activeRecipe.estimatedPrice) %></strong></span>
-                  <span><i class="fa-solid fa-fire"></i> <strong id="selectedRecipeCalories"><%= activeRecipe.calories %></strong> kkal</span>
-                  <span><i class="fa-solid fa-signal"></i> <strong id="selectedRecipeDifficulty"><%= activeRecipe.difficulty %></strong></span>
                 </div>
 
                 <% if (activeRecipe.warning) { %>
@@ -173,73 +161,6 @@
             <% } %>
           </section>
 
-          <aside class="user-fyp-sidebar">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Aktivitas aktif</p>
-                  <h2>Aktivitas di resep ini</h2>
-                </div>
-                <span class="user-panel-link">Lihat semua</span>
-              </div>
-
-              <div class="user-stat-list">
-                <div class="user-stat-card">
-                  <i class="fa-solid fa-users"></i>
-                  <strong><%= activityData.viewsCount %> pembaca</strong>
-                  <span>Resep ini sedang ramai dibuka pengguna lain.</span>
-                </div>
-                <div class="user-stat-card">
-                  <i class="fa-solid fa-bookmark"></i>
-                  <strong><%= activityData.savesCount %> simpan</strong>
-                  <span>Bisa dijadikan menu andalan minggu ini.</span>
-                </div>
-                <div class="user-stat-card">
-                  <i class="fa-solid fa-heart"></i>
-                  <strong><%= activityData.likesCount %> suka</strong>
-                  <span>Interaksi resep yang sedang naik.</span>
-                </div>
-              </div>
-            </article>
-
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Ulasan & penilaian</p>
-                  <h2>Masukan pengguna</h2>
-                </div>
-              </div>
-
-              <div class="user-recipe-review-list">
-                <% reviews.forEach((review) => { %>
-                  <article class="user-recipe-review-item">
-                    <div class="user-recipe-review-head">
-                      <strong><%= review.name %></strong>
-                      <span><%= '★'.repeat(review.rating) %></span>
-                    </div>
-                    <p><%= review.note %></p>
-                  </article>
-                <% }) %>
-              </div>
-            </article>
-
-            <article class="user-panel user-ai-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Langkah berikutnya</p>
-                  <h2>Video resep vertikal</h2>
-                </div>
-              </div>
-
-              <p class="user-ai-copy">
-                Kamu bisa pilih resep lain dari menu kiri untuk mengganti tampilan detail di tengah.
-              </p>
-
-              <div class="user-ai-actions">
-                <span class="user-panel-meta">Klik resep di kiri untuk pindah detail.</span>
-              </div>
-            </article>
-          </aside>
         </div>
       </section>
     </div>
@@ -255,12 +176,6 @@
       const recipeMap = new Map(recipes.map((recipe) => [String(recipe.id), recipe]));
       const selectedRecipeSnapshot = <%- JSON.stringify(activeRecipe || null).replace(/</g, '\\u003c') %>;
       const selectedRecipeId = String(<%- JSON.stringify(activeRecipe ? activeRecipe.id : '') %>);
-      const selectedRecipeLike = document.getElementById('selectedRecipeLikes');
-      const selectedRecipeSave = document.getElementById('selectedRecipeSaves');
-      const selectedRecipeTime = document.getElementById('selectedRecipeTime');
-      const selectedRecipePrice = document.getElementById('selectedRecipePrice');
-      const selectedRecipeCalories = document.getElementById('selectedRecipeCalories');
-      const selectedRecipeDifficulty = document.getElementById('selectedRecipeDifficulty');
       const selectedRecipeFavorite = document.getElementById('selectedRecipeFavorite');
       const selectedRecipeShare = document.getElementById('selectedRecipeShare');
       const escapeSelector = (value) => {
@@ -307,30 +222,6 @@
       const updateSelectedRecipeState = (recipe) => {
         if (!recipe || String(recipe.id) !== selectedRecipeId) {
           return;
-        }
-
-        if (selectedRecipeLike) {
-          selectedRecipeLike.textContent = recipe.likesCount || 0;
-        }
-
-        if (selectedRecipeSave) {
-          selectedRecipeSave.textContent = recipe.savesCount || 0;
-        }
-
-        if (selectedRecipeTime) {
-          selectedRecipeTime.textContent = recipe.cookingTime || 0;
-        }
-
-        if (selectedRecipePrice) {
-          selectedRecipePrice.textContent = Number(recipe.estimatedPrice || 0).toLocaleString('id-ID');
-        }
-
-        if (selectedRecipeCalories) {
-          selectedRecipeCalories.textContent = recipe.calories || 0;
-        }
-
-        if (selectedRecipeDifficulty) {
-          selectedRecipeDifficulty.textContent = recipe.difficulty || 'easy';
         }
 
         if (selectedRecipeFavorite) {

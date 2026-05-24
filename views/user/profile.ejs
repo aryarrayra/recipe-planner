@@ -19,14 +19,16 @@
   <% const avatarUrl = profileData.avatarUrl || user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username || 'Pengguna')}`; %>
   <% const hasCustomAvatar = Boolean(user.avatar_url && !String(user.avatar_url).includes('ui-avatars.com')); %>
   <% const progress = profileData.progress || { level: 1, title: 'Koki Pemula', progress: 0, activityPoints: 0, pointsIntoLevel: 0, pointsToNextLevel: 10 }; %>
-  <% const budgetValue = Number(profileData.budgetPerMeal || user.budget_per_meal || 0); %>
-  <% const budgetText = budgetValue ? budgetValue.toLocaleString('id-ID') : '0'; %>
   <% const skillLabel = profileData.skillLevel || 'Pemula'; %>
   <% const totalCooked = Number(profileData.cookingCount || user.total_recipes_cooked || 0); %>
   <% const totalSaved = Number(user.total_saved_recipes || 0); %>
   <% const totalShared = Number(user.total_recipes_shared || 0); %>
   <% const favoriteCount = Number(profileData.favoriteCount || 0); %>
   <% const communityFeed = profileData.communityFeed || { posts: [], comments: [] }; %>
+  <% const profileBio = String(profileData.bio || user.bio || '').trim() || 'Belum ada bio akun. Tambahkan cerita singkat tentang gaya masak atau menu favoritmu di pengaturan profil.'; %>
+  <% const birthDateDisplay = String(profileData.birthDate || '').trim(); %>
+  <% const birthDateValue = String(profileData.birthDateValue || '').trim(); %>
+  <% const regionOrigin = String(profileData.regionOrigin || user.region_origin || '').trim(); %>
   <% const communityPosts = Array.isArray(communityFeed.posts) ? communityFeed.posts : []; %>
   <% const communityComments = Array.isArray(communityFeed.comments) ? communityFeed.comments : []; %>
   <% const communityPostUrl = (recipe) => `/community/posts/${encodeURIComponent(recipe.communityPostId || recipe.postId || recipe.post_id || recipe.id || '')}`; %>
@@ -187,7 +189,7 @@
 
     .profile-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.3fr) 360px;
+      grid-template-columns: minmax(0, 1fr);
       gap: 20px;
       align-items: start;
     }
@@ -196,6 +198,10 @@
     .profile-sidebar {
       display: grid;
       gap: 18px;
+    }
+
+    .profile-sidebar {
+      display: none;
     }
 
     .profile-card {
@@ -302,6 +308,10 @@
       box-shadow: none;
     }
 
+    .profile-settings-section-wide {
+      grid-column: 1 / -1;
+    }
+
     .profile-settings-section .profile-section-head {
       margin-bottom: 14px;
     }
@@ -341,13 +351,14 @@
       display: grid;
       grid-template-columns: 120px minmax(0, 1fr);
       gap: 18px;
-      align-items: center;
+      align-items: start;
     }
 
     .profile-avatar-wrap {
       display: grid;
       gap: 10px;
-      justify-items: center;
+      justify-items: start;
+      align-content: start;
     }
 
     .profile-avatar-form {
@@ -440,6 +451,42 @@
       margin-top: 12px;
     }
 
+    .profile-bio-box {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #f7f9fa;
+      border: 1px solid rgba(15, 20, 25, 0.08);
+      color: #536471;
+      line-height: 1.7;
+    }
+
+    .profile-bio-box strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #0f1419;
+      font-size: 0.92rem;
+    }
+
+    .profile-account-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .profile-account-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #f7f9fa;
+      color: #536471;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
     .profile-badge {
       display: inline-flex;
       align-items: center;
@@ -449,6 +496,10 @@
       background: #f7f9fa;
       color: #0f1419;
       font-weight: 700;
+    }
+
+    .profile-badge-label {
+      white-space: nowrap;
     }
 
     .profile-level-pill {
@@ -538,6 +589,12 @@
       appearance: none;
       -webkit-appearance: none;
       box-shadow: 0 8px 20px rgba(29, 29, 29, 0.04);
+    }
+
+    .profile-field input[type="date"] {
+      appearance: auto;
+      -webkit-appearance: auto;
+      min-height: 52px;
     }
 
     .profile-field input[type="file"] {
@@ -697,6 +754,28 @@
       background: #f7f9fa;
       color: #0f1419;
       line-height: 1.6;
+    }
+
+    .profile-flash-message {
+      transition:
+        opacity 220ms ease,
+        transform 220ms ease,
+        max-height 220ms ease,
+        margin 220ms ease,
+        padding 220ms ease;
+      opacity: 1;
+      transform: translateY(0);
+      max-height: 160px;
+      overflow: hidden;
+    }
+
+    .profile-flash-message.is-hiding {
+      opacity: 0;
+      transform: translateY(-8px);
+      max-height: 0;
+      margin: 0;
+      padding-top: 0;
+      padding-bottom: 0;
     }
 
     .profile-community-header {
@@ -944,6 +1023,20 @@
         height: 92px;
       }
 
+      .profile-badges {
+        gap: 8px;
+      }
+
+      .profile-badge {
+        min-width: 0;
+        justify-content: center;
+        padding: 8px 10px;
+      }
+
+      .profile-badge-label {
+        display: none;
+      }
+
       .profile-stats-grid,
       .profile-form-grid,
       .profile-preference-grid {
@@ -1187,13 +1280,13 @@
         </header>
 
         <% if (notice) { %>
-          <article class="profile-card is-accent">
+          <article class="profile-card is-accent profile-flash-message" data-profile-flash>
             <div class="profile-note-box"><%= notice %></div>
           </article>
         <% } %>
 
         <% if (error) { %>
-          <article class="profile-card is-accent">
+          <article class="profile-card is-accent profile-flash-message" data-profile-flash>
             <div class="profile-note-box"><%= error %></div>
           </article>
         <% } %>
@@ -1232,11 +1325,27 @@
                     </div>
                   </div>
 
+                  <% if (birthDateDisplay || regionOrigin) { %>
+                    <div class="profile-account-meta">
+                      <% if (birthDateDisplay) { %>
+                        <span><i class="fa-regular fa-calendar"></i> <%= birthDateDisplay %></span>
+                      <% } %>
+                      <% if (regionOrigin) { %>
+                        <span><i class="fa-solid fa-location-dot"></i> <%= regionOrigin %></span>
+                      <% } %>
+                    </div>
+                  <% } %>
+
+                  <div class="profile-bio-box">
+                    <strong>Bio akun</strong>
+                    <span><%= profileBio %></span>
+                  </div>
+
                   <div class="profile-badges">
-                    <span class="profile-badge"><i class="fa-solid fa-fire-burner"></i> <%= totalCooked %> masak ulang</span>
-                    <span class="profile-badge"><i class="fa-solid fa-bookmark"></i> <%= totalSaved %> tersimpan</span>
-                    <span class="profile-badge"><i class="fa-solid fa-share-nodes"></i> <%= totalShared %> dibagikan</span>
-                    <span class="profile-badge"><i class="fa-solid fa-heart"></i> <%= favoriteCount %> favorit</span>
+                    <span class="profile-badge"><i class="fa-solid fa-fire-burner"></i> <%= totalCooked %> <span class="profile-badge-label">masak ulang</span></span>
+                    <span class="profile-badge"><i class="fa-solid fa-bookmark"></i> <%= totalSaved %> <span class="profile-badge-label">tersimpan</span></span>
+                    <span class="profile-badge"><i class="fa-solid fa-share-nodes"></i> <%= totalShared %> <span class="profile-badge-label">dibagikan</span></span>
+                    <span class="profile-badge"><i class="fa-solid fa-heart"></i> <%= favoriteCount %> <span class="profile-badge-label">favorit</span></span>
                   </div>
                 </div>
               </div>
@@ -1270,10 +1379,6 @@
                 <div class="profile-stat">
                   <span>Resep dibagikan</span>
                   <strong><%= totalShared %></strong>
-                </div>
-                <div class="profile-stat">
-                  <span>Anggaran / porsi</span>
-                  <strong>Rp <%= budgetText %></strong>
                 </div>
               </div>
             </article>
@@ -1379,19 +1484,6 @@
           <aside class="profile-sidebar">
             <article class="profile-card">
               <div class="profile-section-head">
-                <p class="user-panel-kicker">Progres level</p>
-                <h3>Ringkasan progres</h3>
-              </div>
-
-              <div class="profile-note-box">
-                <strong>Level <%= progress.level %></strong><br />
-                <%= progress.title %><br />
-                <span><%= progress.pointsToNextLevel %> poin lagi untuk naik level.</span>
-              </div>
-            </article>
-
-            <article class="profile-card">
-              <div class="profile-section-head">
                 <p class="user-panel-kicker">Preferensi</p>
                 <h3>Yang sedang dihindari</h3>
               </div>
@@ -1430,9 +1522,9 @@
               <div class="profile-settings-column">
                 <article class="profile-settings-section">
                   <div class="profile-section-head">
-                    <p class="user-panel-kicker">Foto profil dan info akun</p>
+                    <p class="user-panel-kicker">Profil dan info akun</p>
                     <h3>Edit profil</h3>
-                    <p class="profile-muted">Avatar diganti langsung dari foto profil di atas. Bio dan anggaran bisa diubah di sini.</p>
+                    <p class="profile-muted">Edit bio akun, tanggal lahir, dan asal daerah kamu di sini.</p>
                   </div>
 
                   <form action="/profile/details" method="post">
@@ -1446,14 +1538,21 @@
                       </label>
 
                       <label class="profile-field">
-                        <span>Budget per porsi</span>
+                        <span>Tanggal lahir</span>
                         <input
-                          type="number"
-                          min="0"
-                          step="500"
-                          name="budget_per_meal"
-                          value="<%= Number(user.budget_per_meal || 0) || '' %>"
-                          placeholder="15000"
+                          type="date"
+                          name="birth_date"
+                          value="<%= birthDateValue %>"
+                        />
+                      </label>
+
+                      <label class="profile-field">
+                        <span>Asal daerah</span>
+                        <input
+                          type="text"
+                          name="region_origin"
+                          value="<%= regionOrigin %>"
+                          placeholder="Contoh: Bandung, Jawa Barat"
                         />
                       </label>
                     </div>
@@ -1463,7 +1562,9 @@
                     </div>
                   </form>
                 </article>
+              </div>
 
+              <div class="profile-settings-column">
                 <article class="profile-settings-section">
                   <div class="profile-section-head">
                     <p class="user-panel-kicker">Preferensi makanan</p>
@@ -1491,81 +1592,65 @@
                     </div>
                   </form>
                 </article>
-
-                <article class="profile-settings-section">
-                  <div class="profile-section-head">
-                    <p class="user-panel-kicker">Keamanan</p>
-                    <h3>Ganti password</h3>
-                    <p class="profile-muted">Masukkan password lama lalu tentukan password baru yang kuat.</p>
-                  </div>
-
-                  <form action="/profile/password" method="post">
-                    <div class="profile-password-grid">
-                      <label class="profile-field">
-                        <span>Password lama</span>
-                        <div class="password-field">
-                          <input type="password" id="currentPassword" name="current_password" placeholder="Password saat ini" required />
-                          <button type="button" class="password-toggle" data-password-toggle data-target="currentPassword" aria-label="Tampilkan password lama">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
-                              <circle cx="12" cy="12" r="3"></circle>
-                              <path class="eye-slash" d="M4 4l16 16"></path>
-                            </svg>
-                          </button>
-                        </div>
-                      </label>
-
-                      <label class="profile-field">
-                        <span>Password baru</span>
-                        <div class="password-field">
-                          <input type="password" id="newPassword" name="new_password" placeholder="Password baru" required />
-                          <button type="button" class="password-toggle" data-password-toggle data-target="newPassword" aria-label="Tampilkan password baru">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
-                              <circle cx="12" cy="12" r="3"></circle>
-                              <path class="eye-slash" d="M4 4l16 16"></path>
-                            </svg>
-                          </button>
-                        </div>
-                      </label>
-
-                      <label class="profile-field">
-                        <span>Konfirmasi password</span>
-                        <div class="password-field">
-                          <input type="password" id="confirmPassword" name="confirm_password" placeholder="Ulangi password baru" required />
-                          <button type="button" class="password-toggle" data-password-toggle data-target="confirmPassword" aria-label="Tampilkan konfirmasi password">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
-                              <circle cx="12" cy="12" r="3"></circle>
-                              <path class="eye-slash" d="M4 4l16 16"></path>
-                            </svg>
-                          </button>
-                        </div>
-                      </label>
-                    </div>
-
-                    <div class="profile-section-actions">
-                      <button type="submit" class="profile-primary-button">Ubah password</button>
-                    </div>
-                  </form>
-                </article>
               </div>
 
-              <div class="profile-settings-column">
-                <article class="profile-settings-section">
-                  <div class="profile-section-head">
-                    <p class="user-panel-kicker">Panduan</p>
-                    <h3>Cara update foto profil</h3>
+              <article class="profile-settings-section profile-settings-section-wide">
+                <div class="profile-section-head">
+                  <p class="user-panel-kicker">Keamanan</p>
+                  <h3>Ganti password</h3>
+                  <p class="profile-muted">Masukkan password lama lalu tentukan password baru yang kuat.</p>
+                </div>
+
+                <form action="/profile/password" method="post">
+                  <div class="profile-password-grid">
+                    <label class="profile-field">
+                      <span>Password lama</span>
+                      <div class="password-field">
+                        <input type="password" id="currentPassword" name="current_password" placeholder="Password saat ini" required />
+                        <button type="button" class="password-toggle" data-password-toggle data-target="currentPassword" aria-label="Tampilkan password lama">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path class="eye-slash" d="M4 4l16 16"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </label>
+
+                    <label class="profile-field">
+                      <span>Password baru</span>
+                      <div class="password-field">
+                        <input type="password" id="newPassword" name="new_password" placeholder="Password baru" required />
+                        <button type="button" class="password-toggle" data-password-toggle data-target="newPassword" aria-label="Tampilkan password baru">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path class="eye-slash" d="M4 4l16 16"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </label>
+
+                    <label class="profile-field">
+                      <span>Konfirmasi password</span>
+                      <div class="password-field">
+                        <input type="password" id="confirmPassword" name="confirm_password" placeholder="Ulangi password baru" required />
+                        <button type="button" class="password-toggle" data-password-toggle data-target="confirmPassword" aria-label="Tampilkan konfirmasi password">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path class="eye-slash" d="M4 4l16 16"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </label>
                   </div>
 
-                  <div class="profile-note-box">
-                    <strong>Klik foto profil</strong><br />
-                    Upload gambar baru langsung dari kartu akun di atas.<br />
-                    <span>Ikon <i class="fa-solid <%= hasCustomAvatar ? 'fa-pen' : 'fa-plus' %>"></i> akan berubah otomatis sesuai foto yang dipakai.</span>
+                  <div class="profile-section-actions">
+                    <button type="submit" class="profile-primary-button">Ubah password</button>
                   </div>
-                </article>
-
-              </div>
+                </form>
+              </article>
             </div>
           </div>
         </div>
@@ -1624,6 +1709,33 @@
         if (avatarInput.files && avatarInput.files.length > 0) {
           avatarForm?.submit();
         }
+      });
+
+      settingsOverlay?.querySelectorAll('input[type="date"]').forEach((input) => {
+        const openDatePicker = () => {
+          if (typeof input.showPicker === 'function') {
+            try {
+              input.showPicker();
+            } catch (error) {
+              input.focus();
+            }
+            return;
+          }
+
+          input.focus();
+        };
+
+        input.addEventListener('click', openDatePicker);
+        input.addEventListener('touchend', openDatePicker, { passive: true });
+      });
+
+      document.querySelectorAll('[data-profile-flash]').forEach((flash) => {
+        window.setTimeout(() => {
+          flash.classList.add('is-hiding');
+          window.setTimeout(() => {
+            flash.remove();
+          }, 240);
+        }, 2000);
       });
 
       document.querySelectorAll('[data-password-toggle]').forEach((button) => {

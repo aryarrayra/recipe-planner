@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(20) NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     avatar_url TEXT,
     bio TEXT,
+    birth_date DATE,
+    region_origin VARCHAR(120),
     dietary_preferences JSONB DEFAULT '[]',
     allergies JSONB DEFAULT '[]',
     favorite_cuisines JSONB DEFAULT '[]',

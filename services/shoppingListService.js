@@ -26,6 +26,43 @@ function normalizeText(value = '') {
         .replace(/\s+/g, ' ');
 }
 
+function stripLeadingQuantity(text = '') {
+    let value = String(text || '').trim();
+    if (!value) {
+        return '';
+    }
+
+    value = value.replace(/^\d+(?:[./,]\d+)?(?:\s+\d+\/\d+)?\s*/u, '');
+
+    value = value
+        .replace(/^[\d¼½¾⅓⅔⅛⅜⅝⅞]+(?:[./,]\d+)?(?:\s+\d+\/\d+)?\s*/u, '')
+        .replace(
+            /^(?:sdt|sdm|tsp|tbsp|cup|cups|kg|g|gram|gr|ons|ml|l|liter|pcs|pc|buah|siung|clove|cloves|slice|slices|lembar|batang|pack|pak|sachet|kaleng|can|botol)\b\.?\s*/i,
+            ''
+        )
+        .trim();
+
+    return value;
+}
+
+function normalizeIngredientName(name = '', fallback = '') {
+    const primary = String(name || '').trim();
+    const secondary = String(fallback || '').trim();
+    const preferred = primary || secondary;
+
+    if (!preferred) {
+        return 'Bahan';
+    }
+
+    const strippedPrimary = stripLeadingQuantity(primary);
+    if (strippedPrimary) {
+        return strippedPrimary;
+    }
+
+    const strippedFallback = stripLeadingQuantity(secondary);
+    return strippedFallback || preferred;
+}
+
 function buildMergeKey(name = '', unit = '') {
     return `${normalizeText(name)}::${normalizeText(unit)}`;
 }
@@ -44,6 +81,24 @@ function buildManualItemLabel(quantity = '', unit = '') {
     }
 
     return parts.join(' ').trim();
+}
+
+function buildQuantityLabel(quantity = null, unit = '', fallbackText = '') {
+    const parts = [];
+    const unitText = String(unit || '').trim();
+    const fallback = String(fallbackText || '').trim();
+
+    if (quantity !== null && Number.isFinite(Number(quantity))) {
+        parts.push(formatQuantityValue(quantity));
+    } else if (fallback) {
+        parts.push(fallback);
+    }
+
+    if (unitText) {
+        parts.push(unitText);
+    }
+
+    return parts.join(' ').trim() || 'Secukupnya';
 }
 
 function parseFractionToken(value = '') {
@@ -145,36 +200,56 @@ function inferCategory(name = '') {
 
     const categoryRules = [
         {
-            key: 'oil',
-            terms: ['minyak goreng', 'minyak', 'cooking oil', 'vegetable oil', 'oil', 'canola', 'sunflower']
-        },
-        {
             key: 'alat',
-            terms: ['wajan', 'panci', 'spatula', 'pisau', 'sutil', 'sendok', 'garpu', 'mangkuk', 'oven', 'kukusan', 'blender', 'talenan', 'mixer']
-        },
-        {
-            key: 'bumbu',
-            terms: ['garam', 'lada', 'merica', 'cabai', 'cabe', 'bawang', 'jahe', 'kunyit', 'lengkuas', 'serai', 'ketumbar', 'jinten', 'kencur', 'pala', 'kaldu']
-        },
-        {
-            key: 'protein',
-            terms: ['ayam', 'daging', 'sapi', 'ikan', 'udang', 'telur', 'tuna', 'salmon', 'tempe', 'tahu', 'pork', 'beef', 'chicken', 'shrimp']
-        },
-        {
-            key: 'dairy',
-            terms: ['susu', 'keju', 'yoghurt', 'yogurt', 'krim', 'cream', 'butter', 'mentega', 'santan']
-        },
-        {
-            key: 'sayur',
-            terms: ['bayam', 'wortel', 'kol', 'sawi', 'selada', 'tomat', 'timun', 'brokoli', 'jamur', 'kentang', 'terong', 'buncis']
-        },
-        {
-            key: 'karbohidrat',
-            terms: ['beras', 'nasi', 'mie', 'mi', 'pasta', 'roti', 'kentang', 'oat', 'tepung', 'rice', 'noodle']
+            terms: [
+                'wajan', 'panci', 'spatula', 'pisau', 'sutil', 'sendok', 'garpu', 'mangkuk', 'oven',
+                'kukusan', 'blender', 'talenan', 'mixer', 'teflon', 'loyang', 'saringan', 'rice cooker'
+            ]
         },
         {
             key: 'saus',
-            terms: ['saus', 'kecap', 'mayones', 'vinegar', 'cuka', 'mustard']
+            terms: [
+                'soy sauce', 'kecap', 'saus', 'sauce', 'oyster sauce', 'fish sauce', 'tomato puree',
+                'tomato paste', 'pasta tomat', 'puree', 'passata', 'mayones', 'mayonnaise',
+                'vinegar', 'cuka', 'mustard', 'sambal', 'saus tiram'
+            ]
+        },
+        {
+            key: 'bumbu',
+            terms: [
+                'garam', 'lada', 'merica', 'cabai', 'cabe', 'chili', 'chilli', 'bawang', 'onion',
+                'garlic', 'jahe', 'ginger', 'kunyit', 'turmeric', 'lengkuas', 'galangal', 'serai',
+                'lemongrass', 'ketumbar', 'coriander', 'jinten', 'cumin', 'kencur', 'pala',
+                'nutmeg', 'kaldu', 'royco', 'masako', 'bumbu', 'seasoning', 'seasoning mix',
+                'pepper', 'daun salam', 'daun jeruk', 'gula', 'sugar', 'brown sugar',
+                'caster sugar', 'minyak', 'cooking oil', 'vegetable oil', 'olive oil'
+            ]
+        },
+        {
+            key: 'protein',
+            terms: [
+                'ayam', 'daging', 'sapi', 'ikan', 'udang', 'telur', 'tuna', 'salmon', 'tempe',
+                'tahu', 'pork', 'beef', 'chicken', 'shrimp', 'prawn', 'crab', 'meat', 'tofu'
+            ]
+        },
+        {
+            key: 'dairy',
+            terms: ['susu', 'keju', 'yoghurt', 'yogurt', 'krim', 'cream', 'butter', 'mentega', 'santan', 'milk', 'cheese']
+        },
+        {
+            key: 'sayur',
+            terms: [
+                'bayam', 'wortel', 'kol', 'sawi', 'selada', 'tomat', 'timun', 'brokoli', 'jamur',
+                'terong', 'buncis', 'carrot', 'cabbage', 'lettuce', 'cucumber', 'broccoli',
+                'mushroom', 'eggplant', 'spinach'
+            ]
+        },
+        {
+            key: 'karbohidrat',
+            terms: [
+                'beras', 'nasi', 'mie', 'mi', 'pasta', 'roti', 'kentang', 'oat', 'tepung',
+                'rice', 'noodle', 'flour', 'corn flour', 'cornstarch', 'maizena', 'breadcrumb'
+            ]
         }
     ];
 
@@ -262,7 +337,9 @@ function estimateManualItemPrice(payload = {}) {
 }
 
 function normalizeIngredientItem(item = {}) {
-    const name = String(item.name || item.ingredient || item.label || '').trim() || 'Bahan';
+    const rawName = String(item.name || item.ingredient || '').trim();
+    const rawLabel = String(item.display || item.label || '').trim();
+    const name = normalizeIngredientName(rawName, rawLabel);
     const quantity = extractIngredientQuantity(item);
     const category = inferCategory(name);
 
@@ -270,7 +347,7 @@ function normalizeIngredientItem(item = {}) {
         name,
         amount: String(item.amount || '').trim(),
         unit: quantity.unit || '',
-        display: String(item.display || item.label || '').trim() || formatIngredientDisplay(name, quantity.quantityNumeric, quantity.unit, quantity.quantityText),
+        display: rawLabel || formatIngredientDisplay(name, quantity.quantityNumeric, quantity.unit, quantity.quantityText),
         quantityNumeric: quantity.quantityNumeric,
         quantityText: quantity.quantityText,
         category
@@ -485,33 +562,41 @@ function aggregateShoppingItems(recipeEntries = [], manualEntries = [], checkedM
     recipeEntries.forEach((recipe) => {
         const ingredients = Array.isArray(recipe.scaledIngredients) ? recipe.scaledIngredients : [];
         ingredients.forEach((item) => {
-            const key = String(item.mergeKey || buildMergeKey(item.name, item.unit || item.category));
+            const normalizedItem = normalizeIngredientItem(item);
+            const legacyKey = String(item.mergeKey || buildMergeKey(item.name, item.unit || item.category));
+            const key = buildMergeKey(normalizedItem.name, normalizedItem.unit || normalizedItem.category);
             const current = merged.get(key) || {
                 key,
-                name: item.name,
-                unit: item.unit || '',
-                category: item.category || 'lainnya',
+                name: normalizedItem.name,
+                unit: normalizedItem.unit || '',
+                category: normalizedItem.category || 'lainnya',
                 quantity: 0,
                 quantityText: '',
                 displayQuantity: '',
-                checked: checkedMap.get(key) || false,
+                checked: checkedMap.get(key) || checkedMap.get(legacyKey) || false,
                 recipes: [],
                 source: 'recipe'
             };
 
+            current.name = normalizedItem.name;
+            current.unit = normalizedItem.unit || current.unit || '';
+            current.category = normalizedItem.category || current.category || 'lainnya';
+
             if (item.scaledQuantity !== null && Number.isFinite(Number(item.scaledQuantity))) {
                 current.quantity = roundQuantity(Number(current.quantity || 0) + Number(item.scaledQuantity));
-            } else if (!current.quantityText && item.quantityText) {
-                current.quantityText = item.quantityText;
+            } else if (!current.quantityText && normalizedItem.quantityText) {
+                current.quantityText = normalizedItem.quantityText;
             }
 
             if (!current.recipes.includes(recipe.title)) {
                 current.recipes.push(recipe.title);
             }
 
-            current.displayQuantity = current.quantity
-                ? formatQuantityValue(current.quantity)
-                : current.quantityText || 'Secukupnya';
+            current.displayQuantity = buildQuantityLabel(
+                current.quantity > 0 ? current.quantity : null,
+                current.unit,
+                current.quantityText
+            );
 
             merged.set(key, current);
         });

@@ -1,3 +1,4 @@
+<% const cookingTips = Array.isArray(dashboardData.dailyTips) && dashboardData.dailyTips.length ? dashboardData.dailyTips : [dashboardData.tip].filter(Boolean); %>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -22,7 +23,7 @@
       <%- include('../partials/sidebar', { mode: 'user', activePage: 'dashboard', user }) %>
 
       <section class="user-dashboard-main">
-        <div class="user-dashboard-content user-dashboard-content-modern">
+        <div class="user-dashboard-content user-dashboard-content-modern dashboard-home-content">
           <section class="user-dashboard-left">
             <article class="user-panel user-panel-banner">
               <div class="user-banner-copy">
@@ -32,18 +33,6 @@
                   Temukan resep favorit, menu hemat, makanan rumahan favorit, sampai ide masak cepat
                   tanpa harus scroll terlalu jauh.
                 </p>
-
-                <div class="user-banner-actions">
-                  <a class="auth-button" href="/recipe-menu">Mulai pilih resep</a>
-                  <a class="auth-button auth-button-secondary" href="/shopping-list">Siapkan belanja</a>
-                  <a class="auth-button auth-button-secondary" href="/community">Bagikan ke komunitas</a>
-                </div>
-
-                <div class="user-mood-row">
-                  <% dashboardData.moods.forEach((mood) => { %>
-                    <span><%= mood %></span>
-                  <% }) %>
-                </div>
               </div>
 
               <div class="user-banner-card">
@@ -59,31 +48,61 @@
             </article>
 
             <article class="user-panel user-panel-hero">
-              <p class="user-dashboard-inline-tip user-dashboard-inline-tip-top">
-                Tips memasak: cek kalori makanan, waktu memasak, dan tingkat kesulitan
-                sebelum pilih resep supaya lebih gampang menyesuaikan menu dengan waktu
-                dan kebutuhan hari ini.
-              </p>
+              <div class="dashboard-category-top">
+                <div class="dashboard-category-main">
+                  <div class="user-panel-head">
+                    <div>
+                      <p class="user-panel-kicker">Kategori resep</p>
+                      <h2>Pilih sesuai mood dan kebutuhan</h2>
+                    </div>
+                  </div>
 
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Kategori resep</p>
-                  <h2>Pilih sesuai mood dan kebutuhan</h2>
-                </div>
-              </div>
-
-              <div class="user-category-carousel" data-category-carousel>
-                <div class="user-category-carousel-viewport" data-category-carousel-viewport>
-                  <div class="user-category-carousel-track">
-                    <% dashboardData.categories.forEach((category) => { %>
-                      <a class="user-category-chip" href="/recipe-menu?category=<%= encodeURIComponent(category.feedKey || 'random') %>">
-                        <img src="<%= category.image %>" alt="<%= category.label %>" />
-                        <span><%= category.label %></span>
-                      </a>
-                    <% }) %>
+                  <div class="user-category-carousel" data-category-carousel>
+                    <div class="user-category-carousel-viewport" data-category-carousel-viewport>
+                      <div class="user-category-carousel-track">
+                        <% dashboardData.categories.forEach((category) => { %>
+                          <a class="user-category-chip" href="/recipe-menu?category=<%= encodeURIComponent(category.feedKey || 'random') %>">
+                            <img src="<%= category.image %>" alt="<%= category.label %>" />
+                            <span><%= category.label %></span>
+                          </a>
+                        <% }) %>
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                <aside class="dashboard-inline-tip-card" data-tip-slider>
+                  <div class="dashboard-inline-tip-card-head">
+                    <p class="dashboard-inline-tip-card-label">Tips memasak</p>
+                    <div class="dashboard-inline-tip-card-nav">
+                      <button class="dashboard-inline-tip-card-button" type="button" data-tip-prev aria-label="Tips sebelumnya">
+                        <i class="fa-solid fa-chevron-left"></i>
+                      </button>
+                      <button class="dashboard-inline-tip-card-button" type="button" data-tip-next aria-label="Tips berikutnya">
+                        <i class="fa-solid fa-chevron-right"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="dashboard-inline-tip-slider" data-tip-viewport>
+                    <div class="dashboard-inline-tip-track">
+                      <% cookingTips.forEach((tip, index) => { %>
+                        <article class="dashboard-inline-tip-slide" data-tip-slide>
+                          <p class="dashboard-inline-tip-card-index">Tips <%= index + 1 %></p>
+                          <p class="user-dashboard-inline-tip user-dashboard-inline-tip-top"><%= tip %></p>
+                        </article>
+                      <% }) %>
+                    </div>
+                  </div>
+
+                  <div class="dashboard-inline-tip-dots" aria-hidden="true">
+                    <% cookingTips.forEach((_, index) => { %>
+                      <span class="dashboard-inline-tip-dot <%= index === 0 ? 'is-active' : '' %>" data-tip-dot="<%= index %>"></span>
+                    <% }) %>
+                  </div>
+                </aside>
               </div>
+
             </article>
 
             <article class="user-panel">
@@ -195,27 +214,6 @@
             </div>
           </section>
 
-          <aside class="user-dashboard-right">
-            <article class="user-panel">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Komunitas</p>
-                  <h2>Bagikan resep buatanmu</h2>
-                </div>
-              </div>
-
-              <p class="user-ai-copy">
-                Kirim resep original atau hasil recook kamu ke komunitas. Resep akan menunggu persetujuan
-                sebelum tampil di feed publik.
-              </p>
-
-              <div class="user-ai-actions">
-                <a class="auth-button" href="/community">Buka komunitas</a>
-                <a class="auth-button auth-button-secondary" href="/chat-ai">Minta ide AI</a>
-              </div>
-            </article>
-
-          </aside>
         </div>
       </section>
     </div>
@@ -247,6 +245,159 @@
       }
 
       requestAnimationFrame(updateState);
+    })();
+
+    (function () {
+      const slider = document.querySelector('[data-tip-slider]');
+      if (!slider) {
+        return;
+      }
+
+      const viewport = slider.querySelector('[data-tip-viewport]');
+      const track = slider.querySelector('.dashboard-inline-tip-track');
+      const slides = Array.from(slider.querySelectorAll('[data-tip-slide]'));
+      const dots = Array.from(slider.querySelectorAll('[data-tip-dot]'));
+      const prevButton = slider.querySelector('[data-tip-prev]');
+      const nextButton = slider.querySelector('[data-tip-next]');
+
+      if (!viewport || !track || !slides.length) {
+        return;
+      }
+
+      const storageKey = 'dashboardCookingTipIndex';
+      let activeIndex = 0;
+      let dragStartX = 0;
+      let dragCurrentX = 0;
+      let isDragging = false;
+
+      function renderPosition(index, animate) {
+        track.style.transition = animate ? 'transform 280ms ease' : 'none';
+        track.style.transform = 'translateX(' + (index * -100) + '%)';
+      }
+
+      function syncDots(index) {
+        dots.forEach((dot, dotIndex) => {
+          dot.classList.toggle('is-active', dotIndex === index);
+        });
+      }
+
+      function goTo(index) {
+        const clampedIndex = Math.max(0, Math.min(index, slides.length - 1));
+        const target = slides[clampedIndex];
+        if (!target) {
+          return;
+        }
+
+        activeIndex = clampedIndex;
+        renderPosition(activeIndex, true);
+        syncDots(activeIndex);
+        try {
+          localStorage.setItem(storageKey, String(activeIndex));
+        } catch (error) {
+          /* noop */
+        }
+      }
+
+      function onPointerDown(clientX) {
+        dragStartX = clientX;
+        dragCurrentX = clientX;
+        isDragging = true;
+        track.style.transition = 'none';
+      }
+
+      function onPointerMove(clientX) {
+        if (!isDragging) {
+          return;
+        }
+
+        dragCurrentX = clientX;
+        const deltaX = dragCurrentX - dragStartX;
+        const viewportWidth = viewport.offsetWidth || 1;
+        const baseOffset = activeIndex * -100;
+        const dragOffset = (deltaX / viewportWidth) * 100;
+        track.style.transform = 'translateX(' + (baseOffset + dragOffset) + '%)';
+      }
+
+      function onPointerUp() {
+        if (!isDragging) {
+          return;
+        }
+
+        const deltaX = dragCurrentX - dragStartX;
+        const threshold = Math.max(48, viewport.offsetWidth * 0.16);
+        isDragging = false;
+
+        if (deltaX <= -threshold) {
+          goTo(activeIndex + 1);
+          return;
+        }
+
+        if (deltaX >= threshold) {
+          goTo(activeIndex - 1);
+          return;
+        }
+
+        renderPosition(activeIndex, true);
+      }
+
+      prevButton?.addEventListener('click', function () {
+        goTo(activeIndex - 1);
+      });
+
+      nextButton?.addEventListener('click', function () {
+        goTo(activeIndex + 1);
+      });
+
+      dots.forEach((dot, index) => {
+        dot.addEventListener('click', function () {
+          goTo(index);
+        });
+      });
+
+      window.addEventListener('resize', function () {
+        renderPosition(activeIndex, false);
+      });
+
+      viewport.addEventListener('mousedown', function (event) {
+        onPointerDown(event.clientX);
+      });
+
+      window.addEventListener('mousemove', function (event) {
+        onPointerMove(event.clientX);
+      });
+
+      window.addEventListener('mouseup', onPointerUp);
+
+      viewport.addEventListener('touchstart', function (event) {
+        if (!event.touches.length) {
+          return;
+        }
+
+        onPointerDown(event.touches[0].clientX);
+      }, { passive: true });
+
+      viewport.addEventListener('touchmove', function (event) {
+        if (!event.touches.length) {
+          return;
+        }
+
+        onPointerMove(event.touches[0].clientX);
+      }, { passive: true });
+
+      viewport.addEventListener('touchend', onPointerUp, { passive: true });
+      viewport.addEventListener('mouseleave', onPointerUp);
+
+      let initialIndex = 0;
+      try {
+        const storedIndex = Number(localStorage.getItem(storageKey));
+        initialIndex = Number.isFinite(storedIndex) ? (storedIndex + 1) % slides.length : 0;
+      } catch (error) {
+        initialIndex = 0;
+      }
+
+      requestAnimationFrame(function () {
+        goTo(initialIndex);
+      });
     })();
   </script>
 </body>
