@@ -71,6 +71,12 @@
                     <span>DIHAPUS</span>
                   </div>
                 <% } %>
+                <% if (post.isReshared) { %>
+                  <div class="community-post-status-pill is-reshared">
+                    <i class="fa-solid fa-retweet"></i>
+                    <span>RESHARED</span>
+                  </div>
+                <% } %>
 
                 <p class="community-book-kicker"><%= post.cuisine || post.originPlace || 'Komunitas' %> &bull; <%= post.category || 'resep' %></p>
                 <h2 class="community-book-title"><%= post.title %></h2>

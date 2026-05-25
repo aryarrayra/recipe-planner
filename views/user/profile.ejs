@@ -21,7 +21,6 @@
   <% const progress = profileData.progress || { level: 1, title: 'Koki Pemula', progress: 0, activityPoints: 0, pointsIntoLevel: 0, pointsToNextLevel: 10 }; %>
   <% const skillLabel = profileData.skillLevel || 'Pemula'; %>
   <% const totalCooked = Number(profileData.cookingCount || user.total_recipes_cooked || 0); %>
-  <% const totalSaved = Number(user.total_saved_recipes || 0); %>
   <% const totalShared = Number(user.total_recipes_shared || 0); %>
   <% const favoriteCount = Number(profileData.favoriteCount || 0); %>
   <% const communityFeed = profileData.communityFeed || { posts: [], comments: [] }; %>
@@ -1343,7 +1342,6 @@
 
                   <div class="profile-badges">
                     <span class="profile-badge"><i class="fa-solid fa-fire-burner"></i> <%= totalCooked %> <span class="profile-badge-label">masak ulang</span></span>
-                    <span class="profile-badge"><i class="fa-solid fa-bookmark"></i> <%= totalSaved %> <span class="profile-badge-label">tersimpan</span></span>
                     <span class="profile-badge"><i class="fa-solid fa-share-nodes"></i> <%= totalShared %> <span class="profile-badge-label">dibagikan</span></span>
                     <span class="profile-badge"><i class="fa-solid fa-heart"></i> <%= favoriteCount %> <span class="profile-badge-label">favorit</span></span>
                   </div>
@@ -1364,21 +1362,6 @@
                   <span><%= progress.activityPoints %> poin aktivitas</span>
                   <span><%= progress.pointsIntoLevel %>/10 menuju level berikutnya</span>
                   <span><%= progress.pointsToNextLevel %> poin lagi</span>
-                </div>
-              </div>
-
-              <div class="profile-stats-grid" style="margin-top: 16px;">
-                <div class="profile-stat">
-                  <span>Total masak ulang</span>
-                  <strong><%= totalCooked %></strong>
-                </div>
-                <div class="profile-stat">
-                  <span>Favorit tersimpan</span>
-                  <strong><%= totalSaved %></strong>
-                </div>
-                <div class="profile-stat">
-                  <span>Resep dibagikan</span>
-                  <strong><%= totalShared %></strong>
                 </div>
               </div>
             </article>

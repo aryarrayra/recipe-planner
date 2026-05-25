@@ -520,6 +520,11 @@ function ensureCommunityPostsSchema() {
             `);
 
             await pool.query(`
+                ALTER TABLE community_posts
+                ADD COLUMN IF NOT EXISTS share_type TEXT NOT NULL DEFAULT 'original'
+            `);
+
+            await pool.query(`
                 CREATE INDEX IF NOT EXISTS idx_community_posts_is_deleted
                 ON community_posts (is_deleted)
             `);
@@ -895,6 +900,7 @@ function parseCommunityRecipePayload(body = {}, files = {}) {
         ingredients,
         steps,
         tags: parseRecipeFormList(body.tags),
+        share_type: normalizeText(body.share_type).toLowerCase() === 'reshared' ? 'reshared' : 'original',
         is_approved: false
     };
 }
@@ -909,6 +915,8 @@ function mapCommunityRecipeCard(recipe = {}, favoriteIds = new Set()) {
         creatorName: recipe.creator_name || recipe.username || 'Pengguna komunitas',
         creatorAvatarUrl: recipe.creator_avatar_url || recipe.avatar_url || '',
         createdAt: recipe.created_at,
+        shareType: normalizeText(recipe.share_type) || 'original',
+        isReshared: normalizeText(recipe.share_type).toLowerCase() === 'reshared',
         statusLabel: isDeleted ? 'DIHAPUS' : (recipe.is_approved ? 'Diterbitkan' : 'Draf'),
         communityPostId: recipe.community_post_id || recipe.post_id || recipe.communityPostId || null,
         likesCount: Number(recipe.post_likes_count ?? recipe.likes_count ?? mapped.likesCount ?? 0),
@@ -1022,11 +1030,11 @@ function getRegionSourceOrigins(region = '') {
     const key = String(region || '').trim().toLowerCase();
     const regionMap = {
         indonesia: ['Indonesia'],
-        asia: ['Chinese', 'Japanese', 'Indian', 'Thai', 'Malaysian', 'Korean', 'Vietnamese', 'Filipino'],
-        'middle-east': ['Turkish', 'Saudi Arabian', 'Arabic', 'Persian'],
-        europe: ['Italian', 'French', 'British', 'Spanish', 'German', 'Greek', 'Dutch', 'Portuguese', 'Mediterranean', 'Croatian', 'Irish', 'Polish', 'Russian'],
-        america: ['American', 'Mexican', 'Canadian', 'Caribbean', 'Jamaican', 'Brazilian', 'Latin American', 'South American', 'North American'],
-        africa: ['African', 'Moroccan', 'Egyptian', 'Kenyan', 'Ethiopian', 'Tunisian']
+        asia: ['Chinese', 'Japanese', 'Indian', 'Thai', 'Malaysian', 'Korean', 'Vietnamese', 'Filipino', 'Singaporean', 'Taiwanese', 'Pakistani', 'Bangladeshi'],
+        'middle-east': ['Turkish', 'Saudi Arabian', 'Arabic', 'Persian', 'Iranian', 'Lebanese', 'Syrian', 'Jordanian', 'Palestinian', 'Iraqi', 'Emirati', 'Qatari', 'Kuwaiti', 'Omani'],
+        europe: ['Italian', 'French', 'British', 'Spanish', 'German', 'Greek', 'Dutch', 'Portuguese', 'Mediterranean', 'Croatian', 'Irish', 'Polish', 'Russian', 'Ukrainian', 'Czech', 'Hungarian', 'Romanian', 'Austrian', 'Belgian', 'Swiss', 'Swedish', 'Norwegian', 'Danish', 'Finnish'],
+        america: ['American', 'Mexican', 'Canadian', 'Caribbean', 'Jamaican', 'Brazilian', 'Latin American', 'South American', 'North American', 'Argentinian', 'Peruvian', 'Colombian', 'Chilean', 'Venezuelan', 'Cuban', 'Puerto Rican'],
+        africa: ['African', 'Moroccan', 'Egyptian', 'Kenyan', 'Ethiopian', 'Tunisian', 'Nigerian', 'Ghanaian', 'South African']
     };
 
     return regionMap[key] || [];
@@ -1041,11 +1049,11 @@ function matchesRecipeRegion(recipe = {}, region = '') {
     const blob = getRecipeRegionBlob(recipe);
     const aliases = {
         indonesia: ['indonesia', 'nusantara', 'jawa', 'padang', 'sunda', 'betawi', 'bali', 'makassar', 'aceh', 'medan', 'sumatra', 'indonesian'],
-        asia: ['japan', 'japanese', 'korea', 'korean', 'thai', 'thailand', 'china', 'chinese', 'malaysia', 'malaysian', 'india', 'indian', 'vietnam', 'vietnamese', 'philippines', 'filipino'],
-        'middle-east': ['saudi', 'saudi arabia', 'saudi arabian', 'arab', 'arabic', 'arabian', 'turkey', 'turkish', 'persian'],
-        europe: ['italy', 'italian', 'france', 'french', 'british', 'england', 'english', 'ireland', 'irish', 'croatia', 'croatian', 'poland', 'polish', 'russia', 'russian', 'spain', 'spanish', 'germany', 'german', 'greece', 'greek', 'netherlands', 'dutch', 'portugal', 'portuguese', 'mediterranean', 'european'],
-        america: ['american', 'mexican', 'canadian', 'caribbean', 'jamaica', 'jamaican', 'brazil', 'brazilian', 'latin american', 'south american', 'north american', 'usa', 'united states', 'tex-mex', 'puerto rico', 'cuban'],
-        africa: ['african', 'morocco', 'moroccan', 'egypt', 'egyptian', 'kenya', 'kenyan', 'ethiopian', 'tunisia', 'tunisian', 'north african', 'west african']
+        asia: ['japan', 'japanese', 'korea', 'korean', 'thai', 'thailand', 'china', 'chinese', 'malaysia', 'malaysian', 'india', 'indian', 'vietnam', 'vietnamese', 'philippines', 'filipino', 'singapore', 'singaporean', 'taiwan', 'taiwanese', 'pakistan', 'pakistani', 'bangladesh', 'bangladeshi'],
+        'middle-east': ['saudi', 'saudi arabia', 'saudi arabian', 'arab', 'arabic', 'arabian', 'turkey', 'turkish', 'persian', 'iran', 'iranian', 'lebanon', 'lebanese', 'syria', 'syrian', 'jordan', 'jordanian', 'palestine', 'palestinian', 'iraq', 'iraqi', 'uae', 'emirati', 'united arab emirates', 'qatar', 'qatari', 'kuwait', 'kuwaiti', 'oman', 'omani'],
+        europe: ['italy', 'italian', 'france', 'french', 'british', 'england', 'english', 'ireland', 'irish', 'croatia', 'croatian', 'poland', 'polish', 'russia', 'russian', 'spain', 'spanish', 'germany', 'german', 'greece', 'greek', 'netherlands', 'dutch', 'portugal', 'portuguese', 'mediterranean', 'european', 'ukraine', 'ukrainian', 'czech', 'czech republic', 'hungary', 'hungarian', 'romania', 'romanian', 'austria', 'austrian', 'belgium', 'belgian', 'switzerland', 'swiss', 'sweden', 'swedish', 'norway', 'norwegian', 'denmark', 'danish', 'finland', 'finnish'],
+        america: ['american', 'mexican', 'canadian', 'caribbean', 'jamaica', 'jamaican', 'brazil', 'brazilian', 'latin american', 'south american', 'north american', 'usa', 'united states', 'tex-mex', 'puerto rico', 'cuban', 'argentina', 'argentinian', 'peru', 'peruvian', 'colombia', 'colombian', 'chile', 'chilean', 'venezuela', 'venezuelan'],
+        africa: ['african', 'morocco', 'moroccan', 'egypt', 'egyptian', 'kenya', 'kenyan', 'ethiopian', 'tunisia', 'tunisian', 'north african', 'west african', 'nigeria', 'nigerian', 'ghana', 'ghanaian', 'south africa', 'south african']
     };
 
     const terms = aliases[key] || [key];
@@ -2042,6 +2050,7 @@ async function fetchCommunityPageData(userId, search = '') {
                 SELECT
                     r.*,
                     p.id AS community_post_id,
+                    p.share_type,
                     p.is_deleted AS post_is_deleted,
                     p.deleted_at AS post_deleted_at,
                     COALESCE(p.likes_count, r.likes_count, 0)::int AS post_likes_count,
@@ -2071,6 +2080,7 @@ async function fetchCommunityPageData(userId, search = '') {
                 SELECT
                     r.*,
                     p.id AS community_post_id,
+                    p.share_type,
                     p.is_deleted AS post_is_deleted,
                     p.deleted_at AS post_deleted_at,
                     COALESCE(p.likes_count, r.likes_count, 0)::int AS post_likes_count,
@@ -2251,6 +2261,8 @@ async function fetchCommunityPostDetailData(postId, userId) {
             creatorAvatarUrl: post.creator_avatar_url || recipeCard?.creatorAvatarUrl || '',
             creatorUserId: post.creator_user_id || post.user_id || null,
             createdAt: post.created_at || recipeCard?.createdAt || null,
+            shareType: normalizeText(post.share_type) || 'original',
+            isReshared: normalizeText(post.share_type).toLowerCase() === 'reshared',
             recipeId: post.recipe_id,
             likedByMe: Boolean(post.liked_by_me),
             isDeleted: Boolean(post.is_deleted),
@@ -2286,6 +2298,7 @@ async function fetchProfileCommunityFeed(userId, limit = 8) {
                 SELECT
                     r.*,
                     p.id AS community_post_id,
+                    p.share_type,
                     p.is_deleted AS post_is_deleted,
                     p.deleted_at AS post_deleted_at,
                     COALESCE(p.likes_count, r.likes_count, 0)::int AS post_likes_count,
@@ -3657,6 +3670,8 @@ router.post('/community', communityPostUpload, async (req, res) => {
     }
 
     try {
+        await ensureCommunityPostsSchema();
+
         const freshUser = await getFreshSessionUser(req.session.user.id);
         if (freshUser) {
             req.session.user = {
@@ -3736,6 +3751,7 @@ router.post('/community', communityPostUpload, async (req, res) => {
                         title,
                         content,
                         image_url,
+                        share_type,
                         likes_count,
                         comments_count,
                         shares_count,
@@ -3743,15 +3759,25 @@ router.post('/community', communityPostUpload, async (req, res) => {
                         created_at,
                         updated_at
                     )
-                    VALUES ($1, $2, $3, $4, $5, 0, 0, 0, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    VALUES ($1, $2, $3, $4, $5, $6, 0, 0, 0, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 `,
                 [
                     req.session.user.id,
                     recipeId,
                     payload.title,
                     payload.description,
-                    payload.image_url
+                    payload.image_url,
+                    payload.share_type
                 ]
+            );
+
+            await pool.query(
+                `
+                    UPDATE users
+                    SET total_recipes_shared = COALESCE(total_recipes_shared, 0) + 1
+                    WHERE id = $1
+                `,
+                [req.session.user.id]
             );
         }
 

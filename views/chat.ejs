@@ -19,7 +19,7 @@
     html,
     body.chat-page {
       height: 100%;
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
     body.chat-page {
@@ -32,8 +32,7 @@
     }
 
     .chat-dashboard {
-      height: 100dvh;
-      overflow: hidden;
+      min-height: 100dvh;
     }
 
     .chat-dashboard-shell {
@@ -44,7 +43,7 @@
 
     .chat-dashboard .user-dashboard-main {
       display: grid;
-      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
       gap: 14px;
       padding: 16px;
       border-radius: 34px;
@@ -160,12 +159,18 @@
       box-shadow: 0 10px 26px rgba(29, 29, 29, 0.05);
     }
 
+    .chat-topbar-actions .button {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
     .chat-window-shell {
       overflow: hidden;
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
       min-height: 0;
       height: 100%;
+      align-self: stretch;
       border-radius: 24px;
       background: rgba(255, 255, 255, 0.86);
       border: 1px solid rgba(29, 29, 29, 0.06);
@@ -532,6 +537,7 @@
       }
 
       .chat-dashboard {
+        height: 100dvh;
         padding: 0;
       }
 
@@ -580,6 +586,8 @@
       }
 
       .chat-window-shell {
+        overflow: hidden;
+        grid-template-rows: auto minmax(0, 1fr) auto;
         min-height: 0;
         height: 100%;
         margin-bottom: 0;
@@ -589,6 +597,7 @@
 
       .chat-feed {
         min-height: 0;
+        max-height: none;
       }
 
       .chat-composer {
@@ -609,6 +618,16 @@
         align-items: stretch;
       }
 
+      .chat-topbar-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-self: stretch;
+      }
+
+      .chat-topbar-actions .button {
+        width: 100%;
+      }
+
       .chat-bubble {
         max-width: 100%;
       }
@@ -625,17 +644,21 @@
       }
 
       .chat-topbar-actions {
-        display: none;
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+        justify-content: flex-end;
       }
 
       .chat-topbar-actions .button {
-        width: 42px;
-        min-width: 42px;
+        width: auto;
+        min-width: fit-content;
         min-height: 42px;
         height: 42px;
         padding: 0;
         border-radius: 999px;
         box-shadow: 0 10px 22px rgba(29, 29, 29, 0.08);
+        flex: 0 0 42px;
       }
 
       .chat-action-label {
@@ -672,15 +695,17 @@
       .chat-topbar .chat-topbar-actions {
         display: flex;
         flex-wrap: nowrap;
-        gap: 8px;
+        flex: 0 0 auto;
         padding: 0;
+        gap: 8px;
       }
 
       .chat-topbar .chat-topbar-actions .button {
-        width: 38px !important;
-        min-width: 38px;
-        min-height: 38px;
-        height: 38px;
+        width: 42px !important;
+        min-width: 42px;
+        min-height: 42px;
+        height: 42px;
+        padding: 0 !important;
         box-shadow: 0 8px 18px rgba(29, 29, 29, 0.08);
       }
 
@@ -807,6 +832,9 @@
         height: 42px;
         padding: 0 !important;
         display: inline-flex;
+        justify-content: center;
+        white-space: nowrap;
+        flex: 0 0 42px;
       }
 
       .message-attachment img {
@@ -834,8 +862,8 @@
             </div>
             <div class="user-topbar-actions chat-topbar-actions">
               <a href="/chat-history" class="button button-secondary" aria-label="History chat">
-                <i class="fa-regular fa-clock-rotate-left" aria-hidden="true"></i>
-                <span class="chat-action-label">History chat</span>
+                <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
+                <span class="chat-action-label">History</span>
               </a>
               <button type="button" class="button button-secondary" id="clearChat" aria-label="Clear chat">
                 <i class="fa-regular fa-trash-can" aria-hidden="true"></i>

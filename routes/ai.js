@@ -8,6 +8,7 @@ const { requireAuth, preventBack } = require('../middleware/auth');
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const CHAT_TIMEZONE = 'Asia/Jakarta';
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
@@ -17,6 +18,39 @@ const upload = multer({
 
 router.use(requireAuth);
 router.use(preventBack);
+
+function parseDbTimestampAsUtc(value) {
+    if (!value) {
+        return null;
+    }
+
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    const normalized = String(value).trim().replace(' ', 'T');
+    const isoValue = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized) ? normalized : `${normalized}Z`;
+    const parsed = new Date(isoValue);
+
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatChatDateTime(value) {
+    const parsed = parseDbTimestampAsUtc(value);
+
+    if (!parsed) {
+        return '-';
+    }
+
+    return parsed.toLocaleString('id-ID', {
+        timeZone: CHAT_TIMEZONE,
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
 
 function fallbackReply(message) {
     const text = message.toLowerCase();
@@ -235,7 +269,15 @@ function buildPhotoAttachment(file) {
 async function getChatHistory(sessionId, limit = 20) {
     const result = await pool.query(
         `
-            SELECT role, content, metadata, created_at
+            SELECT
+                role,
+                content,
+                metadata,
+                created_at,
+                TO_CHAR(
+                    ((created_at AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Jakarta'),
+                    'DD Mon YYYY, HH24:MI'
+                ) AS created_at_wib
             FROM ai_chat_messages
             WHERE session_id = $1
             ORDER BY created_at ASC
@@ -255,6 +297,14 @@ async function getUserChatSessions(userId) {
                 s.title,
                 s.created_at,
                 s.updated_at,
+                TO_CHAR(
+                    ((s.created_at AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Jakarta'),
+                    'DD Mon YYYY, HH24:MI'
+                ) AS created_at_wib,
+                TO_CHAR(
+                    ((COALESCE(s.updated_at, s.created_at) AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Jakarta'),
+                    'DD Mon YYYY, HH24:MI'
+                ) AS updated_at_wib,
                 COUNT(m.id) AS message_count
             FROM ai_chat_sessions s
             LEFT JOIN ai_chat_messages m ON m.session_id = s.session_id
@@ -663,6 +713,11 @@ router.get('/chat-history', async (req, res) => {
 
     try {
         sessions = userId ? await getUserChatSessions(userId) : [];
+        sessions = sessions.map((session) => ({
+            ...session,
+            created_at_label: session.created_at_wib || formatChatDateTime(session.created_at),
+            updated_at_label: session.updated_at_wib || formatChatDateTime(session.updated_at || session.created_at)
+        }));
 
         if (!selectedSessionId) {
             selectedSessionId = sessions[0]?.session_id || req.sessionID;
@@ -677,7 +732,8 @@ router.get('/chat-history', async (req, res) => {
             attachment: item.metadata?.attachment || null,
             tips: item.metadata?.tips || [],
             followUps: item.metadata?.followUps || [],
-            createdAt: item.created_at || null
+            createdAt: item.created_at || null,
+            createdAtLabel: item.created_at_wib || formatChatDateTime(item.created_at)
         }));
     } catch (error) {
         console.error('Failed to load full chat history:', error.message);

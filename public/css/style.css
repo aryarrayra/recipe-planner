@@ -10760,6 +10760,23 @@ body.history-page {
   color: #6a6a6a;
 }
 
+.community-page .community-recipe-card-badge.is-reshared {
+  top: 12px;
+  left: 12px;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #54737a;
+  border-color: rgba(84, 115, 122, 0.18);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.community-page .community-recipe-card-badge.is-reshared i {
+  font-size: 0.76rem;
+}
+
 .community-page .community-recipe-card-body {
   display: grid;
   gap: 6px;

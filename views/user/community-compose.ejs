@@ -44,6 +44,9 @@
         <% } %>
 
         <form class="community-compose-form" action="/community" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="image_url" id="communityRecipeImageUrl" value="" />
+          <input type="hidden" name="video_url" id="communityRecipeVideoUrl" value="" />
+          <input type="hidden" name="share_type" id="communityShareType" value="original" />
           <div class="community-compose-grid">
             <div class="community-compose-column">
               <label class="community-form-field">
@@ -221,7 +224,12 @@
 
   <script>
     (() => {
+      const COMMUNITY_PREFILL_KEY = 'communityRecipePrefill';
+      const composeForm = document.querySelector('.community-compose-form');
       const recipeImageInput = document.getElementById('communityRecipeImageInput');
+      const recipeImageUrlInput = document.getElementById('communityRecipeImageUrl');
+      const recipeVideoUrlInput = document.getElementById('communityRecipeVideoUrl');
+      const communityShareTypeInput = document.getElementById('communityShareType');
       const recipePreviewImage = document.getElementById('communityRecipeImagePreviewImg');
       const recipePreviewEmpty = document.getElementById('communityRecipeImagePreviewEmpty');
       const recipeImageRemove = document.getElementById('communityRecipeImageRemove');
@@ -277,6 +285,9 @@
           if (input) {
             input.value = '';
           }
+          if (input === recipeImageInput && recipeImageUrlInput) {
+            recipeImageUrlInput.value = '';
+          }
           syncPreview(input, previewImage, previewEmpty, removeButton, objectUrlRef);
         });
       }
@@ -295,10 +306,15 @@
         });
       }
 
-      function createIngredientCard() {
+      function createIngredientCard(initialValue = '') {
         const fragment = ingredientTemplate.content.cloneNode(true);
         const card = fragment.querySelector('.community-ingredient-card');
+        const input = fragment.querySelector('input[name="ingredient_texts"]');
         const removeButton = fragment.querySelector('.community-step-remove');
+
+        if (input) {
+          input.value = initialValue || '';
+        }
 
         removeButton?.addEventListener('click', () => {
           if (ingredientList.children.length <= 1) {
@@ -327,9 +343,10 @@
         });
       }
 
-      function createStepCard() {
+      function createStepCard(initialStep = {}) {
         const fragment = stepTemplate.content.cloneNode(true);
         const card = fragment.querySelector('.community-step-card');
+        const textArea = fragment.querySelector('textarea[name="step_texts"]');
         const fileInput = fragment.querySelector('input[type="file"]');
         const previewImage = fragment.querySelector('.community-upload-preview-image');
         const previewEmpty = fragment.querySelector('.community-upload-preview-empty');
@@ -337,6 +354,10 @@
         const removeButton = fragment.querySelector('.community-step-remove');
 
         const objectUrlRef = { current: '' };
+
+        if (textArea) {
+          textArea.value = initialStep?.instruction || initialStep?.text || '';
+        }
 
         fileInput?.addEventListener('change', () => {
           syncPreview(fileInput, previewImage, previewEmpty, removePreviewButton, objectUrlRef);
@@ -357,7 +378,112 @@
         });
 
         stepPreviewUrls.set(card, objectUrlRef);
+
+        const previewUrl = String(initialStep?.image_url || initialStep?.imageUrl || '').trim();
+        if (previewUrl && previewImage && previewEmpty) {
+          previewImage.src = previewUrl;
+          previewImage.hidden = false;
+          previewImage.style.display = 'block';
+          previewEmpty.hidden = true;
+          previewEmpty.style.display = 'none';
+          if (removePreviewButton) {
+            removePreviewButton.hidden = false;
+            removePreviewButton.style.display = 'inline-flex';
+          }
+        }
+
         return fragment;
+      }
+
+      function setRecipePreviewFromUrl(url) {
+        const safeUrl = String(url || '').trim();
+        if (!recipePreviewImage || !recipePreviewEmpty || !recipeImageUrlInput) {
+          return;
+        }
+
+        recipeImageUrlInput.value = safeUrl;
+
+        if (!safeUrl) {
+          recipePreviewImage.hidden = true;
+          recipePreviewImage.style.display = 'none';
+          recipePreviewImage.removeAttribute('src');
+          recipePreviewEmpty.hidden = false;
+          recipePreviewEmpty.style.display = 'grid';
+          if (recipeImageRemove) {
+            recipeImageRemove.hidden = true;
+            recipeImageRemove.style.display = 'none';
+          }
+          return;
+        }
+
+        recipePreviewImage.src = safeUrl;
+        recipePreviewImage.hidden = false;
+        recipePreviewImage.style.display = 'block';
+        recipePreviewEmpty.hidden = true;
+        recipePreviewEmpty.style.display = 'none';
+        if (recipeImageRemove) {
+          recipeImageRemove.hidden = false;
+          recipeImageRemove.style.display = 'inline-flex';
+        }
+      }
+
+      function getPrefillData() {
+        try {
+          const rawValue = window.sessionStorage.getItem(COMMUNITY_PREFILL_KEY);
+          if (!rawValue) {
+            return null;
+          }
+
+          return JSON.parse(rawValue);
+        } catch (error) {
+          console.error('Failed to parse community prefill:', error);
+          return null;
+        }
+      }
+
+      function applyPrefill(prefill) {
+        if (!composeForm || !prefill) {
+          return;
+        }
+
+        const setFieldValue = (selector, value) => {
+          const field = composeForm.querySelector(selector);
+          if (!field) {
+            return;
+          }
+          field.value = value == null ? '' : String(value);
+        };
+
+        setFieldValue('input[name="title"]', prefill.title);
+        setFieldValue('textarea[name="description"]', prefill.description);
+        setFieldValue('textarea[name="tags"]', Array.isArray(prefill.tags) ? prefill.tags.join('\n') : prefill.tags);
+        setFieldValue('input[name="cuisine"]', prefill.cuisine);
+        setFieldValue('select[name="category"]', prefill.category);
+        setFieldValue('input[name="cooking_time"]', prefill.cooking_time);
+        setFieldValue('input[name="servings"]', prefill.servings);
+        setFieldValue('select[name="difficulty"]', prefill.difficulty);
+        setFieldValue('input[name="estimated_price"]', prefill.estimated_price);
+        setFieldValue('#communityRecipeVideoUrl', prefill.video_url);
+        setFieldValue('#communityShareType', prefill.share_type || 'original');
+        setRecipePreviewFromUrl(prefill.image_url);
+
+        if (ingredientList) {
+          ingredientList.innerHTML = '';
+          const ingredients = Array.isArray(prefill.ingredients) ? prefill.ingredients.filter(Boolean) : [];
+          (ingredients.length ? ingredients : ['']).forEach((ingredient) => {
+            ingredientList.appendChild(createIngredientCard(ingredient));
+          });
+          renumberIngredients();
+        }
+
+        if (stepList) {
+          stepList.innerHTML = '';
+          const steps = Array.isArray(prefill.steps) ? prefill.steps.filter((step) => step && (step.instruction || step.text || step.image_url || step.imageUrl)) : [];
+          (steps.length ? steps : [{ instruction: '' }]).forEach((step) => {
+            stepList.appendChild(createStepCard(step));
+          });
+          renumberSteps();
+        }
       }
 
       recipeImageInput?.addEventListener('change', () => {
@@ -389,12 +515,19 @@
         renumberSteps();
       });
 
-      ingredientList?.appendChild(createIngredientCard());
-      ingredientList?.appendChild(createIngredientCard());
-      stepList?.appendChild(createStepCard());
-      stepList?.appendChild(createStepCard());
-      renumberIngredients();
-      renumberSteps();
+      const prefill = getPrefillData();
+
+      if (prefill) {
+        applyPrefill(prefill);
+        window.sessionStorage.removeItem(COMMUNITY_PREFILL_KEY);
+      } else {
+        ingredientList?.appendChild(createIngredientCard());
+        ingredientList?.appendChild(createIngredientCard());
+        stepList?.appendChild(createStepCard());
+        stepList?.appendChild(createStepCard());
+        renumberIngredients();
+        renumberSteps();
+      }
 
       window.addEventListener('beforeunload', () => {
         if (recipePreviewObjectUrl) {

@@ -15,6 +15,58 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
   <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .recipe-share-sheet[hidden] { display: none !important; }
+    .recipe-share-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.24);
+      backdrop-filter: blur(8px);
+    }
+    .recipe-share-sheet-panel {
+      width: min(100%, 420px);
+      border-radius: 28px;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+      display: grid;
+      gap: 14px;
+    }
+    .recipe-share-sheet-head {
+      display: grid;
+      gap: 6px;
+    }
+    .recipe-share-sheet-head h3,
+    .recipe-share-sheet-head p {
+      margin: 0;
+    }
+    .recipe-share-sheet-head p {
+      color: #5f6f79;
+    }
+    .recipe-share-sheet-actions {
+      display: grid;
+      gap: 10px;
+    }
+    .recipe-share-option {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 12px;
+      text-align: left;
+    }
+    .recipe-share-sheet-close {
+      justify-self: end;
+      border: 0;
+      background: transparent;
+      color: #54737a;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+  </style>
 </head>
 <body>
   <% const formatPrice = (value) => new Intl.NumberFormat('id-ID').format(Number(value || 0)); %>
@@ -269,6 +321,30 @@
     </div>
   </main>
 
+  <div class="recipe-share-sheet" id="recipeShareSheet" hidden>
+    <div class="recipe-share-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="recipeShareTitle">
+      <button type="button" class="recipe-share-sheet-close" id="recipeShareClose">Tutup</button>
+      <div class="recipe-share-sheet-head">
+        <h3 id="recipeShareTitle">Bagikan resep</h3>
+        <p>Pilih cara bagikan resep ini.</p>
+      </div>
+      <div class="recipe-share-sheet-actions">
+        <button type="button" class="user-recipe-action-btn recipe-share-option" id="recipeShareCopyLink">
+          <i class="fa-solid fa-link"></i>
+          <span>Copy link</span>
+        </button>
+        <button type="button" class="user-recipe-action-btn recipe-share-option" id="recipeShareWhatsapp">
+          <i class="fa-brands fa-whatsapp"></i>
+          <span>Kirim ke WhatsApp</span>
+        </button>
+        <button type="button" class="user-recipe-action-btn recipe-share-option" id="recipeShareCommunity">
+          <i class="fa-solid fa-retweet"></i>
+          <span>Reshared ke community</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     (() => {
       const cards = Array.from(document.querySelectorAll('[data-step-card]'));
@@ -284,6 +360,12 @@
       const servingInput = document.getElementById('recipeServingInput');
       const servingLabel = document.getElementById('recipeServingLabel');
       const estimatedPriceNode = document.getElementById('recipeEstimatedPrice');
+      const shareSheet = document.getElementById('recipeShareSheet');
+      const shareSheetClose = document.getElementById('recipeShareClose');
+      const shareCopyLinkButton = document.getElementById('recipeShareCopyLink');
+      const shareWhatsappButton = document.getElementById('recipeShareWhatsapp');
+      const shareCommunityButton = document.getElementById('recipeShareCommunity');
+      let activeShareRecipe = selectedRecipeSnapshot;
       const selectedRecipeId = String(<%- JSON.stringify(activeRecipe ? (activeRecipe.favoriteKey || activeRecipe.id) : '') %>);
       const recipeScalerState = {
         originalServings: Math.max(1, Number(selectedRecipeSnapshot?.servings || 1)),
@@ -291,6 +373,7 @@
         estimatedPrice: Number(selectedRecipeSnapshot?.estimatedPrice || 0),
         ingredients: Array.isArray(selectedRecipeSnapshot?.ingredients) ? selectedRecipeSnapshot.ingredients : []
       };
+      const COMMUNITY_PREFILL_KEY = 'communityRecipePrefill';
       const recookIdentity = {
         source: <%- JSON.stringify(activeRecipeSource) %>,
         sourceId: <%- JSON.stringify(activeRecipeSourceId) %>,
@@ -306,6 +389,90 @@
         }
 
         return String(value || '').replace(/"/g, '\\"');
+      };
+
+      const buildCommunityPrefill = (recipe) => {
+        if (!recipe) {
+          return null;
+        }
+
+        return {
+          title: recipe.title || '',
+          description: recipe.description || '',
+          image_url: recipe.imageUrl || '',
+          video_url: recipe.videoSource?.src || recipe.videoUrl || '',
+          cuisine: recipe.originPlace || recipe.cuisine || '',
+          category: String(recipe.category || '').toLowerCase(),
+          cooking_time: Number(recipe.cookingTime || 0) || '',
+          servings: Number(recipe.servings || 0) || '',
+          difficulty: String(recipe.difficulty || '').toLowerCase(),
+          estimated_price: Number(recipe.estimatedPrice || 0) || '',
+          tags: Array.isArray(recipe.tags) ? recipe.tags : [],
+          ingredients: Array.isArray(recipe.ingredients)
+            ? recipe.ingredients.map((ingredient) => ingredient?.display || ingredient?.label || ingredient?.name || '').filter(Boolean)
+            : [],
+          steps: Array.isArray(recipe.steps)
+            ? recipe.steps.map((step) => ({
+                instruction: step?.instruction || step?.text || '',
+                image_url: step?.imageUrl || step?.image_url || ''
+              }))
+            : [],
+          share_type: 'reshared'
+        };
+      };
+
+      const buildRecipeLink = (recipe) => {
+        const recipeId = encodeURIComponent(String(recipe?.id || ''));
+        return `${window.location.origin}/recipe-detail?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=${recipeId}`;
+      };
+
+      const setShareSheetVisible = (visible) => {
+        if (!shareSheet) {
+          return;
+        }
+
+        shareSheet.hidden = !visible;
+      };
+
+      const openCommunityShare = (recipe) => {
+        const payload = buildCommunityPrefill(recipe);
+        if (!payload) {
+          window.location.href = '/community/new';
+          return;
+        }
+
+        try {
+          window.sessionStorage.setItem(COMMUNITY_PREFILL_KEY, JSON.stringify(payload));
+        } catch (error) {
+          console.error('Failed to store community prefill:', error);
+        }
+
+        window.location.href = '/community/new';
+      };
+
+      const openShareMenu = (recipe) => {
+        activeShareRecipe = recipe || selectedRecipeSnapshot || null;
+        setShareSheetVisible(true);
+      };
+
+      const closeShareMenu = () => {
+        setShareSheetVisible(false);
+      };
+
+      const copyRecipeLink = async (recipe) => {
+        const link = buildRecipeLink(recipe);
+        try {
+          await navigator.clipboard.writeText(link);
+          window.alert('Link resep berhasil disalin.');
+        } catch (error) {
+          window.prompt('Salin link resep ini:', link);
+        }
+      };
+
+      const shareToWhatsapp = (recipe) => {
+        const link = buildRecipeLink(recipe);
+        const message = `${recipe?.title || 'Resep favorit'}\n${link}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
       };
 
       const parseFractionToken = (value) => {
@@ -537,7 +704,8 @@
           }
 
           if (actionButton && actionButton.dataset.action === 'share') {
-            navigator.clipboard?.writeText?.(`${window.location.origin}/recipes?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=${encodeURIComponent(recipeId || '')}`);
+            const recipe = recipeMap.get(String(recipeId));
+            openShareMenu(recipe);
             return;
           }
 
@@ -598,10 +766,27 @@
       }
 
       if (selectedShareButton) {
-        selectedShareButton.addEventListener('click', () => {
-          navigator.clipboard?.writeText?.(`${window.location.origin}/recipes?feed=<%= encodeURIComponent(feed || 'random') %>&recipeId=<%= encodeURIComponent(activeRecipe ? activeRecipe.id : '') %>`);
-        });
+        selectedShareButton.addEventListener('click', openShareMenu);
       }
+
+      shareSheetClose?.addEventListener('click', closeShareMenu);
+      shareSheet?.addEventListener('click', (event) => {
+        if (event.target === shareSheet) {
+          closeShareMenu();
+        }
+      });
+      shareCopyLinkButton?.addEventListener('click', async () => {
+        await copyRecipeLink(activeShareRecipe);
+        closeShareMenu();
+      });
+      shareWhatsappButton?.addEventListener('click', () => {
+        shareToWhatsapp(activeShareRecipe);
+        closeShareMenu();
+      });
+      shareCommunityButton?.addEventListener('click', () => {
+        closeShareMenu();
+        openCommunityShare(activeShareRecipe);
+      });
 
       document.querySelectorAll('[data-serving-action]').forEach((button) => {
         button.addEventListener('click', () => {

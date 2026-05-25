@@ -39,6 +39,8 @@
     cuisine: recipe.originPlace || recipe.cuisine || 'Komunitas',
     creatorName: recipe.creatorName || 'Pengguna komunitas',
     createdAt: recipe.createdAt || null,
+    shareType: recipe.shareType || 'original',
+    isReshared: Boolean(recipe.isReshared),
     isDeleted: Boolean(recipe.isDeleted || recipe.is_deleted || recipe.postIsDeleted),
     deletedAt: recipe.deletedAt || recipe.postDeletedAt || null,
     commentCount: Array.isArray(recipe.comments) ? recipe.comments.length : 0,
@@ -108,6 +110,12 @@
                   >
                     <div class="community-recipe-card-hero">
                       <img src="<%= recipe.imageUrl || '/images/1.png' %>" alt="<%= recipe.title %>" />
+                      <% if (recipe.isReshared) { %>
+                        <span class="community-recipe-card-badge is-reshared">
+                          <i class="fa-solid fa-retweet" aria-hidden="true"></i>
+                          <span>Reshared</span>
+                        </span>
+                      <% } %>
                       <% if (isDeletedPost) { %>
                         <span class="community-recipe-card-badge is-deleted">DIHAPUS</span>
                       <% } %>
@@ -398,6 +406,9 @@
         const mediaUrl = post.imageUrl || '/images/1.png';
         const cuisineText = post.originPlace || post.cuisine || 'Komunitas';
         const categoryText = post.category || 'resep';
+        const resharedPill = post.isReshared
+          ? '<span class="community-post-status-pill is-reshared"><i class="fa-solid fa-retweet"></i> RESHARED</span>'
+          : '';
 
         if (detailAvatar) detailAvatar.src = avatarUrl;
         if (detailAuthor) detailAuthor.textContent = post.creatorName || 'Pengguna komunitas';
@@ -416,6 +427,7 @@
             <span><i class="fa-solid fa-layer-group"></i> ${escapeHtml(categoryText)} / ${escapeHtml(cuisineText)}</span>
             <span><i class="fa-regular fa-clock"></i> ${escapeHtml(String(post.cookingTime || 0))} min</span>
             <span><i class="fa-solid fa-wallet"></i> Rp ${escapeHtml(String(post.estimatedPrice || 0).replace(/\B(?=(\d{3})+(?!\d))/g, '.'))}</span>
+            ${resharedPill}
             ${isDeletedPost ? '<span class="community-post-status-pill is-deleted"><i class="fa-solid fa-trash"></i> DIHAPUS</span>' : ''}
           `;
         }
