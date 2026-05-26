@@ -1,10 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %></title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <script>
+    (() => {
+      try {
+        if (window.sessionStorage.getItem("auth-switch-target") === "/login") {
+          document.documentElement.classList.add("auth-skip-intro");
+        }
+      } catch (error) {
+        void error;
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
@@ -113,11 +124,23 @@
     </main>
     <script>
       (() => {
-        window.requestAnimationFrame(() => {
-          window.setTimeout(() => {
-            document.body.classList.add("is-ready");
-          }, 70);
-        });
+        const shouldSkipIntro = document.documentElement.classList.contains("auth-skip-intro");
+
+        if (shouldSkipIntro) {
+          document.body.classList.add("is-ready");
+          try {
+            window.sessionStorage.removeItem("auth-switch-target");
+          } catch (error) {
+            void error;
+          }
+          document.documentElement.classList.remove("auth-skip-intro");
+        } else {
+          window.requestAnimationFrame(() => {
+            window.setTimeout(() => {
+              document.body.classList.add("is-ready");
+            }, 70);
+          });
+        }
 
         const switchLink = document.querySelector('a[href="/register"]');
         const homeLink = document.querySelector('a[href="/"]');
@@ -125,11 +148,16 @@
         if (switchLink) {
           switchLink.addEventListener("click", (event) => {
             event.preventDefault();
+            try {
+              window.sessionStorage.setItem("auth-switch-target", "/register");
+            } catch (error) {
+              void error;
+            }
             document.body.classList.remove("is-ready");
             document.body.classList.add("is-switching-auth", "is-switching-to-register");
             window.setTimeout(() => {
               window.location.href = "/register";
-            }, 240);
+            }, 320);
           });
         }
 

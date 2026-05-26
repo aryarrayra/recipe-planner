@@ -2451,12 +2451,33 @@ function getFallbackDashboard(user) {
     };
 }
 
+function renderAuthPage(res, authMode = 'login', options = {}) {
+    const safeMode = authMode === 'register' ? 'register' : 'login';
+    const {
+        status = 200,
+        error = null,
+        notice = null,
+        loginValues = {},
+        registerValues = {}
+    } = options;
+
+    return res.status(status).render('auth', {
+        title: safeMode === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
+        authMode: safeMode,
+        error,
+        notice,
+        loginValues,
+        registerValues
+    });
+}
+
 function renderAuthError(res, view, message, values = {}) {
-    return res.status(400).render(view, {
-        title: view === 'login' ? 'Masuk - AI Recipe Planner' : 'Daftar - AI Recipe Planner',
+    const safeMode = view === 'register' ? 'register' : 'login';
+    return renderAuthPage(res, safeMode, {
+        status: 400,
         error: message,
-        values,
-        allergyOptions: ALLERGY_OPTIONS
+        loginValues: safeMode === 'login' ? values : {},
+        registerValues: safeMode === 'register' ? values : {}
     });
 }
 
@@ -2729,11 +2750,9 @@ router.get('/auth/google', (req, res) => {
     try {
         const { clientId, redirectUri } = getGoogleOAuthConfig(req);
         if (!clientId || !redirectUri) {
-            return res.status(400).render(source, {
-                title: source === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
-                error: 'Google login belum dikonfigurasi. Tambahkan GOOGLE_CLIENT_ID dan GOOGLE_REDIRECT_URI.',
-                values: {},
-                allergyOptions: ALLERGY_OPTIONS
+            return renderAuthPage(res, source, {
+                status: 400,
+                error: 'Google login belum dikonfigurasi. Tambahkan GOOGLE_CLIENT_ID dan GOOGLE_REDIRECT_URI.'
             });
         }
 
@@ -2765,18 +2784,15 @@ router.get('/auth/google', (req, res) => {
 
 router.get('/auth/google/callback', async (req, res) => {
     const source = req.session.oauthSource === 'register' ? 'register' : 'login';
-    const errorView = source === 'register' ? 'register' : 'login';
 
     try {
         const code = String(req.query.code || '').trim();
         const state = String(req.query.state || '').trim();
 
         if (!code || !state || !req.session.oauthState || state !== req.session.oauthState) {
-            return res.status(400).render(errorView, {
-                title: errorView === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
-                error: 'Sesi login Google tidak valid. Coba lagi.',
-                values: {},
-                allergyOptions: ALLERGY_OPTIONS
+            return renderAuthPage(res, source, {
+                status: 400,
+                error: 'Sesi login Google tidak valid. Coba lagi.'
             });
         }
 
@@ -2784,11 +2800,9 @@ router.get('/auth/google/callback', async (req, res) => {
         const profile = await fetchGoogleProfile(tokenPayload.access_token);
 
         if (profile.email_verified === false) {
-            return res.status(400).render(errorView, {
-                title: errorView === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
-                error: 'Akun Google harus punya email yang terverifikasi.',
-                values: {},
-                allergyOptions: ALLERGY_OPTIONS
+            return renderAuthPage(res, source, {
+                status: 400,
+                error: 'Akun Google harus punya email yang terverifikasi.'
             });
         }
 
@@ -2800,11 +2814,9 @@ router.get('/auth/google/callback', async (req, res) => {
         return res.redirect(req.session.user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
     } catch (error) {
         console.error('Google auth callback error:', error.message);
-        return res.status(400).render(errorView, {
-            title: errorView === 'register' ? 'Daftar - AI Recipe Planner' : 'Masuk - AI Recipe Planner',
-            error: 'Gagal masuk dengan Google. Coba lagi.',
-            values: {},
-            allergyOptions: ALLERGY_OPTIONS
+        return renderAuthPage(res, source, {
+            status: 400,
+            error: 'Gagal masuk dengan Google. Coba lagi.'
         });
     }
 });
@@ -3191,11 +3203,9 @@ router.get('/login', (req, res) => {
 
     preventBack(req, res, () => {});
 
-    res.render('login', {
-        title: 'Masuk - AI Recipe Planner',
-        error: null,
+    return renderAuthPage(res, 'login', {
         notice: String(req.query.reset || '').toLowerCase() === 'success' ? 'Password berhasil direset. Silakan login.' : null,
-        values: {}
+        loginValues: {}
     });
 });
 
@@ -3206,12 +3216,9 @@ router.get('/register', (req, res) => {
 
     preventBack(req, res, () => {});
 
-    res.render('register', {
-        title: 'Daftar - AI Recipe Planner',
-        error: null,
+    return renderAuthPage(res, 'register', {
         notice: String(req.query.reset || '').toLowerCase() === 'success' ? 'Password berhasil direset. Silakan login.' : null,
-        values: {} ,
-        allergyOptions: ALLERGY_OPTIONS
+        registerValues: {}
     });
 });
 

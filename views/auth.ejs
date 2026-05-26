@@ -1,0 +1,298 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body class="page-transition auth-page auth-mode-<%= authMode === 'register' ? 'register' : 'login' %>" data-auth-mode="<%= authMode === 'register' ? 'register' : 'login' %>">
+    <% const loginFormValues = loginValues || {}; %>
+    <% const registerFormValues = registerValues || {}; %>
+    <main class="login-page auth-page">
+      <section class="visual-panel">
+        <div class="visual-outline"></div>
+        <div class="visual-strip"></div>
+
+        <div class="plate-stack">
+          <figure class="plate plate-primary">
+            <img src="/images/3.png" alt="Noodle bowl" />
+          </figure>
+          <figure class="plate plate-secondary">
+            <img src="/images/2.png" alt="Spicy dish" />
+          </figure>
+          <figure class="plate plate-tertiary">
+            <img src="/images/1.png" alt="Vegetable soup" />
+          </figure>
+        </div>
+
+        <div class="brand-badge">
+          <img src="/images/7.png" alt="Logo ResepKu" />
+          <div>
+            <strong>ResepKu</strong>
+            <small>Smart meal ideas for every day</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-panel">
+        <div class="form-top-accent"></div>
+        <div class="corner-leaf corner-leaf-top"></div>
+        <div class="corner-leaf corner-leaf-bottom"></div>
+
+        <div class="form-shell">
+          <div class="form-card">
+            <div class="auth-stage">
+              <section class="auth-pane auth-pane-login" aria-hidden="<%= authMode === 'register' ? 'true' : 'false' %>">
+                <p class="eyebrow">Welcome back</p>
+                <h1>Sign in to ResepKu</h1>
+
+                <% if (authMode !== 'register' && error) { %>
+                  <div class="auth-alert landing-alert"><%= error %></div>
+                <% } %>
+
+                <% if (authMode !== 'register' && notice) { %>
+                  <div class="auth-alert landing-alert landing-alert-success"><%= notice %></div>
+                <% } %>
+
+                <div class="login-panel">
+                  <form class="login-form" action="/login" method="post">
+                    <label class="sr-only" for="loginEmail">Email</label>
+                    <input
+                      id="loginEmail"
+                      name="email"
+                      type="email"
+                      placeholder="E-mail"
+                      value="<%= loginFormValues.email || '' %>"
+                    />
+
+                    <label class="sr-only" for="loginPassword">Password</label>
+                    <div class="password-field">
+                      <input
+                        id="loginPassword"
+                        name="password"
+                        type="password"
+                        placeholder="Password"
+                      />
+                      <button type="button" class="password-toggle" data-password-toggle data-target="loginPassword" aria-label="Tampilkan password">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                          <path class="eye-slash" d="M4 4l16 16"></path>
+                        </svg>
+                      </button>
+                    </div>
+
+                    <a class="helper-link" href="/forgot-password">Forgot password?</a>
+                    <button type="submit">Login</button>
+                  </form>
+                </div>
+
+                <div class="divider">
+                  <span></span>
+                  <p>Or continue with</p>
+                  <span></span>
+                </div>
+
+                <div class="social-grid">
+                  <a href="/auth/google?source=login" class="social-btn">
+                    <span class="social-icon google">G</span>
+                    Continue with Google
+                  </a>
+                </div>
+
+                <p class="signup-copy">
+                  Don't have an account?
+                  <a href="/register" data-auth-mode-target="register">Register</a>
+                </p>
+              </section>
+
+              <section class="auth-pane auth-pane-register" aria-hidden="<%= authMode === 'register' ? 'false' : 'true' %>">
+                <p class="eyebrow">Create account</p>
+                <h1>Join ResepKu</h1>
+
+                <% if (authMode === 'register' && error) { %>
+                  <div class="auth-alert landing-alert"><%= error %></div>
+                <% } %>
+
+                <% if (authMode === 'register' && notice) { %>
+                  <div class="auth-alert landing-alert landing-alert-success"><%= notice %></div>
+                <% } %>
+
+                <div class="login-panel">
+                  <form class="login-form" action="/register" method="post">
+                    <label class="sr-only" for="registerUsername">Username</label>
+                    <input
+                      id="registerUsername"
+                      name="username"
+                      type="text"
+                      placeholder="Username"
+                      value="<%= registerFormValues.username || '' %>"
+                    />
+
+                    <label class="sr-only" for="registerEmail">Email</label>
+                    <input
+                      id="registerEmail"
+                      name="email"
+                      type="email"
+                      placeholder="E-mail"
+                      value="<%= registerFormValues.email || '' %>"
+                    />
+
+                    <label class="sr-only" for="registerPassword">Password</label>
+                    <div class="password-field">
+                      <input
+                        id="registerPassword"
+                        name="password"
+                        type="password"
+                        placeholder="Password"
+                      />
+                      <button type="button" class="password-toggle" data-password-toggle data-target="registerPassword" aria-label="Tampilkan password">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                          <path class="eye-slash" d="M4 4l16 16"></path>
+                        </svg>
+                      </button>
+                    </div>
+
+                    <label class="sr-only" for="registerConfirmPassword">Confirm password</label>
+                    <div class="password-field">
+                      <input
+                        id="registerConfirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        placeholder="Confirm password"
+                      />
+                      <button type="button" class="password-toggle" data-password-toggle data-target="registerConfirmPassword" aria-label="Tampilkan konfirmasi password">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                          <path class="eye-slash" d="M4 4l16 16"></path>
+                        </svg>
+                      </button>
+                    </div>
+
+                    <button type="submit">Create account</button>
+                  </form>
+                </div>
+
+                <div class="divider">
+                  <span></span>
+                  <p>Or sign up with</p>
+                  <span></span>
+                </div>
+
+                <div class="social-grid">
+                  <a href="/auth/google?source=register" class="social-btn">
+                    <span class="social-icon google">G</span>
+                    Continue with Google
+                  </a>
+                </div>
+
+                <p class="signup-copy">
+                  Already have an account?
+                  <a href="/login" data-auth-mode-target="login">Sign in</a>
+                </p>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>
+      (() => {
+        const body = document.body;
+        const modeLinks = document.querySelectorAll("[data-auth-mode-target]");
+        const homeLink = document.querySelector('a[href="/"]');
+        const switchButtons = document.querySelectorAll(".auth-switch-button");
+
+        function setAuthMode(nextMode, { pushHistory = true } = {}) {
+          const safeMode = nextMode === "register" ? "register" : "login";
+          const nextPath = safeMode === "register" ? "/register" : "/login";
+
+          body.dataset.authMode = safeMode;
+          body.classList.toggle("auth-mode-login", safeMode === "login");
+          body.classList.toggle("auth-mode-register", safeMode === "register");
+
+          document.querySelector(".auth-pane-login")?.setAttribute("aria-hidden", safeMode === "login" ? "false" : "true");
+          document.querySelector(".auth-pane-register")?.setAttribute("aria-hidden", safeMode === "register" ? "false" : "true");
+
+          switchButtons.forEach((button) => {
+            const isActive = button.dataset.authModeTarget === safeMode;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-selected", isActive ? "true" : "false");
+          });
+
+          if (pushHistory && window.location.pathname !== nextPath) {
+            window.history.pushState({ authMode: safeMode }, "", nextPath);
+          } else if (!pushHistory && window.location.pathname !== nextPath) {
+            window.history.replaceState({ authMode: safeMode }, "", nextPath);
+          }
+
+          document.title = safeMode === "register" ? "Daftar - AI Recipe Planner" : "Masuk - AI Recipe Planner";
+        }
+
+        window.requestAnimationFrame(() => {
+          window.setTimeout(() => {
+            body.classList.add("is-ready");
+          }, 70);
+        });
+
+        setAuthMode(body.dataset.authMode || "login", { pushHistory: false });
+
+        modeLinks.forEach((link) => {
+          link.addEventListener("click", (event) => {
+            const nextMode = link.dataset.authModeTarget;
+            if (!nextMode) {
+              return;
+            }
+
+            event.preventDefault();
+            setAuthMode(nextMode, { pushHistory: true });
+          });
+        });
+
+        window.addEventListener("popstate", () => {
+          const path = window.location.pathname.toLowerCase();
+          setAuthMode(path === "/register" ? "register" : "login", { pushHistory: false });
+        });
+
+        [homeLink].filter(Boolean).forEach((link) => {
+          link.addEventListener("click", (event) => {
+            const href = link.getAttribute("href");
+            if (!href) {
+              return;
+            }
+
+            event.preventDefault();
+            body.classList.remove("is-ready");
+            body.classList.add("is-leaving");
+            window.setTimeout(() => {
+              window.location.href = href;
+            }, 320);
+          });
+        });
+
+        document.querySelectorAll("[data-password-toggle]").forEach((button) => {
+          const target = document.getElementById(button.dataset.target || "");
+          if (!target) {
+            return;
+          }
+
+          button.addEventListener("click", () => {
+            const showPassword = target.type === "password";
+            target.type = showPassword ? "text" : "password";
+            button.classList.toggle("is-visible", showPassword);
+            button.setAttribute("aria-label", showPassword ? "Sembunyikan password" : "Tampilkan password");
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

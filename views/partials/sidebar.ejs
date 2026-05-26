@@ -89,7 +89,7 @@
   </aside>
 </div>
 
-  <div class="mobile-bottom-nav-shell" aria-label="Navigasi mobile">
+<div class="mobile-bottom-nav-shell" aria-label="Navigasi mobile">
   <input type="checkbox" class="mobile-bottom-nav-toggle" id="<%= mobileNavId %>" />
 
   <nav class="mobile-bottom-nav" aria-label="Navigasi cepat">
@@ -100,48 +100,59 @@
       </a>
     <% }) %>
 
-    <label class="mobile-bottom-nav-link mobile-bottom-nav-menu" for="<%= mobileNavId %>" aria-label="Buka menu halaman">
-      <span class="mobile-bottom-nav-icon"><i class="fa-solid fa-bars"></i></span>
-      <span>Menu</span>
-    </label>
+    <% if (isAdmin) { %>
+      <form action="/logout" method="post" class="mobile-bottom-nav-link-form">
+        <button type="submit" class="mobile-bottom-nav-link mobile-bottom-nav-link-button" aria-label="Logout">
+          <span class="mobile-bottom-nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+          <span>Logout</span>
+        </button>
+      </form>
+    <% } else { %>
+      <label class="mobile-bottom-nav-link mobile-bottom-nav-menu" for="<%= mobileNavId %>" aria-label="Buka menu halaman">
+        <span class="mobile-bottom-nav-icon"><i class="fa-solid fa-bars"></i></span>
+        <span>Menu</span>
+      </label>
+    <% } %>
   </nav>
 
-  <aside class="mobile-bottom-nav-drawer" aria-label="Menu halaman">
-    <div class="mobile-bottom-nav-drawer-head">
-      <div>
-        <p>Menu tambahan</p>
-        <strong><%= mobileDrawerLinks.length ? 'Pilih halaman' : 'Tidak ada menu tambahan' %></strong>
+  <% if (!isAdmin) { %>
+    <aside class="mobile-bottom-nav-drawer" aria-label="Menu halaman">
+      <div class="mobile-bottom-nav-drawer-head">
+        <div>
+          <p>Menu tambahan</p>
+          <strong><%= mobileDrawerLinks.length ? 'Pilih halaman' : 'Tidak ada menu tambahan' %></strong>
+        </div>
+        <label class="mobile-bottom-nav-close" for="<%= mobileNavId %>" aria-label="Tutup menu">
+          <i class="fa-solid fa-xmark"></i>
+        </label>
       </div>
-      <label class="mobile-bottom-nav-close" for="<%= mobileNavId %>" aria-label="Tutup menu">
-        <i class="fa-solid fa-xmark"></i>
-      </label>
-    </div>
 
-    <% if (mobileDrawerLinks.length) { %>
-      <div class="mobile-bottom-nav-grid">
-        <% mobileDrawerLinks.forEach((item) => { %>
-          <a class="mobile-bottom-nav-card <%= activePage === item.active ? 'is-active' : '' %>" href="<%= item.href %>">
-            <span class="mobile-bottom-nav-icon"><i class="<%= item.iconClass %>"></i></span>
-            <div>
-              <strong><%= item.label %></strong>
-            </div>
-          </a>
-        <% }) %>
-      </div>
-    <% } else { %>
-      <div class="mobile-bottom-nav-empty">
-        Menu utama sudah ada di bottom navbar.
-      </div>
-    <% } %>
+      <% if (mobileDrawerLinks.length) { %>
+        <div class="mobile-bottom-nav-grid">
+          <% mobileDrawerLinks.forEach((item) => { %>
+            <a class="mobile-bottom-nav-card <%= activePage === item.active ? 'is-active' : '' %>" href="<%= item.href %>">
+              <span class="mobile-bottom-nav-icon"><i class="<%= item.iconClass %>"></i></span>
+              <div>
+                <strong><%= item.label %></strong>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="mobile-bottom-nav-empty">
+          Menu utama sudah ada di bottom navbar.
+        </div>
+      <% } %>
 
-    <form action="/logout" method="post" class="mobile-bottom-nav-logout">
-      <button type="submit" class="button button-secondary">
-        <i class="fa-solid fa-right-from-bracket"></i>
-        <span>Keluar</span>
-      </button>
-    </form>
-  </aside>
-  <label class="mobile-bottom-nav-backdrop" for="<%= mobileNavId %>" aria-hidden="true"></label>
+      <form action="/logout" method="post" class="mobile-bottom-nav-logout">
+        <button type="submit" class="button button-secondary">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Keluar</span>
+        </button>
+      </form>
+    </aside>
+    <label class="mobile-bottom-nav-backdrop" for="<%= mobileNavId %>" aria-hidden="true"></label>
+  <% } %>
 </div>
 
 <% if (mode !== 'admin') { %>

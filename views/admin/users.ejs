@@ -26,14 +26,36 @@
   <% const activeFilters = filters || { search: '', role: '' }; %>
   <% const currentSessionUserId = String(user?.id || ''); %>
   <% const shouldOpenAccordion = Boolean(selectedUser || notice || error); %>
-  <% const buildUsersPageUrl = (targetPage, targetUserId = '') => {
+  <% const usersPaginationAnchor = 'users-pagination'; %>
+  <% const buildUsersPageUrl = (targetPage, targetUserId = '', anchor = '') => {
     const params = new URLSearchParams();
     params.set('page', String(targetPage));
     if (targetUserId) params.set('userId', targetUserId);
     if (activeFilters.search) params.set('search', activeFilters.search);
     if (activeFilters.role) params.set('role', activeFilters.role);
-    return `/admin/users?${params.toString()}`;
+    return `/admin/users?${params.toString()}${anchor ? `#${anchor}` : ''}`;
   }; %>
+  <% const buildPaginationItems = (currentPage, totalPages) => {
+    if (totalPages <= 1) return [1];
+    const rawItems = [1];
+    for (let page = Math.max(2, currentPage - 1); page <= Math.min(totalPages - 1, currentPage + 1); page += 1) {
+      rawItems.push(page);
+    }
+    if (totalPages > 1) rawItems.push(totalPages);
+
+    const uniqueItems = [...new Set(rawItems)].sort((left, right) => left - right);
+    const result = [];
+    uniqueItems.forEach((page, index) => {
+      if (index > 0 && page - uniqueItems[index - 1] > 1) {
+        result.push({ type: 'ellipsis', key: `ellipsis-${uniqueItems[index - 1]}-${page}` });
+      }
+      result.push({ type: 'page', value: page });
+    });
+    return result;
+  }; %>
+  <% const pagerItems = buildPaginationItems(pager.page, pager.totalPages); %>
+  <% const pageStart = pager.totalItems ? ((pager.page - 1) * pager.pageSize) + 1 : 0; %>
+  <% const pageEnd = Math.min(pager.totalItems, pager.page * pager.pageSize); %>
   <main class="user-dashboard admin-dashboard">
     <div class="user-dashboard-shell admin-shell">
       <%- include('../partials/sidebar', { mode: 'admin', activePage, user }) %>
@@ -206,7 +228,7 @@
                   </div>
                   <p><%= item.email %></p>
                   <div class="admin-meta-row">
-                    <span><i class="fa-solid fa-book-bookmark"></i> <%= item.total_saved_recipes || 0 %> saved</span>
+                    <span><i class="fa-solid fa-book-bookmark"></i> <%= item.total_saved_recipes || 0 %> favorites</span>
                     <span><i class="fa-solid fa-fire-burner"></i> <%= item.total_recipes_cooked || 0 %> cooked</span>
                   </div>
                   <small><i class="fa-regular fa-calendar"></i> <%= formatDate(item.created_at) %></small>
@@ -232,21 +254,62 @@
           </div>
 
           <% if (pager.totalPages > 1) { %>
-            <nav class="admin-pagination" aria-label="Pagination user list">
-              <a class="admin-pagination-link <%= !pager.hasPrev ? 'is-disabled' : '' %>" href="<%= pager.hasPrev ? buildUsersPageUrl(pager.page - 1, selectedUser ? selectedUser.id : '') : '#' %>">
-                <i class="fa-solid fa-chevron-left"></i>
-                <span>Prev</span>
-              </a>
+            <nav class="admin-pagination" id="<%= usersPaginationAnchor %>" aria-label="Pagination user list">
+              <% if (pager.hasPrev) { %>
+                <a class="admin-pagination-link" href="<%= buildUsersPageUrl(pager.page - 1, selectedUser ? selectedUser.id : '', usersPaginationAnchor) %>" rel="prev">
+                  <i class="fa-solid fa-chevron-left"></i>
+                  <span class="admin-pagination-link-label">
+                    <strong>Sebelumnya</strong>
+                    <span>Page <%= pager.page - 1 %></span>
+                  </span>
+                </a>
+              <% } else { %>
+                <span class="admin-pagination-link is-disabled" aria-disabled="true">
+                  <i class="fa-solid fa-chevron-left"></i>
+                  <span class="admin-pagination-link-label">
+                    <strong>Sebelumnya</strong>
+                    <span>Page pertama</span>
+                  </span>
+                </span>
+              <% } %>
 
-              <div class="admin-pagination-summary">
-                <strong>Halaman <%= pager.page %></strong>
-                <span>dari <%= pager.totalPages %> | <%= pager.pageSize %> per halaman</span>
+              <div class="admin-pagination-center">
+                <div class="admin-pagination-summary">
+                  <strong>Halaman <%= pager.page %> dari <%= pager.totalPages %></strong>
+                  <span>Menampilkan <%= pageStart %>-<%= pageEnd %> dari <%= pager.totalItems %> user</span>
+                  <span class="admin-pagination-summary-compact"><%= pager.page %>/<%= pager.totalPages %></span>
+                </div>
+
+                <div class="admin-pagination-pages" aria-label="Daftar halaman user">
+                  <% pagerItems.forEach((item) => { %>
+                    <% if (item.type === 'ellipsis') { %>
+                      <span class="admin-pagination-page is-ellipsis" aria-hidden="true">...</span>
+                    <% } else if (item.value === pager.page) { %>
+                      <span class="admin-pagination-page is-active" aria-current="page"><%= item.value %></span>
+                    <% } else { %>
+                      <a class="admin-pagination-page" href="<%= buildUsersPageUrl(item.value, selectedUser ? selectedUser.id : '', usersPaginationAnchor) %>"><%= item.value %></a>
+                    <% } %>
+                  <% }) %>
+                </div>
               </div>
 
-              <a class="admin-pagination-link <%= !pager.hasNext ? 'is-disabled' : '' %>" href="<%= pager.hasNext ? buildUsersPageUrl(pager.page + 1, selectedUser ? selectedUser.id : '') : '#' %>">
-                <span>Next</span>
-                <i class="fa-solid fa-chevron-right"></i>
-              </a>
+              <% if (pager.hasNext) { %>
+                <a class="admin-pagination-link" href="<%= buildUsersPageUrl(pager.page + 1, selectedUser ? selectedUser.id : '', usersPaginationAnchor) %>" rel="next">
+                  <span class="admin-pagination-link-label">
+                    <strong>Berikutnya</strong>
+                    <span>Page <%= pager.page + 1 %></span>
+                  </span>
+                  <i class="fa-solid fa-chevron-right"></i>
+                </a>
+              <% } else { %>
+                <span class="admin-pagination-link is-disabled" aria-disabled="true">
+                  <span class="admin-pagination-link-label">
+                    <strong>Berikutnya</strong>
+                    <span>Page terakhir</span>
+                  </span>
+                  <i class="fa-solid fa-chevron-right"></i>
+                </span>
+              <% } %>
             </nav>
           <% } %>
         </article>

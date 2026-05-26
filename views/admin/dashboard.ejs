@@ -23,7 +23,29 @@
   <% const insights = secondaryInsights || {}; %>
   <% const auditItems = Array.isArray(auditTrail) ? auditTrail : []; %>
   <% const auditPager = auditPagination || { page: 1, pageSize: 5, totalItems: auditItems.length, totalPages: 1, hasPrev: false, hasNext: false }; %>
-  <% const buildAuditPageUrl = (targetPage) => `/admin/dashboard?auditPage=${targetPage}`; %>
+  <% const auditPaginationAnchor = 'audit-pagination'; %>
+  <% const buildAuditPageUrl = (targetPage, anchor = '') => `/admin/dashboard?auditPage=${targetPage}${anchor ? `#${anchor}` : ''}`; %>
+  <% const buildPaginationItems = (currentPage, totalPages) => {
+    if (totalPages <= 1) return [1];
+    const rawItems = [1];
+    for (let page = Math.max(2, currentPage - 1); page <= Math.min(totalPages - 1, currentPage + 1); page += 1) {
+      rawItems.push(page);
+    }
+    if (totalPages > 1) rawItems.push(totalPages);
+
+    const uniqueItems = [...new Set(rawItems)].sort((left, right) => left - right);
+    const result = [];
+    uniqueItems.forEach((page, index) => {
+      if (index > 0 && page - uniqueItems[index - 1] > 1) {
+        result.push({ type: 'ellipsis', key: `ellipsis-${uniqueItems[index - 1]}-${page}` });
+      }
+      result.push({ type: 'page', value: page });
+    });
+    return result;
+  }; %>
+  <% const auditPagerItems = buildPaginationItems(auditPager.page, auditPager.totalPages); %>
+  <% const auditStart = auditPager.totalItems ? ((auditPager.page - 1) * auditPager.pageSize) + 1 : 0; %>
+  <% const auditEnd = Math.min(auditPager.totalItems, auditPager.page * auditPager.pageSize); %>
   <% const formatDateTime = (value) => value ? new Date(value).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; %>
   <% const formatRelativeTime = (value) => {
     if (!value) return 'baru saja';
@@ -227,7 +249,10 @@
                         <h3><%= item.event_title || 'Aktivitas' %></h3>
                         <span class="admin-status is-neutral"><%= item.event_label || '-' %></span>
                       </div>
-                      <p><strong><%= item.actor_name || 'System' %></strong> &middot; <%= item.event_meta || '-' %></p>
+                      <div class="admin-audit-detail">
+                        <strong class="admin-audit-actor"><%= item.actor_name || 'System' %></strong>
+                        <span class="admin-audit-meta"><%= item.event_meta || '-' %></span>
+                      </div>
                       <small><i class="fa-regular fa-clock"></i> <%= formatDateTime(item.event_time) %></small>
                     </div>
                   </article>
@@ -241,21 +266,62 @@
             </div>
 
             <% if (auditPager.totalPages > 1) { %>
-              <nav class="admin-pagination" aria-label="Pagination audit activity">
-                <a class="admin-pagination-link <%= !auditPager.hasPrev ? 'is-disabled' : '' %>" href="<%= auditPager.hasPrev ? buildAuditPageUrl(auditPager.page - 1) : '#' %>">
-                  <i class="fa-solid fa-chevron-left"></i>
-                  <span>Prev</span>
-                </a>
+              <nav class="admin-pagination" id="<%= auditPaginationAnchor %>" aria-label="Pagination audit activity">
+                <% if (auditPager.hasPrev) { %>
+                  <a class="admin-pagination-link" href="<%= buildAuditPageUrl(auditPager.page - 1, auditPaginationAnchor) %>" rel="prev">
+                    <i class="fa-solid fa-chevron-left"></i>
+                    <span class="admin-pagination-link-label">
+                      <strong>Sebelumnya</strong>
+                      <span>Page <%= auditPager.page - 1 %></span>
+                    </span>
+                  </a>
+                <% } else { %>
+                  <span class="admin-pagination-link is-disabled" aria-disabled="true">
+                    <i class="fa-solid fa-chevron-left"></i>
+                    <span class="admin-pagination-link-label">
+                      <strong>Sebelumnya</strong>
+                      <span>Page pertama</span>
+                    </span>
+                  </span>
+                <% } %>
 
-                <div class="admin-pagination-summary">
-                  <strong>Halaman <%= auditPager.page %></strong>
-                  <span>dari <%= auditPager.totalPages %> | <%= auditPager.pageSize %> per halaman</span>
+                <div class="admin-pagination-center">
+                  <div class="admin-pagination-summary">
+                    <strong>Halaman <%= auditPager.page %> dari <%= auditPager.totalPages %></strong>
+                    <span>Menampilkan <%= auditStart %>-<%= auditEnd %> dari <%= auditPager.totalItems %> aktivitas</span>
+                    <span class="admin-pagination-summary-compact"><%= auditPager.page %>/<%= auditPager.totalPages %></span>
+                  </div>
+
+                  <div class="admin-pagination-pages" aria-label="Daftar halaman audit">
+                    <% auditPagerItems.forEach((item) => { %>
+                      <% if (item.type === 'ellipsis') { %>
+                        <span class="admin-pagination-page is-ellipsis" aria-hidden="true">...</span>
+                      <% } else if (item.value === auditPager.page) { %>
+                        <span class="admin-pagination-page is-active" aria-current="page"><%= item.value %></span>
+                      <% } else { %>
+                        <a class="admin-pagination-page" href="<%= buildAuditPageUrl(item.value, auditPaginationAnchor) %>"><%= item.value %></a>
+                      <% } %>
+                    <% }) %>
+                  </div>
                 </div>
 
-                <a class="admin-pagination-link <%= !auditPager.hasNext ? 'is-disabled' : '' %>" href="<%= auditPager.hasNext ? buildAuditPageUrl(auditPager.page + 1) : '#' %>">
-                  <span>Next</span>
-                  <i class="fa-solid fa-chevron-right"></i>
-                </a>
+                <% if (auditPager.hasNext) { %>
+                  <a class="admin-pagination-link" href="<%= buildAuditPageUrl(auditPager.page + 1, auditPaginationAnchor) %>" rel="next">
+                    <span class="admin-pagination-link-label">
+                      <strong>Berikutnya</strong>
+                      <span>Page <%= auditPager.page + 1 %></span>
+                    </span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </a>
+                <% } else { %>
+                  <span class="admin-pagination-link is-disabled" aria-disabled="true">
+                    <span class="admin-pagination-link-label">
+                      <strong>Berikutnya</strong>
+                      <span>Page terakhir</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </span>
+                <% } %>
               </nav>
             <% } %>
           </article>
