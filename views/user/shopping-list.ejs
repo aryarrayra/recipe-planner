@@ -74,7 +74,6 @@
 
               <% const shoppingSections = data.sections || { sayur: [], protein: [], bumbu: [], dairy: [], karbohidrat: [], saus: [], alat: [], lainnya: [] }; %>
 
-              <% if (data.totalIngredients) { %>
                 <div class="shopping-sections">
                   <% [
                     { key: 'sayur', title: 'Sayur', icon: 'fa-seedling', empty: 'Belum ada sayur.' },
@@ -185,12 +184,6 @@
                     </section>
                   <% }) %>
                 </div>
-              <% } else { %>
-                <div class="user-empty-state">
-                  <i class="fa-regular fa-list-check"></i>
-                  <p>Belum ada item di shopping list. Tambahkan dari detail resep atau isi form manual di atas.</p>
-                </div>
-              <% } %>
             </article>
           </section>
 
