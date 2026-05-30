@@ -1,7 +1,9 @@
 :root {
+  color-scheme: light;
   --bg: #ffffff;
   --surface: #f8f8f8;
   --surface-soft: #ffffff;
+  --surface-strong: #ffffff;
   --accent: #389c9a;
   --accent-dark: #2a7f7d;
   --highlight: #fedb71;
@@ -9,7 +11,74 @@
   --muted: #7f877f;
   --line-art: #1d1d1d;
   --field: #f8f8f8;
+  --field-strong: #ffffff;
+  --border-color: rgba(29, 29, 29, 0.08);
+  --shadow-soft: 0 18px 36px rgba(22, 31, 24, 0.08);
   --shadow: 0 28px 60px rgba(22, 31, 24, 0.12);
+  --theme-toggle-bg: rgba(255, 255, 255, 0.92);
+  --theme-toggle-border: rgba(29, 29, 29, 0.08);
+  --theme-toggle-shadow: 0 18px 36px rgba(22, 31, 24, 0.18);
+  --theme-toggle-text: #1d1d1d;
+  --theme-toggle-muted: #6f776f;
+  --theme-accent-glow: rgba(56, 156, 154, 0.16);
+  --plate-ring: rgba(255, 255, 255, 0.42);
+  --plate-shadow: 0 18px 35px rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg: #0f1416;
+    --surface: #162023;
+    --surface-soft: #1a2427;
+    --surface-strong: #202d31;
+    --accent: #59c8c5;
+    --accent-dark: #74d8d5;
+    --highlight: #f3cc62;
+    --text: #eff4ef;
+    --muted: #a3b1aa;
+    --line-art: #eff4ef;
+    --field: #131b1e;
+    --field-strong: #182225;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow-soft: 0 18px 36px rgba(0, 0, 0, 0.28);
+    --shadow: 0 28px 60px rgba(0, 0, 0, 0.34);
+    --theme-toggle-bg: rgba(18, 26, 29, 0.94);
+    --theme-toggle-border: rgba(255, 255, 255, 0.1);
+    --theme-toggle-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
+    --theme-toggle-text: #eff4ef;
+    --theme-toggle-muted: #b5c0ba;
+    --theme-accent-glow: rgba(89, 200, 197, 0.18);
+    --plate-ring: rgba(226, 235, 230, 0.2);
+    --plate-shadow: 0 18px 35px rgba(0, 0, 0, 0.34);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1416;
+  --surface: #162023;
+  --surface-soft: #1a2427;
+  --surface-strong: #202d31;
+  --accent: #59c8c5;
+  --accent-dark: #74d8d5;
+  --highlight: #f3cc62;
+  --text: #eff4ef;
+  --muted: #a3b1aa;
+  --line-art: #eff4ef;
+  --field: #131b1e;
+  --field-strong: #182225;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --shadow-soft: 0 18px 36px rgba(0, 0, 0, 0.28);
+  --shadow: 0 28px 60px rgba(0, 0, 0, 0.34);
+  --theme-toggle-bg: rgba(18, 26, 29, 0.94);
+  --theme-toggle-border: rgba(255, 255, 255, 0.1);
+  --theme-toggle-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
+  --theme-toggle-text: #eff4ef;
+  --theme-toggle-muted: #b5c0ba;
+  --theme-accent-glow: rgba(89, 200, 197, 0.18);
+  --plate-ring: rgba(226, 235, 230, 0.2);
+  --plate-shadow: 0 18px 35px rgba(0, 0, 0, 0.34);
 }
 
 * {
@@ -26,6 +95,9 @@ body {
   font-family: "Plus Jakarta Sans", sans-serif;
   background: var(--bg);
   color: var(--text);
+  transition:
+    background-color 220ms ease,
+    color 220ms ease;
 }
 
 body.page-transition {
@@ -325,6 +397,66 @@ a {
   text-decoration: none;
 }
 
+.theme-toggle {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2200;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 1px solid var(--theme-toggle-border);
+  border-radius: 999px;
+  background: var(--theme-toggle-bg);
+  color: var(--theme-toggle-text);
+  box-shadow: var(--theme-toggle-shadow);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(56, 156, 154, 0.28);
+}
+
+.theme-toggle:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 4px var(--theme-accent-glow),
+    var(--theme-toggle-shadow);
+}
+
+.theme-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: var(--accent);
+}
+
+.theme-toggle-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -363,7 +495,7 @@ a {
 .visual-strip {
   position: absolute;
   top: 0;
-  left: 57%;
+  left: 53%;
   width: 50%;
   height: 100%;
   background: url("/images/5.png") center / cover no-repeat;
@@ -372,21 +504,21 @@ a {
 
 .visual-outline {
   position: absolute;
-  top: -20%;
-  left: -10%;
-  width: min(62vw, 860px);
-  height: min(96vw, 1180px);
-  background: url("/images/4.png") center / contain no-repeat;
+  top: 4%;
+  left: -8%;
+  width: min(60vw, 840px);
+  height: min(84vh, 940px);
+  background: url("/images/4.png") left center / contain no-repeat;
   z-index: 0;
   pointer-events: none;
 }
 
 .plate-stack {
   position: absolute;
-  top: -3%;
-  left: 37%;
-  width: min(31vw, 390px);
-  height: min(48vw, 620px);
+  top: 0;
+  left: 30%;
+  width: min(33vw, 430px);
+  height: min(50vw, 640px);
   z-index: 5;
 }
 
@@ -395,7 +527,9 @@ a {
   margin: 0;
   border-radius: 50%;
   overflow: hidden;
-  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 0 0 1.5px var(--plate-ring),
+    var(--plate-shadow);
 }
 
 .plate img {
@@ -8523,21 +8657,22 @@ html.page-is-loading .page-load-overlay {
   }
 
   .plate-stack {
-    left: 24%;
-    width: min(34vw, 340px);
+    top: 1%;
+    left: 22%;
+    width: min(35vw, 372px);
     height: min(52vw, 560px);
   }
 
   .visual-strip {
-    left: 53%;
-    width: 54%;
+    left: 50%;
+    width: 52%;
   }
 
   .visual-outline {
-    top: -18%;
-    left: -14%;
-    width: min(66vw, 720px);
-    height: min(96vw, 1060px);
+    top: 8%;
+    left: -12%;
+    width: min(64vw, 720px);
+    height: min(76vh, 820px);
   }
 
   .form-panel::before {
@@ -11137,7 +11272,7 @@ body.history-page {
 }
 
 .community-post-page .community-post-layout {
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 24px;
   justify-items: stretch;
@@ -11253,6 +11388,13 @@ body.history-page {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.community-post-page .community-book-tag-list-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .community-post-page .community-book-chip-row span,
@@ -11416,6 +11558,35 @@ body.history-page {
 
 .community-post-page .community-detail-actions {
   flex-wrap: wrap;
+  gap: 12px;
+}
+
+.community-post-page .community-detail-actions .community-tweet-action-button-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(164, 72, 72, 0.2);
+  background: linear-gradient(180deg, rgba(255, 246, 245, 0.98) 0%, rgba(252, 234, 232, 0.96) 100%);
+  color: #b74a4a;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(164, 72, 72, 0.12);
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.community-post-page .community-detail-actions .community-tweet-action-button-danger:hover {
+  transform: translateY(-1px);
+  border-color: rgba(164, 72, 72, 0.28);
+  background: linear-gradient(180deg, rgba(255, 239, 237, 1) 0%, rgba(250, 223, 220, 0.98) 100%);
+  color: #9f3232;
+  box-shadow: 0 14px 28px rgba(164, 72, 72, 0.16);
+}
+
+.community-post-page .community-detail-actions .community-tweet-action-button-danger .community-action-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .community-post-page .community-detail-actions .is-disabled {
@@ -13536,5 +13707,747 @@ body.history-page {
   .auth-page .signup-copy {
     margin: 14px 0 0;
     font-size: 0.8rem;
+  }
+}
+
+html[data-theme="dark"] body,
+html[data-theme="dark"] .login-page,
+html[data-theme="dark"] .auth-shell,
+html[data-theme="dark"] .dashboard-shell,
+html[data-theme="dark"] .food-shell,
+html[data-theme="dark"] .user-dashboard,
+html[data-theme="dark"] .user-dashboard-shell,
+html[data-theme="dark"] .admin-shell,
+html[data-theme="dark"] .chat-dashboard,
+html[data-theme="dark"] .chat-dashboard-shell,
+html[data-theme="dark"] .history-dashboard,
+html[data-theme="dark"] .history-dashboard-shell,
+html[data-theme="dark"] body.chat-page,
+html[data-theme="dark"] body.history-page,
+html[data-theme="dark"] body.profile-page {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+html[data-theme="dark"] .user-dashboard-shell {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-dashboard-main {
+  background: linear-gradient(180deg, #182225 0%, #162023 100%) !important;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.28) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme="dark"] .user-sidebar {
+  background: linear-gradient(180deg, #1a2427 0%, #162023 100%) !important;
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.28) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme="dark"] :is(
+  .user-sidebar-brand,
+  .user-icon-button,
+  .user-sidebar-icon,
+  .user-search,
+  .user-profile-pill
+) {
+  background: #223034 !important;
+  color: var(--text) !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme="dark"] .user-sidebar-link {
+  color: #95aba2 !important;
+}
+
+html[data-theme="dark"] .user-sidebar-link.is-active {
+  background: rgba(89, 200, 197, 0.14) !important;
+  color: #8ce2df !important;
+}
+
+html[data-theme="dark"] .user-sidebar-link.is-active .user-sidebar-icon {
+  background: #26373b !important;
+  color: #8ce2df !important;
+}
+
+html[data-theme="dark"] :is(
+  .user-panel,
+  .user-recipe-card,
+  .user-event-card,
+  .user-mini-recipe-card,
+  .user-stat-card,
+  .user-banner-card,
+  .dashboard-inline-tip-card,
+  .user-recipe-menu-card,
+  .user-category-chip
+) {
+  background: #1d292c !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-panel-hero {
+  background:
+    linear-gradient(180deg, rgba(115, 187, 70, 0.08), transparent 62%),
+    #1d292c !important;
+}
+
+html[data-theme="dark"] .dashboard-home-content .user-panel-banner {
+  background:
+    radial-gradient(circle at top left, rgba(115, 187, 70, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(89, 200, 197, 0.12), rgba(243, 204, 98, 0.08)),
+    #172123 !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-category-chip {
+  gap: 12px;
+}
+
+html[data-theme="dark"] .user-category-chip span {
+  color: #d9e3de !important;
+}
+
+html[data-theme="dark"] .user-category-chip img,
+html[data-theme="dark"] .user-recipe-card img {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24) !important;
+}
+
+html[data-theme="dark"] .dashboard-inline-tip-dot {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+html[data-theme="dark"] .dashboard-inline-tip-dot.is-active {
+  background: var(--accent) !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-fyp-feature {
+  background: #1a2528 !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-fyp-author,
+html[data-theme="dark"] .user-recipe-author {
+  background: #223034 !important;
+  color: #dbe5e0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-recipe-visual {
+  background: linear-gradient(180deg, #101719, #162023) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-recipe-mini-panel,
+html[data-theme="dark"] .user-fyp-page .user-feed-empty,
+html[data-theme="dark"] .user-fyp-page .user-empty-state,
+html[data-theme="dark"] .user-fyp-page .user-recipe-step-card,
+html[data-theme="dark"] .user-fyp-page .user-recipe-review-item {
+  background: #223034 !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-recipe-mini-panel h3,
+html[data-theme="dark"] .user-fyp-page .user-feed-empty h3,
+html[data-theme="dark"] .user-fyp-page .user-panel-head h1,
+html[data-theme="dark"] .user-fyp-page .user-panel-head h2 {
+  color: var(--text) !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-recipe-ingredient-item {
+  background: rgba(89, 200, 197, 0.08) !important;
+  border-color: rgba(89, 200, 197, 0.12) !important;
+  color: #e8f1ed !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-recipe-ingredient-item::before {
+  background: #65d5d2 !important;
+  box-shadow: 0 0 0 6px rgba(89, 200, 197, 0.16) !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-recipe-summary-list span {
+  color: #dbe5e0 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-recipe-summary-list span strong {
+  color: var(--text) !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-recipe-detail-description,
+html[data-theme="dark"] .user-fyp-page .user-feed-empty p {
+  color: var(--muted) !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-recipe-action-btn {
+  background: #223034 !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-fyp-page .user-recipe-action-btn.is-primary {
+  background: var(--accent) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-back-link,
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-author,
+html[data-theme="dark"] .user-recipe-detail-page .recipe-serving-btn,
+html[data-theme="dark"] .user-recipe-detail-page .recipe-serving-input-wrap,
+html[data-theme="dark"] .user-recipe-detail-page .recipe-serving-input-wrap input {
+  background: #223034 !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .recipe-serving-scaler,
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-mini-panel,
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-step-card,
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-review-item,
+html[data-theme="dark"] .user-recipe-detail-page .user-mini-recipe-card,
+html[data-theme="dark"] .user-recipe-detail-page .user-stat-card {
+  background: #223034 !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-mini-panel h3,
+html[data-theme="dark"] .user-recipe-detail-page .user-panel-head h2,
+html[data-theme="dark"] .user-recipe-detail-page .user-panel-head h1,
+html[data-theme="dark"] .user-recipe-detail-page .user-mini-recipe-copy h3,
+html[data-theme="dark"] .user-recipe-detail-page .user-stat-card strong {
+  color: var(--text) !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-detail-tags span {
+  background: rgba(89, 200, 197, 0.12) !important;
+  color: #8ce2df !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-ingredient-item {
+  background: rgba(89, 200, 197, 0.08) !important;
+  border-color: rgba(89, 200, 197, 0.12) !important;
+  color: #e8f1ed !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-ingredient-item::before {
+  background: #65d5d2 !important;
+  box-shadow: 0 0 0 6px rgba(89, 200, 197, 0.16) !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-summary-list span {
+  color: #dbe5e0 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-summary-list span strong {
+  color: var(--text) !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-detail-description,
+html[data-theme="dark"] .user-recipe-detail-page .recipe-serving-copy,
+html[data-theme="dark"] .user-recipe-detail-page .user-panel-meta,
+html[data-theme="dark"] .user-recipe-detail-page .user-mini-recipe-copy small,
+html[data-theme="dark"] .user-recipe-detail-page .user-stat-card span,
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-review-item p {
+  color: var(--muted) !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-action-btn {
+  background: #223034 !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .user-recipe-action-btn.is-primary {
+  background: var(--accent) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .recipe-food-info-badge.is-safe {
+  background: rgba(115, 187, 70, 0.16) !important;
+  color: #dcefc8 !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .recipe-food-info-badge.is-warn {
+  background: rgba(243, 204, 98, 0.16) !important;
+  color: #f8dd93 !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .recipe-food-info-badge.is-danger {
+  background: rgba(220, 68, 55, 0.16) !important;
+  color: #ffb1a9 !important;
+}
+
+html[data-theme="dark"] .user-recipe-detail-page .recipe-warning-badge {
+  background: rgba(243, 204, 98, 0.12) !important;
+  color: #f8dd93 !important;
+  border-color: rgba(243, 204, 98, 0.18) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-selected-recipes-panel,
+html[data-theme="dark"] .user-shopping-page .shopping-section-shell,
+html[data-theme="dark"] .user-shopping-page .shopping-section-form,
+html[data-theme="dark"] .user-shopping-page .shopping-item,
+html[data-theme="dark"] .user-shopping-page .user-empty-state,
+html[data-theme="dark"] .user-shopping-page .shopping-recipe-card,
+html[data-theme="dark"] .user-shopping-page .shopping-region-control,
+html[data-theme="dark"] .user-shopping-page .shopping-budget-display,
+html[data-theme="dark"] .user-shopping-page .shopping-budget-display-muted {
+  color: var(--text) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-section-shell,
+html[data-theme="dark"] .user-shopping-page .shopping-selected-recipes-panel,
+html[data-theme="dark"] .user-shopping-page .user-empty-state {
+  background: #1d292c !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-section-shell:has(.shopping-section[open]) {
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.2) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-section-form,
+html[data-theme="dark"] .user-shopping-page .shopping-budget-display,
+html[data-theme="dark"] .user-shopping-page .shopping-region-control {
+  background: #223034 !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-budget-display-muted,
+html[data-theme="dark"] .user-shopping-page .shopping-empty-inline,
+html[data-theme="dark"] .user-shopping-page .shopping-section-cancel {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--muted) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-section-form-field input,
+html[data-theme="dark"] .user-shopping-page .shopping-region-select select {
+  background: #182225 !important;
+  color: var(--text) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item {
+  background: #223034 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item-sayur {
+  background: rgba(89, 200, 197, 0.12) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item-protein {
+  background: rgba(239, 68, 68, 0.12) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item-bumbu {
+  background: rgba(245, 158, 11, 0.12) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item-dairy {
+  background: rgba(250, 204, 21, 0.14) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item-karbohidrat {
+  background: rgba(251, 191, 36, 0.14) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item-saus {
+  background: rgba(168, 85, 247, 0.14) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item-lainnya,
+html[data-theme="dark"] .user-shopping-page .shopping-item-alat {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item-copy strong,
+html[data-theme="dark"] .user-shopping-page .shopping-region-control-copy h3,
+html[data-theme="dark"] .user-shopping-page .shopping-budget-value,
+html[data-theme="dark"] .user-shopping-page .shopping-section-head h3 {
+  color: var(--text) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item-copy span,
+html[data-theme="dark"] .user-shopping-page .shopping-item-copy small,
+html[data-theme="dark"] .user-shopping-page .shopping-budget-copy,
+html[data-theme="dark"] .user-shopping-page .shopping-budget-label,
+html[data-theme="dark"] .user-shopping-page .shopping-region-control-copy span,
+html[data-theme="dark"] .user-shopping-page .shopping-region-select span,
+html[data-theme="dark"] .user-shopping-page .shopping-empty-inline,
+html[data-theme="dark"] .user-shopping-page .user-empty-state p {
+  color: var(--muted) !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-section-toggle-icon {
+  background: rgba(89, 200, 197, 0.12) !important;
+  color: #8ce2df !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-recipe-link {
+  color: #65d5d2 !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-recipe-remove,
+html[data-theme="dark"] .user-shopping-page .shopping-item-remove-manual {
+  color: #ff9a90 !important;
+}
+
+html[data-theme="dark"] .user-shopping-page .shopping-item-remove-manual {
+  background: rgba(220, 68, 55, 0.12) !important;
+}
+
+html[data-theme="dark"] body.chat-page {
+  background:
+    radial-gradient(circle at top left, rgba(89, 200, 197, 0.14), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(243, 204, 98, 0.12), transparent 24%),
+    linear-gradient(180deg, #101719 0%, #121b1d 100%);
+}
+
+html[data-theme="dark"] :is(
+  .form-card,
+  .auth-card,
+  .dashboard-hero,
+  .dashboard-card,
+  .auth-highlights article,
+  .user-panel,
+  .user-profile-pill,
+  .user-sidebar,
+  .food-shell,
+  .chat-feed,
+  .chat-composer,
+  .chat-bubble,
+  .chat-topbar,
+  .history-panel,
+  .history-bubble,
+  .history-topbar,
+  .community-feed-card,
+  .community-feed-empty,
+  .community-recipe-card,
+  .admin-banner,
+  .admin-hero-panel,
+  .admin-list-card,
+  .admin-user-card,
+  .user-recipe-card,
+  .user-event-card,
+  .user-mini-recipe-card,
+  .user-stat-card,
+  .user-recipe-menu-card,
+  .user-recipe-detail-panel,
+  .user-recipe-steps-panel,
+  .user-recipe-served-hero,
+  .user-banner-card,
+  .dashboard-inline-tip-card,
+  .mobile-bottom-nav,
+  .mobile-bottom-nav-drawer,
+  .mobile-bottom-nav-card,
+  .page-load-card,
+  .confirm-dialog,
+  .confirm-dialog-card,
+  .user-dashboard-topbar,
+  .admin-topbar,
+  .admin-topbar-slim,
+  .chat-history-topbar,
+  .site-header
+) {
+  background: var(--surface-soft) !important;
+  color: var(--text) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+html[data-theme="dark"] :is(
+  .dashboard-home-content .user-panel-banner,
+  .auth-shell,
+  .dashboard-shell,
+  .user-sidebar-shell,
+  .community-book-cover-panel,
+  .community-book-section,
+  .community-book-sidecard
+) {
+  color: var(--text);
+}
+
+html[data-theme="dark"] :is(
+  .dashboard-home-content .user-panel-banner,
+  .auth-shell,
+  .dashboard-shell
+) {
+  background:
+    radial-gradient(circle at top left, rgba(89, 200, 197, 0.12), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(243, 204, 98, 0.12), transparent 28%),
+    linear-gradient(180deg, #101719 0%, #121b1d 100%) !important;
+}
+
+html[data-theme="dark"] :is(
+  .field input,
+  .field select,
+  .login-form input,
+  .login-form select,
+  .chat-input,
+  .chat-composer textarea,
+  textarea,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  select
+) {
+  background: var(--field);
+  color: var(--text);
+  border-color: var(--border-color);
+}
+
+html[data-theme="dark"] :is(
+  .field input::placeholder,
+  .field select::placeholder,
+  .login-form input::placeholder,
+  textarea::placeholder,
+  input::placeholder
+) {
+  color: var(--muted);
+}
+
+html[data-theme="dark"] :is(
+  .auth-button-secondary,
+  .button-secondary,
+  .user-icon-button-soft,
+  .follow-up,
+  .dashboard-inline-tip-card-button,
+  .chat-quick-chip,
+  .admin-link.is-muted
+) {
+  background: var(--surface-strong) !important;
+  color: var(--text) !important;
+  border-color: var(--border-color) !important;
+}
+
+html[data-theme="dark"] :is(
+  .auth-switch-button.is-active,
+  .mobile-bottom-nav-link.is-active,
+  .user-sidebar-link.is-active,
+  .user-recipe-pagination-page.is-active
+) {
+  background: rgba(89, 200, 197, 0.16) !important;
+  color: var(--accent-dark) !important;
+}
+
+html[data-theme="dark"] :is(
+  .auth-help-text,
+  .auth-footer,
+  .user-profile-pill span,
+  .chat-meta,
+  .history-topbar-note,
+  .chat-topbar-note,
+  .admin-banner p,
+  .user-banner-description,
+  .user-panel-head p,
+  .dashboard-card span,
+  .auth-highlights span,
+  .community-feed-card p,
+  .community-feed-empty p,
+  .divider,
+  .divider p,
+  .helper-link,
+  .signup-copy
+) {
+  color: var(--muted) !important;
+}
+
+html[data-theme="dark"] .auth-page.login-page,
+html[data-theme="dark"] .auth-page .form-card,
+html[data-theme="dark"] .auth-page .login-form input,
+html[data-theme="dark"] .auth-page .login-form select {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+html[data-theme="dark"] .auth-page .form-panel {
+  background: transparent !important;
+}
+
+html[data-theme="dark"] .auth-page .form-card {
+  background: var(--surface-soft) !important;
+}
+
+html[data-theme="dark"] .auth-page .social-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text) !important;
+  border-color: rgba(89, 200, 197, 0.24) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .auth-page .social-btn:hover {
+  background: rgba(89, 200, 197, 0.1) !important;
+  border-color: rgba(89, 200, 197, 0.34) !important;
+}
+
+html[data-theme="dark"] .auth-page .social-icon.google {
+  color: #ff6a5e !important;
+}
+
+html[data-theme="dark"] .auth-page .divider span {
+  background: rgba(89, 200, 197, 0.2) !important;
+}
+
+html[data-theme="dark"] .auth-page .helper-link,
+html[data-theme="dark"] .auth-page .signup-copy a,
+html[data-theme="dark"] .auth-page .eyebrow,
+html[data-theme="dark"] .auth-page .password-toggle {
+  color: var(--accent-dark) !important;
+}
+
+html[data-theme="dark"] .auth-page .landing-alert {
+  background: rgba(243, 204, 98, 0.14) !important;
+  border-color: rgba(243, 204, 98, 0.22) !important;
+  color: var(--text) !important;
+}
+
+html[data-theme="dark"] .auth-page .landing-alert-success {
+  background: rgba(115, 187, 70, 0.14) !important;
+  border-color: rgba(115, 187, 70, 0.22) !important;
+  color: #dcefc8 !important;
+}
+
+html[data-theme="dark"] .user-sidebar-brand img,
+html[data-theme="dark"] .brand-badge img {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme="dark"] .community-page .community-recipe-card {
+  background: #1d292c !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 20px 44px rgba(4, 9, 10, 0.28) !important;
+}
+
+html[data-theme="dark"] .community-page .community-recipe-card-body {
+  background: #1d292c !important;
+}
+
+html[data-theme="dark"] .community-page .community-recipe-card-title,
+html[data-theme="dark"] .community-page .community-recipe-card-author strong {
+  color: #eff4ef !important;
+}
+
+html[data-theme="dark"] .community-page .community-recipe-card-author span {
+  color: #a6b7b0 !important;
+}
+
+html[data-theme="dark"] .community-page .community-recipe-card-badge {
+  background: rgba(18, 27, 29, 0.86) !important;
+  color: #dce9e3 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="dark"] .community-page .community-recipe-card-badge.is-reshared {
+  color: #7fe0dc !important;
+  border-color: rgba(89, 200, 197, 0.2) !important;
+}
+
+html[data-theme="dark"] .community-page .community-recipe-card-delete {
+  background: rgba(102, 39, 39, 0.18) !important;
+  color: #ff8e8e !important;
+  border-color: rgba(255, 110, 110, 0.18) !important;
+}
+
+html[data-theme="dark"] .community-page .community-recipe-card-delete:hover {
+  background: rgba(128, 47, 47, 0.24) !important;
+}
+
+html[data-theme="dark"] .community-post-page .community-post-topbar,
+html[data-theme="dark"] .community-post-page .community-book-cover-panel,
+html[data-theme="dark"] .community-post-page .community-book-section,
+html[data-theme="dark"] .community-post-page .community-book-sidecard,
+html[data-theme="dark"] .community-post-page .community-detail-comments {
+  background: #1d292c !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 20px 44px rgba(4, 9, 10, 0.24) !important;
+}
+
+html[data-theme="dark"] .community-post-page .community-post-topbar-copy h1,
+html[data-theme="dark"] .community-post-page .community-book-title,
+html[data-theme="dark"] .community-post-page .community-book-author strong,
+html[data-theme="dark"] .community-post-page .community-book-section-head h3,
+html[data-theme="dark"] .community-post-page .community-detail-comments-head h3,
+html[data-theme="dark"] .community-post-page .community-thread-head strong,
+html[data-theme="dark"] .community-post-page .community-book-summary-list span strong {
+  color: #eff4ef !important;
+}
+
+html[data-theme="dark"] .community-post-page .community-post-topbar-subcopy,
+html[data-theme="dark"] .community-post-page .community-book-description,
+html[data-theme="dark"] .community-post-page .community-book-kicker,
+html[data-theme="dark"] .community-post-page .community-book-author span,
+html[data-theme="dark"] .community-post-page .community-book-summary-list span,
+html[data-theme="dark"] .community-post-page .community-detail-reply-hint,
+html[data-theme="dark"] .community-post-page .community-detail-empty,
+html[data-theme="dark"] .community-post-page .community-thread-head span,
+html[data-theme="dark"] .community-post-page .community-thread-body p,
+html[data-theme="dark"] .community-post-page .community-book-step-list p {
+  color: #a6b7b0 !important;
+}
+
+html[data-theme="dark"] .community-post-page .community-book-chip-row span,
+html[data-theme="dark"] .community-post-page .community-book-tag-list span,
+html[data-theme="dark"] .community-post-page .community-book-ingredient-list li,
+html[data-theme="dark"] .community-post-page .community-book-step-list li,
+html[data-theme="dark"] .community-post-page .community-thread-item,
+html[data-theme="dark"] .community-post-page .community-detail-reply-form {
+  background: #223034 !important;
+  color: #eff4ef !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+html[data-theme="dark"] .community-post-page .community-book-ingredient-list li i,
+html[data-theme="dark"] .community-post-page .community-book-step-list strong,
+html[data-theme="dark"] .community-post-page .community-detail-thread-kicker,
+html[data-theme="dark"] .community-post-page .community-book-section-head span {
+  color: #7fe0dc !important;
+}
+
+html[data-theme="dark"] .community-post-page .community-detail-actions .community-tweet-action-button,
+html[data-theme="dark"] .community-post-page .community-post-back-button,
+html[data-theme="dark"] .community-post-page .community-back-link {
+  background: #223034 !important;
+  color: #eff4ef !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="dark"] .community-post-page .community-detail-actions .community-tweet-action-button.is-disabled {
+  background: rgba(34, 48, 52, 0.6) !important;
+  color: #74847d !important;
+}
+
+html[data-theme="dark"] .community-post-page .community-tweet-action-button-danger {
+  background: rgba(102, 39, 39, 0.18) !important;
+  color: #ff8e8e !important;
+  border-color: rgba(255, 110, 110, 0.16) !important;
+}
+
+html[data-theme="dark"] .community-post-page .community-detail-reply-form textarea {
+  background: #141d20 !important;
+  color: #eff4ef !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+@media (max-width: 820px) {
+  .theme-toggle {
+    right: 14px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    width: 48px;
+    height: 48px;
   }
 }

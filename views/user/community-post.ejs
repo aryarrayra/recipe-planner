@@ -3,6 +3,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title><%= title %></title>
+  <%- include('../partials/favicon') %>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
@@ -81,6 +82,13 @@
                 <p class="community-book-kicker"><%= post.cuisine || post.originPlace || 'Komunitas' %> &bull; <%= post.category || 'resep' %></p>
                 <h2 class="community-book-title"><%= post.title %></h2>
                 <p class="community-book-description"><%= post.content || post.title %></p>
+                <% if (recipeTags.length) { %>
+                  <div class="community-book-tag-list community-book-tag-list-inline">
+                    <% recipeTags.forEach((tag) => { %>
+                      <span><%= tag %></span>
+                    <% }) %>
+                  </div>
+                <% } %>
 
                 <div class="community-book-chip-row">
                   <span><i class="fa-regular fa-clock"></i> <%= post.cookingTime || 0 %> menit</span>
@@ -220,46 +228,6 @@
             </section>
           </section>
 
-          <aside class="community-book-sidebar">
-            <article class="user-panel community-book-sidecard">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Ringkasan resep</p>
-                  <h2>Detail cepat</h2>
-                </div>
-              </div>
-
-              <div class="community-book-summary-list">
-                <span><strong>Kategori</strong><%= post.category || 'community' %></span>
-                <span><strong>Asal masakan</strong><%= post.cuisine || post.originPlace || 'Komunitas' %></span>
-                <span><strong>Waktu</strong><%= post.cookingTime || 0 %> menit</span>
-                <span><strong>Porsi</strong><%= post.servings || 1 %> porsi</span>
-                <span><strong>Tingkat kesulitan</strong><%= post.difficulty || 'easy' %></span>
-                <span><strong>Harga</strong>Rp <%= formatPrice(post.estimatedPrice) %></span>
-              </div>
-            </article>
-
-            <article class="user-panel community-book-sidecard">
-              <div class="user-panel-head">
-                <div>
-                  <p class="user-panel-kicker">Tags</p>
-                  <h2>Catatan resep</h2>
-                </div>
-              </div>
-
-              <% if (recipeTags.length) { %>
-                <div class="community-book-tag-list">
-                  <% recipeTags.forEach((tag) => { %>
-                    <span><%= tag %></span>
-                  <% }) %>
-                </div>
-              <% } else { %>
-                <div class="community-detail-empty">
-                  <p>Resep ini belum punya tag tambahan.</p>
-                </div>
-              <% } %>
-            </article>
-          </aside>
         </article>
 
         <div class="community-report-overlay" id="communityReportOverlay" hidden>

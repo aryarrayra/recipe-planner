@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title><%= title %></title>
+  <%- include('../partials/favicon') %>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -1250,6 +1251,138 @@
     .profile-community-actions .profile-primary-button,
     .profile-community-actions .profile-secondary-button {
       min-height: 42px;
+    }
+
+    html[data-theme="dark"] body.profile-page {
+      background: #101719;
+      color: #eff4ef;
+    }
+
+    html[data-theme="dark"] .profile-dashboard .user-dashboard-main {
+      background: linear-gradient(180deg, #182225 0%, #162023 100%);
+      border-color: rgba(255, 255, 255, 0.06);
+    }
+
+    html[data-theme="dark"] .profile-topbar,
+    html[data-theme="dark"] .profile-card,
+    html[data-theme="dark"] .profile-settings-section,
+    html[data-theme="dark"] .profile-community-card,
+    html[data-theme="dark"] .profile-community-comment,
+    html[data-theme="dark"] .profile-side-item,
+    html[data-theme="dark"] .profile-empty-state,
+    html[data-theme="dark"] .profile-note-box,
+    html[data-theme="dark"] .profile-settings-modal {
+      background: #1d292c !important;
+      color: #eff4ef !important;
+      border-color: rgba(255, 255, 255, 0.06) !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="dark"] .profile-card.is-accent {
+      background:
+        radial-gradient(circle at top left, rgba(115, 187, 70, 0.12), transparent 34%),
+        linear-gradient(135deg, rgba(89, 200, 197, 0.1), rgba(243, 204, 98, 0.06)),
+        #1a2528 !important;
+    }
+
+    html[data-theme="dark"] .profile-topbar-copy h1,
+    html[data-theme="dark"] .profile-section-head h3,
+    html[data-theme="dark"] .profile-name-row h2,
+    html[data-theme="dark"] .profile-community-card h4,
+    html[data-theme="dark"] .profile-community-user strong,
+    html[data-theme="dark"] .profile-side-item strong,
+    html[data-theme="dark"] .profile-bio-box strong,
+    html[data-theme="dark"] .profile-level-pill strong {
+      color: #eff4ef !important;
+    }
+
+    html[data-theme="dark"] .profile-topbar-note,
+    html[data-theme="dark"] .profile-muted,
+    html[data-theme="dark"] .profile-badge-label,
+    html[data-theme="dark"] .profile-level-pill span,
+    html[data-theme="dark"] .profile-community-user span,
+    html[data-theme="dark"] .profile-community-subtext,
+    html[data-theme="dark"] .profile-community-meta,
+    html[data-theme="dark"] .profile-empty-state,
+    html[data-theme="dark"] .profile-note-box,
+    html[data-theme="dark"] .profile-progress-meta,
+    html[data-theme="dark"] .profile-side-item span,
+    html[data-theme="dark"] .profile-account-meta span {
+      color: #a3b1aa !important;
+    }
+
+    html[data-theme="dark"] .profile-settings-button {
+      background: #223034 !important;
+      color: #eff4ef !important;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    html[data-theme="dark"] .profile-settings-button:hover {
+      background: #26373b !important;
+    }
+
+    html[data-theme="dark"] .profile-chip,
+    html[data-theme="dark"] .profile-secondary-button,
+    html[data-theme="dark"] .profile-badge,
+    html[data-theme="dark"] .profile-level-pill,
+    html[data-theme="dark"] .profile-bio-box {
+      background: #223034 !important;
+      color: #eff4ef !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="dark"] .profile-primary-button {
+      box-shadow: none !important;
+    }
+
+    html[data-theme="dark"] .profile-progress-meter {
+      background: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    html[data-theme="dark"] .profile-progress-meter span {
+      background: linear-gradient(90deg, #34b3ff 0%, #2e8de0 100%) !important;
+    }
+
+    html[data-theme="dark"] .profile-avatar-overlay {
+      background: rgba(15, 20, 25, 0.58) !important;
+    }
+
+    html[data-theme="dark"] .profile-community-tweet,
+    html[data-theme="dark"] .profile-community-reply {
+      background: #223034 !important;
+      border-color: rgba(255, 255, 255, 0.06) !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="dark"] .profile-community-text {
+      color: #eff4ef !important;
+    }
+
+    html[data-theme="dark"] .profile-community-media,
+    html[data-theme="dark"] .profile-community-avatar {
+      background: #182225 !important;
+      border-color: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    html[data-theme="dark"] .profile-field input,
+    html[data-theme="dark"] .profile-field textarea,
+    html[data-theme="dark"] .profile-field select,
+    html[data-theme="dark"] .profile-preference-chip,
+    html[data-theme="dark"] .profile-settings-close {
+      background: #223034 !important;
+      color: #eff4ef !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      box-shadow: none !important;
+    }
+
+    html[data-theme="dark"] .profile-preference-chip span,
+    html[data-theme="dark"] .profile-field label {
+      color: #eff4ef !important;
+    }
+
+    html[data-theme="dark"] .profile-settings-overlay {
+      background: rgba(3, 7, 10, 0.56);
     }
   </style>
 </head>
